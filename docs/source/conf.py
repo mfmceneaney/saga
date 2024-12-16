@@ -26,16 +26,16 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 breathe_projects = {}
 
 if read_the_docs_build:
-    input_dir = '../../alib/include'
+    input_dir = '../../saga/include'
     output_dir = 'build'
     configureDoxyfile(input_dir, output_dir)
     subprocess.call('doxygen', shell=True)
-    breathe_projects['alib'] = output_dir + '/xml'
+    breathe_projects['saga'] = output_dir + '/xml'
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'alib'
+project = 'saga'
 copyright = '2024, Matthew F. McEneaney'
 author = 'Matthew F. McEneaney'
 release = '0.0.0'
@@ -60,9 +60,9 @@ intersphinx_mapping = {
 intersphinx_disabled_domains = ['std']
 
 # Breathe Configuration
-breathe_default_project = "alib"
+breathe_default_project = "saga"
 breathe_projects_source = {
-    "alib" : ( "../../alib/include", ["analysis.h"] )
+    "saga" : ( "../../saga/include", ["analysis.h"] )
 }
 
 templates_path = ['_templates']

@@ -2,12 +2,12 @@ find_package(Doxygen REQUIRED)
 find_package(Sphinx REQUIRED)
 
 # Find all the public headers
-get_target_property(ALIB_PUBLIC_HEADER_DIR alib INTERFACE_INCLUDE_DIRECTORIES)
-message(STATUS "Found ALIB_PUBLIC_HEADER_DIR = ${ALIB_PUBLIC_HEADER_DIR}")#DEBUGGING
-file(GLOB_RECURSE ALIB_PUBLIC_HEADERS ${ALIB_PUBLIC_HEADER_DIR}/*.h)
-message(STATUS "Found ALIB_PUBLIC_HEADERS = ${ALIB_PUBLIC_HEADERS}")#DEBUGGING
+get_target_property(SAGA_PUBLIC_HEADER_DIR saga INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "Found SAGA_PUBLIC_HEADER_DIR = ${SAGA_PUBLIC_HEADER_DIR}")#DEBUGGING
+file(GLOB_RECURSE SAGA_PUBLIC_HEADERS ${SAGA_PUBLIC_HEADER_DIR}/*.h)
+message(STATUS "Found SAGA_PUBLIC_HEADERS = ${SAGA_PUBLIC_HEADERS}")#DEBUGGING
 
-set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/alib/include)
+set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/saga/include)
 message(STATUS "DOXYGEN_INPUT_DIR = ${DOXYGEN_INPUT_DIR}")#DEBUGGING
 set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
 set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/xml/index.xml)
@@ -22,7 +22,7 @@ file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
 
 # Only regenerate Doxygen when the Doxyfile or public headers change
 add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                   DEPENDS ${ALIB_PUBLIC_HEADERS}
+                   DEPENDS ${SAGA_PUBLIC_HEADERS}
                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
                    MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
                    COMMENT "Generating docs"
@@ -43,7 +43,7 @@ add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                    COMMAND 
                      ${SPHINX_EXECUTABLE} -b html
                      # Tell Breathe where to find the Doxygen output
-                     -Dbreathe_projects.alib=${DOXYGEN_OUTPUT_DIR}/xml
+                     -Dbreathe_projects.saga=${DOXYGEN_OUTPUT_DIR}/xml
                    ${SPHINX_SOURCE} ${SPHINX_BUILD}
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                    DEPENDS
