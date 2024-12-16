@@ -228,5 +228,4 @@ void getBinMigrationHistograms1D(
 
 } // void getBinMigrationHistograms1D()
 
-
 } // namespace bins {
