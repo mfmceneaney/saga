@@ -9,3 +9,8 @@ Python API
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. automodule:: aggregate
+    :members:
+    :undoc-members:
+    :show-inheritance:
