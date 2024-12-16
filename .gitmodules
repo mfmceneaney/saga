@@ -1,0 +1,6 @@
+[submodule "saga/argparse"]
+	path = saga/argparse
+	url = https://github.com/jamolnng/argparse.git
+[submodule "saga/yaml-cpp"]
+	path = saga/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
