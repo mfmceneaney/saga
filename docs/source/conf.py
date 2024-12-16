@@ -62,7 +62,7 @@ intersphinx_disabled_domains = ['std']
 # Breathe Configuration
 breathe_default_project = "saga"
 breathe_projects_source = {
-    "saga" : ( "../../saga/include", ["analysis.h"] )
+    "saga" : ( "../../saga/include", ["analysis.h", "bins.h"] )
 }
 
 templates_path = ['_templates']

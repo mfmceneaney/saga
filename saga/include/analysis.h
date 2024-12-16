@@ -41,9 +41,6 @@
 // RooStats includes
 #include "RooStats/SPlot.h"
 
-// Local includes
-// #include <massfit.h>
-
 #pragma once
 
 /**

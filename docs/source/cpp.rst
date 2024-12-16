@@ -7,3 +7,6 @@ C++ API
 
 .. doxygennamespace:: analysis
    :project: saga
+
+.. doxygennamespace:: bins
+   :project: saga
