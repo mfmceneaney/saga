@@ -4,21 +4,21 @@ Run a generic SIDIS asymmetry analysis with CLAS12 data.
 
 Use [CLAS12-Analysis](https://github.com/mfmceneaney/CLAS12-Analysis.git) or your own software to produce the input ROOT trees with event by event kinematics selecting all unique $e^{-}+X$ combinations.
 
-# Prerequisites
+## Prerequisites
 
 * Python >=3.7.3
 * A compiler with C++11 support
 * Pip 10+ or CMake >= 3.4 (or 3.14+ on Windows, which was the first version to support VS 2019)
 * [ROOT](https://root.cern.ch)
 
-# Installation
+## Installation
 
 Begin by cloning this repository:
 ```bash
 git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
 ```
 
-# C++ Libraries
+### C++ Libraries
 This is a CMake project so you can build wherever but this is probably the simplest way to go:
 ```bash
 mkdir build
@@ -30,9 +30,7 @@ You should now have several executables in your `build` directory.
 
 TODO: Add directions for adding dependency to another CMake project.
 
-# Python3 Modules
-
-TODO:
+### Python3 Modules
 
 For now just include these lines in your python code:
 ```python
@@ -40,13 +38,13 @@ import sys
 
 sys.path.append('/path/to/<thisrepository>/py')
 
-import asym_analysis as aa
+import orchestrate as o
 ```
 
-# Documentation
-Check out the documentation page on [Read The Docs](https://lspintransfer.readthedocs.io/en/latest/)!
+## Documentation
+Check out the documentation page on [Read The Docs](https://saga.readthedocs.io/en/latest/)!
 
-## Building the Documentation
+### Building the Documentation
 
 Additional prerequisites for building the documentation:
 * [doxygen](https://www.doxygen.nl)
@@ -59,31 +57,31 @@ To build the documentation run cmake with the `BUILD_DOXYGEN` option set to `TRU
 cmake .. -DBUILD_DOXYGEN=TRUE
 ```
 
-# Running an Analysis
+## Running an Analysis
 TODO
 
-## Design Philosophy
+### Design Philosophy
 
-## Examining Kinematics
+### Examining Kinematics
 The first step to any analysis should be to peruse your data.
 
-## Binning
+### Binning
 
-## Invariant Mass Signal + Background Fits
+##### Invariant Mass Signal + Background Fits
 
-## Background Correction: Sideband Subtraction and sPlots
+### Background Correction: Sideband Subtraction and sPlots
 
-## Fitting Asymmetries
+### Fitting Asymmetries
 
-## Injecting Asymmetries
+### Injecting Asymmetries
 
-## Orchestrating Jobs
+### Orchestrating Jobs
 
-## Aggregating Jobs
+### Aggregating Jobs
 
-## Tabulating and Plotting Results
+### Tabulating and Plotting Results
 
-## Scaling MC for Future Experiments
+### Scaling MC for Future Experiments
 
 #
 
