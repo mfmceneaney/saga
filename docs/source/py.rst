@@ -5,12 +5,12 @@ Python API
     
     This project is under active development.
 
-.. automodule:: orchestrate
+.. automodule:: saga.orchestrate
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: aggregate
+.. automodule:: saga.aggregate
     :members:
     :undoc-members:
     :show-inheritance:
