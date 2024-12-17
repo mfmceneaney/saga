@@ -47,7 +47,7 @@ def get_list(divisions,aggregate_keys=[]):
 
     return data_list
 
-def get_out_file_list_1D_binning(divisions,base_dir,submit_path,yaml_path,var_lims,get_out_file_name,aggregate_keys=[]):
+def get_out_file_list_1D_binning(divisions,base_dir,submit_path,yaml_path,var_lims,get_out_file_name,aggregate_keys=[],asym_idx=0):
 
     """
     Parameters
@@ -63,10 +63,14 @@ def get_out_file_list_1D_binning(divisions,base_dir,submit_path,yaml_path,var_li
     var_lims : dictionary, required
         Map of bin variable names to minimum and maximum bounds
     get_out_file_name : function, required
-        Function to generate output file name from configuration map and additional 1D binning arguments `binvar`, `binvar_min`, `binvar_max`
+        Function to generate output file name from 1D binning arguments `binvar`, `binvar_min`, `binvar_max`, and `asym_idx` supplied directly
+        and `method` and `fitvar` as well as any additional elements supplied from the configuration map
     aggregate_keys : list, optional
         List of keys over which to group configurations
         Default : []
+    asym_idx : int, optional
+        Index of asymmetry
+        Default : 0
 
     Returns
     -------
@@ -107,7 +111,7 @@ def get_out_file_list_1D_binning(divisions,base_dir,submit_path,yaml_path,var_li
                 # Get job directory and output file name
                 job_dir = os.path.join(base_dir,"__".join(["_".join([key,str(data_list_i[key])]) for key in sorted(data_list_i)]))
                 job_dir = os.path.abspath(job_dir) #NOTE: Since dictionary is not copied this should just edit the original entry in data_list.
-                out_file_name = get_out_file_name(use_mc=use_mc,binvar=binvar,binvar_min=binvar_min,binvar_max=binvar_max,**data_list_i)
+                out_file_name = get_out_file_name(binvar=binvar,binvar_min=binvar_min,binvar_max=binvar_max,asym_idx=asym_idx,**data_list_i)
                 out_file_name = os.path.join(job_dir,out_file_name)
                 output_dict["file_list"].append(out_file_name)
                 output_dict["dir_list"].append(job_dir)
@@ -122,7 +126,7 @@ def get_out_file_list_1D_binning(divisions,base_dir,submit_path,yaml_path,var_li
                     # Get job directory and output file name
                     job_dir = os.path.join(base_dir,"__".join(["_".join([key,str(data_list_i_val[key])]) for key in sorted(data_list_i_val)]))
                     job_dir = os.path.abspath(job_dir) #NOTE: Since dictionary is not copied this should just edit the original entry in data_list.
-                    out_file_name = get_out_file_name(binvar=binvar,binvar_min=binvar_min,binvar_max=binvar_max,**data_list_i)
+                    out_file_name = get_out_file_name(binvar=binvar,binvar_min=binvar_min,binvar_max=binvar_max,asym_idx=asym_idx,**data_list_i)
                     out_file_name = os.path.join(job_dir,out_file_name)
                     output_dict["file_list"].append(out_file_name)
                     output_dict["dir_list"].append(job_dir)
@@ -451,7 +455,7 @@ def load_TH2(
 def save_bin_migration_matrix_to_csv(
         bin_migration_mat,
         base_dir='systematics/bin_migration/',
-        binvar='Q2',
+        binvar='x',
         delimiter=",",
         header=None,
         fmt=None,
@@ -467,7 +471,7 @@ def save_bin_migration_matrix_to_csv(
         Default : 'systematics/bin_migration/'
     binvar : optional, string
         Name of reconstructed bin variable
-        Default : 'Q2'
+        Default : 'x'
     delimiter : optional, string
         CSV format delimiter
         Default : ","
@@ -610,7 +614,7 @@ def plot_systematics(
         label   = None,
         xlims   = (0.0,1.0),
         ylims   = (-1.0,1.0),
-        xvar    = 'Q2',
+        xvar    = 'x',
         title   = 'Systematic Errors',
         xtitle  = '$Q^{2} (GeV^{2})$',
         ytitle  = '$\Delta \mathcal{A}$',
@@ -625,8 +629,10 @@ def plot_systematics(
     yerr_syst : np.array, required
         Array of absolute systematic error in each bin further indexed by the sources of systematic error
     palette : string, optional
+        Seaborn color palette
         Default : 'Dark2'
     stacked : Boolean, optional
+        Whether to stack histograms from different sources of systematic error
         Default : False
     label : List, optional
         List of labels for each source of systematic error
@@ -639,7 +645,7 @@ def plot_systematics(
         Default : (-1.0,1.0)
     xvar : string, optional
         Bin variable name
-        Default : 'Q2'
+        Default : 'x'
     title : string, optional
         Plot title
         Default : 'Systematic Errors'
@@ -698,9 +704,8 @@ def plot_systematics(
     plt.ylabel(ytitle,usetex=True)
 
     # Plot systematics by source for each x point
-    xbins = x_means
-    nbins = len(xbins)
-    xbins = np.moveaxis(np.array([xbins for el in range(np.shape(yerr_syst)[1])]),(0,1),(1,0))
+    nbins = len(x_means)
+    xbins = np.moveaxis(np.array([x_means for el in range(np.shape(yerr_syst)[1])]),(0,1),(1,0))
     s1 = plt.hist(xbins, weights=yerr_syst, bins=nbins, alpha=0.5, label=label, stacked=stacked)
     plt.tick_params(direction='out',bottom=True,top=True,left=True,right=True,length=10,width=1)
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
@@ -710,3 +715,304 @@ def plot_systematics(
                 horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
     plt.legend(loc='best')
     f1.savefig(outpath)
+
+def plot_results(
+        x_mean = None,
+        y_mean = None,
+        xerr_mean = None,
+        yerr_mean = None,
+        xerr_syst = None,
+        yerr_syst = None,
+        y_min  = None,
+        y_max  = None,
+        y_std  = None,
+        ydiff_mean = None,
+        ydiff_std = None,
+        ydiff_mins = None,
+        ydiff_maxs = None,
+        xlims = [0.0,1.0],
+        ylims = [0.0,1.0],
+        title = 'Asymmetry Results',
+        xvar  = 'x',
+        xtitle = '$x$',
+        ytitle = '$\mathcal{A}$',
+        sgasym = 0.10,
+        bgasym = 0.00,
+        color  = 'blue', #NOTE: COLOR OF DATA POINTS
+        bcolor = 'gray', #NOTE:
+        outpath = 'out.pdf',
+        add_clas12_watermark = True,
+        show_injected_asymmetries = False,
+    ):
+    """
+    Parameters
+    ----------
+    x_mean : list, optional
+        x mean values for each bin
+        Default : None
+    y_mean : list, optional
+        y mean values for each bin
+        Default : None
+    xerr_mean : list, optional
+        x error alues for each bin
+        Default : None
+    yerr_mean : list, optional
+        y error values for each bin
+        Default : None
+    xerr_syst : list, optional
+        x systematic error alues for each bin
+        Default : None
+    yerr_syst : list, optional
+        y systematic error values for each bin
+        Default : None
+    y_min : list, optional
+        y minimum values for each bin
+        Default : None
+    y_max : list, optional
+        y maximum values for each bin
+        Default : None
+    y_std : list, optional
+        y standard deviation values for each bin
+        Default : None
+    ydiff_mean : list, optional
+        y difference from injected signal asymmetry mean values for each bin
+        Default : None
+    ydiff_std : list, optional
+        y difference from injected signal asymmetry standard deviation values for each bin
+        Default : None
+    ydiff_mins : list, optional
+        y difference from injected signal asymmetry minimum values for each bin
+        Default : None
+    ydiff_maxs : list, optional
+        y difference from injected signal asymmetry maximum values for each bin
+        Default : None
+    xlims : tuple, optional
+        x limits for plotting
+        Default : (0.0,1.0)
+    ylims : tuple, optional
+        y limits for plotting
+        Default : (-1.0,1.0)
+    title : string, optional
+        Plot title
+        Default : 'x'
+    xvar : string, optional
+        Bin variable name
+        Default : 'x'
+    xtitle : string, optional
+        x axis title
+        Default : '$x$'
+    ytitle : string, optional
+        y axis title
+        Default : '$\Delta \mathcal{A}$'
+    sgasym : float, optional
+        Injected signal asymmetry
+        Default : 0.10
+    bgasym : float, optional
+        Injected background asymmetry
+        Default : 0.00
+    color : string, optional
+        Color of data point markers
+        Default : 'blue'
+    bcolor : string, optional
+        Color of standard or min max band
+        Default : 'gray'
+    outpath : string, optional
+        Name of output pdf
+        Default : 'systematics.pdf'
+    add_clas12_watermark : Boolean, optional
+        Option to add CLAS12 watermark on produced plot
+        Default : True
+    show_injected_asymmetries : Boolean, optional
+        Option to show injected signal and background asymmetries
+        Default : False
+
+    Description
+    -----------
+    Plot the results for each bin in a 1D binning scheme showing systematic errors
+    and a standard deviation band and injected asymmetries if desired.  Save results
+    and systematics to CSV.
+    """
+
+    # Set font sizes
+    plt.rc('font', size=25) #controls default text size
+    plt.rc('axes', titlesize=50) #fontsize of the title
+    plt.rc('axes', labelsize=50) #fontsize of the x and y labels
+    plt.rc('xtick', labelsize=25) #fontsize of the x tick labels
+    plt.rc('ytick', labelsize=25) #fontsize of the y tick labels
+    plt.rc('legend', fontsize=20) #fontsize of the legend
+
+    # Get some nicer plot settings
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['figure.autolayout'] = True
+
+    ecolor='black'
+    elinewidth=2.0
+    capsize=18
+    capthick=2.0
+    marker='o'
+    linestyle=None
+    linewidth=0.0
+    markersize=20
+    gridlinewidth=0.5
+    axlinewidth=1
+
+    # Set up plot
+    figsize = (16,10)
+    f1, ax1 = plt.subplots(figsize=figsize)
+    plt.xlim(*xlims)
+    plt.ylim(*ylims)
+    plt.title(title,usetex=True)
+    plt.xlabel(xtitle,usetex=True)
+    plt.ylabel(ytitle,usetex=True)
+
+    # Plot systematics OR std deviation of aggregated injected values THEN data with errors
+    if yerr_syst is not None:
+        g1 = plt.errorbar(x_mean,y_mean,xerr=None,yerr=yerr_syst,
+                    ecolor='gray', elinewidth=elinewidth*20, capsize=0,
+                    color=color, marker='o', linestyle=linestyle, alpha=0.5,
+                    linewidth=0, markersize=0,label='Systematic error')
+
+    # Plot standard deviation of repetitions in each bin
+    if y_std is not None:
+        fb = plt.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=bcolor)
+
+    # Plot results
+    g2 = plt.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
+                        ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
+                        color=color, marker='o', linestyle=linestyle,
+                        linewidth=linewidth, markersize=markersize,label=label)
+
+    # Set tick marks and zero line
+    plt.tick_params(direction='out',bottom=True,top=True,left=True,right=True,length=10,width=1)
+    ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
+
+    # Draw injected asymmetries
+    if show_injected_asymmetries:
+        if sgasym!=0: ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
+        ax1.axhline(sgasym, color='red',linestyle='--',linewidth=axlinewidth, label='Injected Signal Asymmetry')
+        if bgasym!=0: ax1.axhline(bgasym, color='blue',linestyle='--',linewidth=axlinewidth, label='Injected Background Asymmetry')
+
+    # Add water mark and legend
+    if add_clas12_watermark:
+        plt.text(0.5, 0.5, 'CLAS12 Preliminary',
+                size=50, rotation=25., color='gray', alpha=0.25,
+                horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
+    plt.legend(loc='best')
+
+    # Save figure
+    f1.savefig(outpath)
+
+    # Save plot data to csv
+    delimiter = ","
+    header    = delimiter.join(["bin","x","y","xerr","yerr","xerrsyst","yerrsyst"]) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
+    fmt       = ["%d","%.3g","%.3g","%.3g","%.3g","%.3g","%.3g"]
+    comments  = ""
+
+    # Save plot data
+    save_graph_to_csv(
+        outpath+'.csv',
+        x_mean,
+        y_mean,
+        xerr=xerr_mean,
+        yerr=yerr_mean,
+        xerr_syst=xerr_syst,
+        yerr_syst=yerr_syst,
+        delimiter=delimiter,
+        header=header,
+        fmt=fmt,
+        comments=comments
+        )
+
+    # Save ydiffs for MC asym injection systematics
+    if ydiff_mean is not None:
+        convert_graph_to_csv(
+            outpath+'_ydiff.csv',
+            x_mean,
+            ydiff_mean,
+            xerr=xerr_mean,
+            yerr=ydiff_std,
+            mins=ydiff_mins,
+            maxs=ydiff_maxs,
+            delimiter=delimiter,
+            header=header,
+            fmt=fmt,
+            comments=comments
+        )
+
+def get_outpath(
+        base_dir,
+        aggregate_keys,
+        asym_name,
+        **config
+    ):
+    """
+    Parameters
+    ----------
+    base_dir : string, required
+        Directory name to prepend to output file names
+    aggregate_keys : list, required
+        List of keys over which configurations are grouped
+    asym_name : string, required
+        Unique string identifier for asymmetry
+    config : dictionary, required
+        Job configuration map
+
+    Returns
+    -------
+    String
+        Unique output path for a PDF produced from the given configuration
+
+    Description
+    -----------
+    Get a unique PDF file name for a given configuration.
+    """
+
+    job_config_name  = 'aggregate_'+'_'.join([str(key) for key in sorted(aggregate_keys)])+'__'
+    job_config_name += "__".join(["_".join([key,str(config[key]) if type(config[key]) is not list else "_".join([str(el) for el in config[key]]) ]) for key in sorted(config)])
+    job_config_name += asym_name+'.pdf'
+    outpath = os.path.abspath(os.path.join(base_dir,job_config_name))
+
+    return outpath
+
+def get_out_file_name(
+        method='BSA1D',
+        fitvar='costheta1',
+        xvar='x',
+        xvar_min=0.0,
+        xvar_max=1.0,
+        asym_idx=0,
+        **kwargs
+    ):
+    """
+    Parameters
+    ----------
+    method : string, optional
+        Method used to compute results
+        Default : 'BSA1D'
+    fitvar : string, optional
+        Asymmetry fit variable
+        Default : 'costheta1'
+    binvar : string, optional
+        Bin variable
+        Default 'x'
+    binvar_min : float, optional
+        Bin variable minimum bound
+        Default : 0.0
+    binvar_max : float, optional
+        Bin variable maximum bound
+        Default : 1.0
+    asym_idx : int, optional
+        Asymmetry index
+        Default : 0
+
+    Returns
+    -------
+    String
+        Ouput ROOT file name
+
+    Description
+    -----------
+    Get output ROOT file name for a 1D kinematic binning scheme passed to `analysis::getKinBinnedAsymUBML1D()`.
+    """
+                    
+    return method+'_'+fitvar+'_'+xvar+f'_{xvar_min:.3f}_{xvar_max:.3f}_A'+str(asym_idx)+'.root'
