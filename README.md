@@ -36,9 +36,9 @@ For now just include these lines in your python code:
 ```python
 import sys
 
-sys.path.append('/path/to/<thisrepository>/py')
+sys.path.append('/path/to/saga/py/saga')
 
-import orchestrate as o
+from saga import orchestrate, aggregate
 ```
 
 ## Documentation
@@ -48,13 +48,15 @@ Check out the documentation page on [Read The Docs](https://saga.readthedocs.io/
 
 Additional prerequisites for building the documentation:
 * [doxygen](https://www.doxygen.nl)
-* [sphinx](https://pypi.org/project/Sphinx/)
-* [sphinx_rtd_theme](https://pypi.org/project/sphinx-rtd-theme/)
-* [breathe](https://pypi.org/project/breathe/)
+* [sphinx](https://pypi.org/project/Sphinx/) (available with pip)
+* [sphinx_rtd_theme](https://pypi.org/project/sphinx-rtd-theme/) (available with pip)
+* [breathe](https://pypi.org/project/breathe/) (available with pip)
 
 To build the documentation run cmake with the `BUILD_DOXYGEN` option set to `TRUE`:
 ```bash
+cd build
 cmake .. -DBUILD_DOXYGEN=TRUE
+make
 ```
 
 ## Running an Analysis
@@ -67,7 +69,7 @@ The first step to any analysis should be to peruse your data.
 
 ### Binning
 
-##### Invariant Mass Signal + Background Fits
+### Invariant Mass Signal + Background Fits
 
 ### Background Correction: Sideband Subtraction and sPlots
 
