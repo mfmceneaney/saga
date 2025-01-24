@@ -312,6 +312,7 @@ void applyLambdaMassFit(
 * @param sg_region_max Invariant mass signal region upper bound
 * @param ws_unique_id Identifier string to ensure PDFs uniqueness in workspace
 * @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
+* @param bin_id Unique bin identifier string
 *
 * @return List containing background fraction epsilon and its statistical error
 */
@@ -331,7 +332,8 @@ std::vector<double> applyLambdaMassFit(
     double sg_region_min,
     double sg_region_max,
     std::string ws_unique_id,
-    int use_poly4_bg
+    int use_poly4_bg,
+    std::string bin_id
     ) {
 
     using namespace RooFit;
@@ -378,6 +380,14 @@ std::vector<double> applyLambdaMassFit(
     RooRealVar n("n","n",2.0,2.0,10.0);
     RooCrystalBall cb(Form("cb%s",ws_unique_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
 
+    // Construct addition component pdfs
+    RooRealVar sg_add("sg_add", "sg_add", 0.0001, 0.0, 0.001);
+    RooGaussian gauss_add(Form("gauss_add%s",ws_unique_id.c_str()), "gauss_add", *m, mu, sg_add);
+    RooCrystalBall cb_add(Form("cb_add%s",ws_unique_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
+    double cbFrac_init = 0.1;
+    RooRealVar cbFrac(Form("cbFrac%s",ws_unique_id.c_str()), "fitted yield for signal", cbFrac_init, 0., 1.0);
+    RooAddPdf cb_gauss(Form("cb_gauss%s",ws_unique_id.c_str()), Form("cb_add%s+gauss_add%s",ws_unique_id.c_str(),ws_unique_id.c_str()), RooArgList(cb_add,gauss_add), RooArgList(cbFrac)); //NOTE: N-1 Coefficients! 
+
     // Construct convolution component pdfs
     RooRealVar mg_conv("mg_conv", "mg_conv", 0.0);
     RooRealVar sg_conv("sg_conv", "sg_conv", 0.008, 0.0, 0.1);
@@ -399,6 +409,7 @@ std::vector<double> applyLambdaMassFit(
     w->import(cb);
     w->import(landau_X_gauss);
     w->import(cb_X_gauss);
+    w->import(cb_gauss);
 
     // Pick out signal function based on preference
     std::string sig_pdf_name_unique = Form("%s%s",sig_pdf_name.c_str(),ws_unique_id.c_str());
@@ -524,6 +535,8 @@ std::vector<double> applyLambdaMassFit(
     TString s_mg_conv, s_sg_conv;
     s_mg_conv.Form("#mu_{Gaus} = %.4f #pm %.4f GeV",mg_conv.getVal(),mg_conv.getError());
     s_sg_conv.Form("#sigma_{Gaus} = %.4f #pm %.4f GeV",sg_conv.getVal(),sg_conv.getError());
+    TString s_mg_add, s_sg_add;
+    s_sg_add.Form("#sigma_{Gaus} = %.4f #pm %.4f GeV",sg_add.getVal(),sg_add.getError());
     TString s_ml, s_sl;
     s_ml.Form("#mu_{Landau} = %.4f #pm %.4f GeV",ml.getVal(),ml.getError());
     s_sl.Form("#sigma_{Landau} = %.4f #pm %.4f GeV",sl.getVal(),sl.getError());
@@ -567,6 +580,13 @@ std::vector<double> applyLambdaMassFit(
         legend->AddEntry((TObject*)0, s_mg_conv, Form(" %g ",chi2ndf));
         legend->AddEntry((TObject*)0, s_sg_conv, Form(" %g ",chi2ndf));
     }
+    else if (sig_pdf_name=="cb_gauss") {
+        legend->AddEntry((TObject*)0, s_alpha, Form(" %g ",chi2ndf));
+        legend->AddEntry((TObject*)0, s_n, Form(" %g ",chi2ndf));
+        legend->AddEntry((TObject*)0, s_sigma, Form(" %g ",chi2ndf));
+        legend->AddEntry((TObject*)0, s_mu, Form(" %g ",chi2ndf));
+        legend->AddEntry((TObject*)0, s_sg_add, Form(" %g ",chi2ndf));
+    }
     else {
         legend->AddEntry((TObject*)0, s_alpha, Form(" %g ",chi2ndf));
         legend->AddEntry((TObject*)0, s_n, Form(" %g ",chi2ndf));
@@ -579,11 +599,12 @@ std::vector<double> applyLambdaMassFit(
     legend->Draw();
 
     // Save Canvas
-    c_massfit->SaveAs(Form("%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),ws_unique_id.c_str()));
+    c_massfit->SaveAs(Form("%s_%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),ws_unique_id.c_str(),bin_id.c_str()));
 
     // Add yield variables to workspace
     w->import(sgYield);
     w->import(bgYield);
+    w->import(cbFrac);
 
     // Add model to workspace
     w->import(model);
@@ -1350,6 +1371,7 @@ void getKinBinnedAsym1D(
         );
 
         // Apply Lambda mass fit to FULL bin frame
+        std::string bin_id = Form("%s_%.3f_%.3f",binvar.c_str(),bin_min,bin_max);
         std::vector<double> epss = applyLambdaMassFit(
                 ws,
                 massvar,
@@ -1366,7 +1388,8 @@ void getKinBinnedAsym1D(
                 sg_region_min,
                 sg_region_max,
                 "",//ws_unique_id->This changes pdf,yieldvar names, but NOT (bin,depol,mass,fit)vars,pdf parameters which are saved internally.
-                1//use_poly4_bg
+                1,//use_poly4_bg
+                bin_id
             );
 
         // Apply sPlot
