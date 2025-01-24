@@ -547,6 +547,18 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: use_sb_subtraction: " << use_sb_subtraction << std::endl;
 
+    bool use_average_depol = false;
+    if (node["use_average_depol"]) {
+        use_average_depol = node["use_average_depol"].as<bool>();
+    }
+    std::cout << "INFO: use_average_depol: " << use_average_depol << std::endl;
+
+    bool use_extended_nll = false;
+    if (node["use_extended_nll"]) {
+        use_extended_nll = node["use_extended_nll"].as<bool>();
+    }
+    std::cout << "INFO: use_extended_nll: " << use_extended_nll << std::endl;
+
     //----------------------------------------------------------------------------------------------------//
     // ANALYSIS
     //----------------------------------------------------------------------------------------------------//
@@ -568,7 +580,11 @@ void execute(const YAML::Node& node) {
         double binmax = bins_.at(bins_.size()-1);
 
         // Add to bin limits cuts
-        binlims_cuts = Form("%s && %s>=%.8f && %s<%.8f",binlims_cuts.c_str(),binvar.c_str(),binmin,binvar.c_str(),binmax);
+        if (binlims_cuts.size()>0) {
+            binlims_cuts = Form("%s && %s>=%.16f && %s<%.16f",binlims_cuts.c_str(),binvar.c_str(),binmin,binvar.c_str(),binmax);
+        } else {
+            binlims_cuts = Form("%s>=%.16f && %s<%.16f",binvar.c_str(),binmin,binvar.c_str(),binmax);
+        }
 
     } // for (auto it = binvars.begin(); it != binvars.end(); ++it) {
     std::cout << "INFO: binlims_cuts = "<<binlims_cuts.c_str() << std::endl;
@@ -768,6 +784,8 @@ void execute(const YAML::Node& node) {
             params, //std::vector<double> params  = std::vector<double>(5),
             fitvar1title, //std::string fitvarxtitle    = "#phi_{h p#pi^{-}}",
             use_sumW2Error, //bool        use_sumW2Error  = true,
+            use_average_depol, //bool use_average_depol      = false,
+            use_extended_nll, // bool use_extended_nll       = false,
             use_splot, //bool        use_splot       = true,
             graph_title, //std::string graph_title     = "BSA A_{LU} vs. #Delta#phi", // Histogram title
             marker_color, // int         marker_color    = 4, // 4 is blue

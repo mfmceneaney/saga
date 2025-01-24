@@ -667,13 +667,14 @@ void applySPlot(
 * 
 * Compute the bin count, bin variable values and errors, depolarization variable values and errors,
 * and fit parameter values and errors using an unbinned maximum likelihood fit to the asymmetry.
-* Note that the given asymmetry formula \f$ A(x, a_0, a_1, a_2, ...) \f$ will be converted internally to a PDF of the form
+* Note that the given asymmetry formula \f$ A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, a_0, a_1, a_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ...)
+* PDF(h, x, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
 * @f]
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
-* The variable names should be replaced in the fit formula by `helicity`\f$\rightarrow\f$`[0]`, `x`\f$\rightarrow\f$`[1]`, `a_0`\f$\rightarrow\f$`[2]`, etc.
+* The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `a_0`\f$\rightarrow\f$`x[1]`, etc.
 *
 * @param outdir Name of output directory
 * @param outroot Name of output ROOT file
@@ -686,8 +687,8 @@ void applySPlot(
 * @param bintitle Bin title
 * @param pol Luminosity averaged beam polarization
 * @param depolvars List of depolarization variables
-* @param depolvarlims List of minimum and maximum bounds for each depolarization variable
 * @param helicity Name of helicity variable
+* @param helicity_states Map of state names to helicity values
 * @param fitformula The asymmetry formula
 * @param nparams Number of parameters in the asymmetry formula (up to 5)
 * @param params List of initial values for asymmetry parameters
@@ -696,6 +697,8 @@ void applySPlot(
 * @param xmin Minimum bound for fit variable
 * @param xmax Maximum bound for fit variable
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param out Output stream
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
@@ -712,8 +715,8 @@ TArrayF* getKinBinAsymUBML1D(
     std::string bintitle,
     double      pol,
     std::vector<std::string>   depolvars,
-    std::vector<std::vector<double>> depolvarlims,
     std::string  helicity = "heli",
+    std::map<std::string,int> helicity_states = {},
     std::string  fitformula    = "[0]*sin(x)+[1]*sin(2*x)",
     int          nparams       = 2,
     std::vector<double> params = std::vector<double>(5),
@@ -722,14 +725,21 @@ TArrayF* getKinBinAsymUBML1D(
     double xmin                = 0.0,
     double xmax                = 2*TMath::Pi(),
     bool use_sumW2Error        = true,
+    bool use_average_depol     = false,
+    bool use_extended_nll      = false,
     std::ostream &out          = std::cout
     ) {
 
     // Set plotting title for bin
     std::string title    = Form("%s %s",fitvarxtitle.c_str(),bincut.c_str());
 
+    // Define the helicity variable
+    RooCategory h(helicity.c_str(), helicity.c_str());
+    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+        h.defineType(it->first.c_str(), it->second);
+    }
+
     // TODO: Load fit avariables from workspace
-    RooRealVar *h = w->var(helicity.c_str());
     RooRealVar *x = w->var(fitvarx.c_str());
 
     //TODO Load dataset from workspace
@@ -758,12 +768,11 @@ TArrayF* getKinBinAsymUBML1D(
     // Get depolarization factors
     std::vector<double> depols;
     std::vector<double> depolerrs;
+    RooRealVar * d[(const int)depolvars.size()];
     for (int i=0; i<depolvars.size(); i++) {
-        // double depol    = (double)*binframe.Mean(depolvars[i].c_str());
-        // double depolerr = (double)*binframe.StdDev(depolvars[i].c_str());
-        RooRealVar depolvar(depolvars[i].c_str(), depolvars[i].c_str(), depolvarlims[i][0], depolvarlims[i][1]);
-        double mean   = bin_ds->mean(depolvar);
-        double stddev = TMath::Sqrt(bin_ds->moment(depolvar,2.0));
+        d[i] = w->var(depolvars[i].c_str());
+        double mean   = bin_ds->mean(*d[i]);
+        double stddev = TMath::Sqrt(bin_ds->moment(*d[i],2.0));
         depols.push_back(mean);
         depolerrs.push_back(stddev);
     }
@@ -776,20 +785,52 @@ TArrayF* getKinBinAsymUBML1D(
     gStyle->SetOptStat(0);
 
     // Create fit parameters
-    if (nparams>5) {std::cerr<<"ERROR: only up to 5 fit parameters are allowed."<<std::endl;}
-    RooRealVar a0("a0","a0",(nparams>0 ? params[0] : 0.0),-1.0,1.0); //NOTE: IMPORTANT!  These have to be declared individually here.  Creating in a loop and adding to a list will not work.
-    RooRealVar a1("a1","a1",(nparams>1 ? params[1] : 0.0),-1.0,1.0);
-    RooRealVar a2("a2","a2",(nparams>2 ? params[2] : 0.0),-1.0,1.0);
-    RooRealVar a3("a3","a3",(nparams>3 ? params[3] : 0.0),-1.0,1.0);
-    RooRealVar a4("a4","a4",(nparams>4 ? params[4] : 0.0),-1.0,1.0);
-    RooArgList arglist(*h,*x,a0,a1,a2,a3,a4); //NOTE: ONLY ALLOW UP TO 5 PARAMS FOR NOW.
+    std::vector<std::string> aNames;
+    std::vector<std::vector<double>> parlims; //TODO: Set entries from function argument.
+    double parLimit = 0.5;
+    RooRealVar *a[nparams];
+    for (int aa=0; aa<nparams; aa++) {
+        parlims.push_back({-parLimit,parLimit});
+        std::string aName = Form("a%d",aa);
+        aNames.push_back(aName);
+        a[aa] = new RooRealVar(aNames[aa].c_str(),aNames[aa].c_str(),params[aa],parlims[aa][0],parlims[aa][1]);
+    }
 
-    // Create 1D PDF
-    std::string fitformula_plusone = Form("1.0+%.3f*%s",pol,fitformula.c_str());
-    RooGenericPdf gen("gen", fitformula_plusone.c_str(), arglist);
+    // Add parameters to argument list in order
+    RooArgSet *arglist = new RooArgSet();
+    arglist->add(*x); // Fit variables
+    for (int aa=0; aa<nparams; aa++) { // Fit asymmetry parameters
+        arglist->add(*a[aa]);
+    }
+    if (!use_average_depol) {
+        for (int dd=0; dd<depolvars.size(); dd++) { // Fit depolarization variables
+            arglist->add(*d[dd]);
+        }
+    }
 
-    // Fit pdf to data
-    std::unique_ptr<RooFitResult> r{gen.fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumW2Error), RooFit::PrintLevel(-1))}; //RooFit::Minos(kTRUE),
+    // Create 1D PDF positive helicity
+    std::string fitformula_pos = Form("1.0+%.3f*%s",pol,fitformula.c_str());
+    RooGenericPdf _gen_pos("_gen_pos", fitformula_pos.c_str(), *arglist);
+
+    // Create extended pdf positive helicity
+    RooRealVar nsig_pos("nsig_pos", "number of signal events", count/2, 0.0, count);
+    RooExtendPdf gen_pos("gen_pos", "extended signal pdf", _gen_pos, nsig_pos);
+
+    // Create 1D PDF negative helicity
+    std::string fitformula_neg = Form("1.0-%.3f*%s",pol,fitformula.c_str());
+    RooGenericPdf _gen_neg("_gen_neg", fitformula_neg.c_str(), *arglist);
+
+    // Create extended pdf negative helicity
+    RooRealVar nsig_neg("nsig_neg", "number of signal events", count/2, 0.0, count);
+    RooExtendPdf gen_neg("gen_neg", "extended signal pdf", _gen_neg, nsig_neg);
+
+    // Create simultaneous pdf
+    RooSimultaneous * gen;
+    if (use_extended_nll) { gen = new RooSimultaneous("gen", "simultaneous pdf", {{"plus", &gen_pos}, {"minus", &gen_neg}}, h); } //TODO: Set these from helicity states...
+    else { gen = new RooSimultaneous("gen", "simultaneous pdf", {{"plus", &_gen_pos}, {"minus", &_gen_neg}}, h); }
+
+    // Fit the pdf to data
+    std::unique_ptr<RooFitResult> r{gen->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumW2Error), RooFit::PrintLevel(-1))};
 
     // Print fit result
     r->Print("v");
@@ -804,19 +845,26 @@ TArrayF* getKinBinAsymUBML1D(
     std::cout << "covariance matrix" << std::endl;
     covMat.Print();
 
+    // Plot projection of fitted distribution in x.
+    RooPlot *xframe = x->frame(RooFit::Title(Form("%s Projection, Bin: %s",fitvarxtitle.c_str(),bincut.c_str())));
+    bin_ds->plotOn(xframe, RooFit::DataError(RooAbsData::SumW2));
+    gen->plotOn(xframe, RooFit::ProjWData(h, *bin_ds));
+
+    // Draw the frame on the canvas
+    std::string c1_x_name = Form("c1_%s__fitvarx_%s",outdir.c_str(),fitvarx.c_str());
+    TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
+    gPad->SetLeftMargin(0.15);
+    xframe->GetYaxis()->SetTitleOffset(1.4);
+    xframe->Draw();
+    c1_x->Print(Form("%s.pdf",c1_x_name.c_str()));
+
     // Get fit parameters
     std::vector<double> pars;
-    if (nparams>0) pars.push_back((double)a0.getVal());
-    if (nparams>1) pars.push_back((double)a1.getVal());
-    if (nparams>2) pars.push_back((double)a2.getVal());
-    if (nparams>3) pars.push_back((double)a3.getVal());
-    if (nparams>4) pars.push_back((double)a4.getVal());
     std::vector<double> Epars;
-    if (nparams>0) Epars.push_back((double)a0.getError());
-    if (nparams>1) Epars.push_back((double)a1.getError());
-    if (nparams>2) Epars.push_back((double)a2.getError());
-    if (nparams>3) Epars.push_back((double)a3.getError());
-    if (nparams>4) Epars.push_back((double)a4.getError());
+    for (int aa=0; aa<nparams; aa++) {
+        pars.push_back((double)a[aa]->getVal());
+        Epars.push_back((double)a[aa]->getError());
+    }
 
     // Print out fit info
     out << "--------------------------------------------------" << std::endl;
@@ -856,6 +904,8 @@ TArrayF* getKinBinAsymUBML1D(
         if (idx<nparams-1) { out << " , "; }
     }
     out << "]" << std::endl;
+    out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
+    out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
     out << "--------------------------------------------------" << std::endl;
 
     // Go back to parent directory
@@ -887,13 +937,15 @@ TArrayF* getKinBinAsymUBML1D(
 *
 * Loop bins and compute an asymmetry using an unbinned maximum likelihood fit.
 * Optionally apply an invariant mass fit and background correction using the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
-* Note that the asymmetry fit formula \f$ A(x, a_0, a_1, a_2, ...) \f$ will be converted internally to a PDF of the form
+* Note that the given asymmetry formula \f$ A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, a_0, a_1, a_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ...)
+* PDF(h, x, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
 * @f]
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
-* The variable names should be replaced in the fit formula by `helicity`\f$\rightarrow\f$`[0]`, `x`\f$\rightarrow\f$`[1]`, `a_0`\f$\rightarrow\f$`[2]`, etc.
+* The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `a_0`\f$\rightarrow\f$`x[1]`, etc.
+*
 *
 * @param outdir Name of output directory
 * @param outroot Name of output ROOT file
@@ -923,6 +975,8 @@ TArrayF* getKinBinAsymUBML1D(
 * @param params List of initial values for asymmetry parameters
 * @param fitvarxtitle Title of fit variable
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_splot Option to use sPlot method and perform fit with sWeighted dataset
 * @param graph_title Title of kinematically binned graph of asymmetry parameters
 * @param marker_color Graph ROOT marker color
@@ -958,6 +1012,8 @@ void getKinBinnedAsymUBML1D(
         std::vector<double> params  = std::vector<double>(5),
         std::string fitvarxtitle    = "#phi_{h p#pi^{-}}",
         bool        use_sumW2Error  = true,
+        bool        use_average_depol = false,
+        bool        use_extended_nll = false,
         bool        use_splot       = true,
         std::string graph_title     = "BSA A_{LU} vs. #Delta#phi", // Histogram title
         int         marker_color    = 4, // 4 is blue
@@ -968,7 +1024,7 @@ void getKinBinnedAsymUBML1D(
     // Check arguments
     if (method != "BSA1D") {std::cerr<<" *** ERROR *** Method must be BSA1D.  Exiting...\n"; return;}
     if (nbins<1) {std::cerr<<" *** ERROR *** Number of " << binvar << " bins is too small.  Exiting...\n"; return;}
-    if (depolvars.size()!=nparams) {std::cerr<<" *** ERROR *** depolvars.size() must match the number of parameters injected."<<std::endl; return;}
+    if (depolvars.size()!=nparams) {std::cerr<<" *** WARNING *** depolvars.size() does not match the number of parameters injected."<<std::endl;}
 
     // Starting message
     out << "----------------------- getKinBinnedAsymUBML1D ----------------------\n";
@@ -1080,8 +1136,8 @@ void getKinBinnedAsymUBML1D(
                                 (std::string)Form("bin_%d",binidx),//Bintitle
                                 pol,
                                 depolvars,
-                                depolvarlims,
                                 helicity,
+                                helicity_states,
                                 fitformula,
                                 nparams,
                                 params,
@@ -1090,6 +1146,8 @@ void getKinBinnedAsymUBML1D(
                                 xmin,
                                 xmax,
                                 use_sumW2Error,
+                                use_average_depol,
+                                use_extended_nll,
                                 out
                             );
 
@@ -1108,18 +1166,27 @@ void getKinBinnedAsymUBML1D(
         }
 
         // Divide out depolarization factors
-        for (int idx=0; idx<nparams; idx++) {
-            ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
-            eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+        if (use_average_depol) {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+            }
+        } else {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx];
+            }
         }
 
         // Output message
-        out << "--- sPlot Corrected Signal ---\n";
+        out << "--- Accpetance, background, and depolarization corrected signal ---\n";
         for (int idx=0; idx<nparams; idx++) {
-            out << " ys["<< idx <<"]["<<binidx<<"]             = " << ys[idx][binidx] << "\n";
-            out << " eys["<< idx <<"]["<<binidx<<"]            = " << eys[idx][binidx] << "\n";
-            out << " depols["<< idx <<"]["<<binidx<<"]         = " << depols[idx][binidx] << "\n";
-            out << " edepols["<< idx <<"]["<<binidx<<"]        = " << edepols[idx][binidx] << "\n";
+            if (use_average_depol) {
+                out << " ys["<< idx <<"]["<<binidx<<"]             = " << ys[idx][binidx] << "\n";
+                out << " eys["<< idx <<"]["<<binidx<<"]            = " << eys[idx][binidx] << "\n";
+                out << " depols["<< idx <<"]["<<binidx<<"]         = " << depols[idx][binidx] << "\n";
+                out << " edepols["<< idx <<"]["<<binidx<<"]        = " << edepols[idx][binidx] << "\n";
+            }
             out << " ys_corrected["<< idx <<"]["<<binidx<<"]   = " << ys_corrected[idx][binidx] << "\n";
             out << " eys_corrected["<< idx <<"]["<<binidx<<"]  = " << eys_corrected[idx][binidx] << "\n";
         }
@@ -1229,6 +1296,8 @@ void getKinBinnedAsymUBML1D(
 * @param params List of initial values for asymmetry parameters
 * @param fitvarxtitle Title of fit variable
 * @param use_sumW2Error Option to use RooFit::SumW2Error() option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_splot Option to use sPlot method and perform fit with sWeighted dataset
 * @param graph_title Title of kinematically binned graph of asymmetry parameters
 * @param marker_color Graph ROOT marker color
@@ -1272,6 +1341,8 @@ void getKinBinnedAsym1D(
         std::vector<double> params  = std::vector<double>(5),
         std::string fitvarxtitle    = "#phi_{h p#pi^{-}}",
         bool        use_sumW2Error  = true,
+        bool use_average_depol      = false,
+        bool use_extended_nll       = false,
         bool        use_splot       = true,
         std::string graph_title     = "BSA A_{LU} vs. #Delta#phi", // Histogram title
         int         marker_color    = 4, // 4 is blue
@@ -1290,7 +1361,7 @@ void getKinBinnedAsym1D(
     // Check arguments
     if (method != "BSA1D") {std::cerr<<" *** ERROR *** Method must be BSA1D.  Exiting...\n"; return;}
     if (nbins<1) {std::cerr<<" *** ERROR *** Number of " << binvar << " bins is too small.  Exiting...\n"; return;}
-    if (depolvars.size()!=nparams) {std::cerr<<" *** ERROR *** depolvars.size() must match the number of parameters injected."<<std::endl; return;}
+    if (depolvars.size()!=nparams) {std::cerr<<" *** WARNING *** depolvars.size() does not match the number of parameters injected."<<std::endl;}
     if (use_sb_subtraction && use_splot) {std::cerr<<" *** ERROR *** Cannot simultaneously use sideband subtraction and sPlot.  Exiting...\n"; return;}
 
     // Starting message
@@ -1445,8 +1516,8 @@ void getKinBinnedAsym1D(
                                 (std::string)Form("bin_%d",binidx),//Bintitle
                                 pol,
                                 depolvars,
-                                depolvarlims,
                                 helicity,
+                                helicity_states,
                                 fitformula,
                                 nparams,
                                 params,
@@ -1455,6 +1526,8 @@ void getKinBinnedAsym1D(
                                 xmin,
                                 xmax,
                                 use_sumW2Error,
+                                use_average_depol,
+                                use_extended_nll,
                                 out
                             );
 
@@ -1499,8 +1572,8 @@ void getKinBinnedAsym1D(
                                 (std::string)Form("bin_%d",binidx),//Bintitle
                                 pol,
                                 depolvars,
-                                depolvarlims,
                                 helicity,
+                                helicity_states,
                                 fitformula,
                                 nparams,
                                 params,
@@ -1509,6 +1582,8 @@ void getKinBinnedAsym1D(
                                 xmin,
                                 xmax,
                                 use_sumW2Error,
+                                use_average_depol,
+                                use_extended_nll,
                                 out
                             );
         } 
@@ -1542,23 +1617,32 @@ void getKinBinnedAsym1D(
         }
 
         // Divide out depolarization factors
-        for (int idx=0; idx<nparams; idx++) {
-            ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
-            eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+        if (use_average_depol) {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+            }
+        } else {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx];
+            }
         }
 
         // Output message
-        out << "--- Background Corrected Signal ---\n";
-        out << " epsilon = "<<epsilon<<" ± "<<epsilon_err<<"\n";
+        out << "--- Accpetance, background, and depolarization corrected signal ---\n";
         for (int idx=0; idx<nparams; idx++) {
-            out << " ys_sb["<< idx <<"]["<<binidx<<"]       = " << ys[idx][binidx] << "\n";
-            out << " eys_sb["<< idx <<"]["<<binidx<<"]      = " << eys[idx][binidx] << "\n";
-            out << " ys["<< idx <<"]["<<binidx<<"]          = " << ys[idx][binidx] << "\n";
-            out << " eys["<< idx <<"]["<<binidx<<"]         = " << eys[idx][binidx] << "\n";
-            out << " depols["<< idx <<"]["<<binidx<<"]      = " << depols[idx][binidx] << "\n";
-            out << " edepols["<< idx <<"]["<<binidx<<"]     = " << edepols[idx][binidx] << "\n";
-            out << " ys/depols["<< idx <<"]["<<binidx<<"]   = " << ys_corrected[idx][binidx] << "\n";
-            out << " eys/depols["<< idx <<"]["<<binidx<<"]  = " << eys_corrected[idx][binidx] << "\n";
+            if (use_average_depol) {
+                out << " ys["<< idx <<"]["<<binidx<<"]             = " << ys[idx][binidx] << "\n";
+                out << " eys["<< idx <<"]["<<binidx<<"]            = " << eys[idx][binidx] << "\n";
+                out << " depols["<< idx <<"]["<<binidx<<"]         = " << depols[idx][binidx] << "\n";
+                out << " edepols["<< idx <<"]["<<binidx<<"]        = " << edepols[idx][binidx] << "\n";
+            } if (use_sb_subtraction) {
+                out << " ys_sb["<< idx <<"]["<<binidx<<"]       = " << ys_sb[idx][binidx] << "\n";
+                out << " eys_sb["<< idx <<"]["<<binidx<<"]      = " << eys_sb[idx][binidx] << "\n";
+            }
+            out << " ys_corrected["<< idx <<"]["<<binidx<<"]   = " << ys_corrected[idx][binidx] << "\n";
+            out << " eys_corrected["<< idx <<"]["<<binidx<<"]  = " << eys_corrected[idx][binidx] << "\n";
         }
         out << "---------------------------\n";
     }
@@ -1783,13 +1867,14 @@ void createDataset2D(
 *
 * Compute the bin count, bin variable values and errors, depolarization variable values and errors,
 * and fit parameter values and errors using an unbinned maximum likelihood fit and an asymmetry fit.
-* Note that the given asymmetry formula \f$ A(x, y, a_0, a_1, a_2, ...) \f$ will be converted internally to a PDF of the form
+* Note that the given asymmetry formula \f$ A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, y, a_0, a_1, a_2,...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ...)
+* PDF(h, x, y, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
 * @f]
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
-* The variable names should be replaced in the fit formula by `helicity`\f$\rightarrow\f$`[0]`, `x`\f$\rightarrow\f$`[1]`, `y`\f$\rightarrow\f$`[2]`, `a_0`\f$\rightarrow\f$`[3]`, etc.
+* The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `y`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[2]`, etc.
 *
 * @param outdir Name of output directory
 * @param outroot Name of output ROOT file
@@ -1802,8 +1887,8 @@ void createDataset2D(
 * @param bintitle Bin title
 * @param pol Luminosity averaged beam polarization
 * @param depolvars List of depolarization variables (up to 5)
-* @param depolvarlims List of minimum and maximum bounds for each depolarization variable
 * @param helicity Name of helicity variable
+* @param helicity_states Map of state names to helicity values
 * @param fitformula The asymmetry formula
 * @param nparams Number of parameters in the asymmetry formula (up to 5)
 * @param params List of initial values for asymmetry parameters
@@ -1816,6 +1901,8 @@ void createDataset2D(
 * @param ymin Minimum bound for fit variable 2
 * @param ymax Maximum bound for fit variable 2
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param out Output stream
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
@@ -1832,8 +1919,8 @@ TArrayF* getKinBinAsymUBML2D(
     std::string bintitle,
     double      pol,
     std::vector<std::string>   depolvars,
-    std::vector<std::vector<double>> depolvarlims,
     std::string  helicity = "heli",
+    std::map<std::string,int> helicity_states = {},
     std::string  fitformula    = "[0]*sin(x)+[1]*sin(2*x)",
     int          nparams       = 2,
     std::vector<double> params = std::vector<double>(5),
@@ -1846,14 +1933,21 @@ TArrayF* getKinBinAsymUBML2D(
     double ymin                = 0.0,
     double ymax                = 2*TMath::Pi(),
     bool use_sumW2Error        = true,
+    bool use_average_depol     = false,
+    bool use_extended_nll      = false,
     std::ostream &out          = std::cout
     ) {
 
     // Set plotting title for bin
     std::string title    = Form("%s %s",fitvarxtitle.c_str(),bincut.c_str());
 
+    // Define the helicity variable
+    RooCategory h(helicity.c_str(), helicity.c_str());
+    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+        h.defineType(it->first.c_str(), it->second);
+    }
+
     // TODO: Load fit avariables from workspace
-    RooRealVar *h = w->var(helicity.c_str());
     RooRealVar *x = w->var(fitvarx.c_str());
     RooRealVar *y = w->var(fitvary.c_str());
 
@@ -1883,12 +1977,11 @@ TArrayF* getKinBinAsymUBML2D(
     // Get depolarization factors
     std::vector<double> depols;
     std::vector<double> depolerrs;
+    RooRealVar * d[(const int)depolvars.size()];
     for (int i=0; i<depolvars.size(); i++) {
-        // double depol    = (double)*binframe.Mean(depolvars[i].c_str());
-        // double depolerr = (double)*binframe.StdDev(depolvars[i].c_str());
-        RooRealVar depolvar(depolvars[i].c_str(), depolvars[i].c_str(), depolvarlims[i][0], depolvarlims[i][1]);
-        double mean   = bin_ds->mean(depolvar);
-        double stddev = TMath::Sqrt(bin_ds->moment(depolvar,2.0));
+        d[i] = w->var(depolvars[i].c_str());
+        double mean   = bin_ds->mean(*d[i]);
+        double stddev = TMath::Sqrt(bin_ds->moment(*d[i],2.0));
         depols.push_back(mean);
         depolerrs.push_back(stddev);
     }
@@ -1901,20 +1994,53 @@ TArrayF* getKinBinAsymUBML2D(
     gStyle->SetOptStat(0);
 
     // Create fit parameters
-    if (nparams>5) {std::cerr<<"ERROR: only up to 5 fit parameters are allowed."<<std::endl;}
-    RooRealVar a0("a0","a0",(nparams>0 ? params[0] : 0.0),-1.0,1.0); //NOTE: IMPORTANT!  These have to be declared individually here.  Creating in a loop and adding to a list will not work.
-    RooRealVar a1("a1","a1",(nparams>1 ? params[1] : 0.0),-1.0,1.0);
-    RooRealVar a2("a2","a2",(nparams>2 ? params[2] : 0.0),-1.0,1.0);
-    RooRealVar a3("a3","a3",(nparams>3 ? params[3] : 0.0),-1.0,1.0);
-    RooRealVar a4("a4","a4",(nparams>4 ? params[4] : 0.0),-1.0,1.0);
-    RooArgList arglist(*h,*x,*y,a0,a1,a2,a3,a4); //NOTE: ONLY ALLOW UP TO 5 PARAMS FOR NOW.
+    std::vector<std::string> aNames;
+    std::vector<std::vector<double>> parlims; //TODO: Set entries from function argument.
+    double parLimit = 0.5;
+    RooRealVar *a[nparams];
+    for (int aa=0; aa<nparams; aa++) {
+        parlims.push_back({-parLimit,parLimit});
+        std::string aName = Form("a%d",aa);
+        aNames.push_back(aName);
+        a[aa] = new RooRealVar(aNames[aa].c_str(),aNames[aa].c_str(),params[aa],parlims[aa][0],parlims[aa][1]);
+    }
 
-    // Create 1D PDF
-    std::string fitformula_plusone = Form("1.0+%.3f*%s",pol,fitformula.c_str());
-    RooGenericPdf gen("gen", fitformula_plusone.c_str(), arglist);
+    // Add parameters to argument list in order
+    RooArgSet *arglist = new RooArgSet();
+    arglist->add(*x); // Fit variables
+    arglist->add(*y);
+    for (int aa=0; aa<nparams; aa++) { // Fit asymmetry parameters
+        arglist->add(*a[aa]);
+    }
+    if (!use_average_depol) {
+        for (int dd=0; dd<depolvars.size(); dd++) { // Fit depolarization variables
+            arglist->add(*d[dd]);
+        }
+    }
 
-    // Fit pdf to data
-    std::unique_ptr<RooFitResult> r{gen.fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumW2Error), RooFit::PrintLevel(-1))}; //RooFit::Minos(kTRUE),
+    // Create 1D PDF positive helicity
+    std::string fitformula_pos = Form("1.0+%.3f*%s",pol,fitformula.c_str());
+    RooGenericPdf _gen_pos("_gen_pos", fitformula_pos.c_str(), *arglist);
+
+    // Create extended pdf positive helicity
+    RooRealVar nsig_pos("nsig_pos", "number of signal events", count/2, 0.0, count);
+    RooExtendPdf gen_pos("gen_pos", "extended signal pdf", _gen_pos, nsig_pos);
+
+    // Create 1D PDF negative helicity
+    std::string fitformula_neg = Form("1.0-%.3f*%s",pol,fitformula.c_str());
+    RooGenericPdf _gen_neg("_gen_neg", fitformula_neg.c_str(), *arglist);
+
+    // Create extended pdf negative helicity
+    RooRealVar nsig_neg("nsig_neg", "number of signal events", count/2, 0.0, count);
+    RooExtendPdf gen_neg("gen_neg", "extended signal pdf", _gen_neg, nsig_neg);
+
+    // Create simultaneous pdf
+    RooSimultaneous * gen;
+    if (use_extended_nll) { gen = new RooSimultaneous("gen", "simultaneous pdf", {{"plus", &gen_pos}, {"minus", &gen_neg}}, h); } //TODO: Set these from helicity states...
+    else { gen = new RooSimultaneous("gen", "simultaneous pdf", {{"plus", &_gen_pos}, {"minus", &_gen_neg}}, h); }
+
+    // Fit the pdf to data
+    std::unique_ptr<RooFitResult> r{gen->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumW2Error), RooFit::PrintLevel(-1))};
 
     // Print fit result
     r->Print("v");
@@ -1929,23 +2055,43 @@ TArrayF* getKinBinAsymUBML2D(
     std::cout << "covariance matrix" << std::endl;
     covMat.Print();
 
+    // Plot projection of fitted distribution in x.
+    RooPlot *xframe = x->frame(RooFit::Title(Form("%s Projection, Bin: %s",fitvarxtitle.c_str(),bincut.c_str())));
+    bin_ds->plotOn(xframe, RooFit::DataError(RooAbsData::SumW2));
+    gen->plotOn(xframe, RooFit::ProjWData(h, *bin_ds));
+
+    // Draw the frame on the canvas
+    std::string c1_x_name = Form("c1_%s__fitvarx_%s",outdir.c_str(),fitvarx.c_str());
+    TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
+    gPad->SetLeftMargin(0.15);
+    xframe->GetYaxis()->SetTitleOffset(1.4);
+    xframe->Draw();
+    c1_x->Print(Form("%s.pdf",c1_x_name.c_str()));
+
+    // Plot projection of fitted distribution in y.
+    RooPlot *yframe = y->frame(RooFit::Title(Form("%s Projection, Bin: %s",fitvarytitle.c_str(),bincut.c_str())));
+    bin_ds->plotOn(yframe, RooFit::DataError(RooAbsData::SumW2));
+    gen->plotOn(yframe, RooFit::ProjWData(h, *bin_ds));
+
+    // Draw the frame on the canvas
+    std::string c1_y_name = Form("c1_%s__fitvary_%s",outdir.c_str(),fitvary.c_str());
+    TCanvas *c1_y = new TCanvas(c1_y_name.c_str(), c1_y_name.c_str());
+    gPad->SetLeftMargin(0.15);
+    yframe->GetYaxis()->SetTitleOffset(1.4);
+    yframe->Draw();
+    c1_y->Print(Form("%s.pdf",c1_y_name.c_str()));
+
     // Get fit parameters
     std::vector<double> pars;
-    if (nparams>0) pars.push_back((double)a0.getVal());
-    if (nparams>1) pars.push_back((double)a1.getVal());
-    if (nparams>2) pars.push_back((double)a2.getVal());
-    if (nparams>3) pars.push_back((double)a3.getVal());
-    if (nparams>4) pars.push_back((double)a4.getVal());
     std::vector<double> Epars;
-    if (nparams>0) Epars.push_back((double)a0.getError());
-    if (nparams>1) Epars.push_back((double)a1.getError());
-    if (nparams>2) Epars.push_back((double)a2.getError());
-    if (nparams>3) Epars.push_back((double)a3.getError());
-    if (nparams>4) Epars.push_back((double)a4.getError());
+    for (int aa=0; aa<nparams; aa++) {
+        pars.push_back((double)a[aa]->getVal());
+        Epars.push_back((double)a[aa]->getError());
+    }
 
     // Print out fit info
     out << "--------------------------------------------------" << std::endl;
-    out << " getKinBinAsymUBML1D():" << std::endl;
+    out << " getKinBinAsymUBML2D():" << std::endl;
     out << " bincut     = " << bincut.c_str() << std::endl;
     out << " bincount   = " << count << std::endl;
     out << " binvar means = [" ;
@@ -1981,6 +2127,8 @@ TArrayF* getKinBinAsymUBML2D(
         if (idx<nparams-1) { out << " , "; }
     }
     out << "]" << std::endl;
+    out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
+    out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
     out << "--------------------------------------------------" << std::endl;
 
     // Go back to parent directory
@@ -2012,13 +2160,14 @@ TArrayF* getKinBinAsymUBML2D(
 *
 * Loop bins and compute an asymmetry using an unbinned maximum likelihood fit.
 * Optionally apply an invariant mass fit and background correction using the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
-* Note that the given asymmetry formula \f$ A(x, y, a_0, a_1, a_2, ...) \f$ will be converted internally to a PDF of the form
+* Note that the given asymmetry formula \f$ A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, y, a_0, a_1, a_2,...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ...)
+* PDF(h, x, y, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
 * @f]
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
-* The variable names should be replaced in the fit formula by `helicity`\f$\rightarrow\f$`[0]`, `x`\f$\rightarrow\f$`[1]`, `y`\f$\rightarrow\f$`[2]`, `a_0`\f$\rightarrow\f$`[3]`, etc.
+* The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `y`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[2]`, etc.
 *
 * @param outdir Name of output directory
 * @param outroot Name of output ROOT file
@@ -2052,6 +2201,8 @@ TArrayF* getKinBinAsymUBML2D(
 * @param fitvarxtitle Title of fit variable 1
 * @param fitvarytitle Title of fit variable 2
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_splot Option to use sPlot method and perform fit with sWeighted dataset
 * @param graph_title Title of kinematically binned graph of asymmetry parameters
 * @param marker_color Graph ROOT marker color
@@ -2091,6 +2242,8 @@ void getKinBinnedAsymUBML2D(
         std::string fitvarxtitle    = "x",
         std::string fitvarytitle    = "y",
         bool        use_sumW2Error  = true,
+        bool        use_average_depol = false,
+        bool        use_extended_nll = false,
         bool        use_splot       = true,
         std::string graph_title     = "BSA A_{LU} vs. #Delta#phi", // Histogram title
         int         marker_color    = 4, // 4 is blue
@@ -2101,7 +2254,7 @@ void getKinBinnedAsymUBML2D(
     // Check arguments
     if (method != "BSA2D") {std::cerr<<" *** ERROR *** Method must be BSA2D.  Exiting...\n"; return;}
     if (nbins<1) {std::cerr<<" *** ERROR *** Number of " << binvar << " bins is too small.  Exiting...\n"; return;}
-    if (depolvars.size()!=nparams) {std::cerr<<" *** ERROR *** depolvars.size() must match the number of parameters injected."<<std::endl; return;}
+    if (depolvars.size()!=nparams) {std::cerr<<" *** WARNING *** depolvars.size() does not match the number of parameters injected."<<std::endl;}
 
     // Starting message
     out << "----------------------- getKinBinnedAsymUBML2D ----------------------\n";
@@ -2216,8 +2369,8 @@ void getKinBinnedAsymUBML2D(
                                 (std::string)Form("bin_%d",binidx),//Bintitle
                                 pol,
                                 depolvars,
-                                depolvarlims,
                                 helicity,
+                                helicity_states,
                                 fitformula,
                                 nparams,
                                 params,
@@ -2230,6 +2383,8 @@ void getKinBinnedAsymUBML2D(
                                 ymin,
                                 ymax,
                                 use_sumW2Error,
+                                use_average_depol,
+                                use_extended_nll,
                                 out
                             );
 
@@ -2248,18 +2403,27 @@ void getKinBinnedAsymUBML2D(
         }
 
         // Divide out depolarization factors
-        for (int idx=0; idx<nparams; idx++) {
-            ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
-            eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+        if (use_average_depol) {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+            }
+        } else {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx];
+            }
         }
 
         // Output message
-        out << "--- sPlot Corrected Signal ---\n";
+        out << "--- Accpetance, background, and depolarization corrected signal ---\n";
         for (int idx=0; idx<nparams; idx++) {
-            out << " ys["<< idx <<"]["<<binidx<<"]             = " << ys[idx][binidx] << "\n";
-            out << " eys["<< idx <<"]["<<binidx<<"]            = " << eys[idx][binidx] << "\n";
-            out << " depols["<< idx <<"]["<<binidx<<"]         = " << depols[idx][binidx] << "\n";
-            out << " edepols["<< idx <<"]["<<binidx<<"]        = " << edepols[idx][binidx] << "\n";
+            if (use_average_depol) {
+                out << " ys["<< idx <<"]["<<binidx<<"]             = " << ys[idx][binidx] << "\n";
+                out << " eys["<< idx <<"]["<<binidx<<"]            = " << eys[idx][binidx] << "\n";
+                out << " depols["<< idx <<"]["<<binidx<<"]         = " << depols[idx][binidx] << "\n";
+                out << " edepols["<< idx <<"]["<<binidx<<"]        = " << edepols[idx][binidx] << "\n";
+            }
             out << " ys_corrected["<< idx <<"]["<<binidx<<"]   = " << ys_corrected[idx][binidx] << "\n";
             out << " eys_corrected["<< idx <<"]["<<binidx<<"]  = " << eys_corrected[idx][binidx] << "\n";
         }
