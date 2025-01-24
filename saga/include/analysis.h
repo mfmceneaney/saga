@@ -670,7 +670,10 @@ void applySPlot(
 * Note that the given asymmetry formula \f$ A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \begin{aligned}
+* PDF(h, x, &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \end{aligned}
 * @f]
 * and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
@@ -940,7 +943,10 @@ TArrayF* getKinBinAsymUBML1D(
 * Note that the given asymmetry formula \f$ A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \begin{aligned}
+* PDF(h, x, &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \end{aligned}
 * @f]
 * and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
@@ -1263,8 +1269,12 @@ void getKinBinnedAsymUBML1D(
 * or the sideband subtraction method.  Note that the asymmetry fit formula \f$ A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...)
+* \begin{aligned}
+* PDF(h, x, &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \end{aligned}
 * @f]
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
 * The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `a_0`\f$\rightarrow\f$`x[1]`, etc.
 *
@@ -1870,7 +1880,10 @@ void createDataset2D(
 * Note that the given asymmetry formula \f$ A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, y, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \begin{aligned}
+* PDF(h, x, y, &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \end{aligned}
 * @f]
 * and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
@@ -2163,7 +2176,10 @@ TArrayF* getKinBinAsymUBML2D(
 * Note that the given asymmetry formula \f$ A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, y, a_0, a_1, a_2,... , d_0, d_1, d_2,...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \begin{aligned}
+* PDF(h, x, y, &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...).
+* \end{aligned}
 * @f]
 * and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
@@ -2500,7 +2516,10 @@ void getKinBinnedAsymUBML2D(
 * or the sideband subtraction method.  Note that the asymmetry fit formula \f$ A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ... ) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...).
+* \begin{aligned}
+* PDF(h, x, y, &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \end{aligned}
 * @f]
 *
 * The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `y`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[2]`, etc.
