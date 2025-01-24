@@ -288,7 +288,7 @@ void applyLambdaMassFit(
 * @brief Apply a \f$\Lambda\f$ baryon mass fit
 *
 * Apply a \f$\Lambda\f$ baryon mass fit with signal function chosen from
-* (`"gauss"`, `"landau"`, `"cb"`, `"landau_X_gauss"`, `"cb_X_gauss"`) and
+* (`"gauss"`, `"landau"`, `"cb"`, `"landau_X_gauss"`, `"cb_X_gauss"`, `"cb_gauss"`) and
 * Chebychev polynomial background function and save model and
 * yield variables to workspace for use with sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
 * This will also return \f$\varepsilon\f$ which is the fraction of events
@@ -999,7 +999,7 @@ void getKinBinnedAsymUBML1D(
     std::vector<std::vector<double>> binvarlims_outer = {{bins[0],bins[nbins]}};
     std::vector<std::vector<double>> depolvarlims;
     for (int idx=0; idx<depolvars.size(); idx++) {
-        depolvarlims.push_back({-2.0,2.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
+        depolvarlims.push_back({0.0,1.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
     }
     std::map<std::string,int> helicity_states;
     helicity_states["plus"]  =  1;
@@ -1321,7 +1321,7 @@ void getKinBinnedAsym1D(
     std::vector<std::vector<double>> binvarlims_outer = {{bins[0],bins[nbins]}};
     std::vector<std::vector<double>> depolvarlims;
     for (int idx=0; idx<depolvars.size(); idx++) {
-        depolvarlims.push_back({-2.0,2.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
+        depolvarlims.push_back({0.0,1.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
     }
 
     // Filter frames for signal and sideband
@@ -2132,7 +2132,7 @@ void getKinBinnedAsymUBML2D(
     std::vector<std::vector<double>> binvarlims_outer = {{bins[0],bins[nbins]}};
     std::vector<std::vector<double>> depolvarlims;
     for (int idx=0; idx<depolvars.size(); idx++) {
-        depolvarlims.push_back({-2.0,2.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
+        depolvarlims.push_back({0.0,1.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
     }
     std::map<std::string,int> helicity_states;
     helicity_states["plus"]  =  1;
