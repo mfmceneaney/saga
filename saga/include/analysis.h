@@ -1260,13 +1260,13 @@ void getKinBinnedAsymUBML1D(
 *
 * Loop bins and compute an asymmetry using an unbinned maximum likelihood fit.
 * Optionally apply an invariant mass fit and background correction using the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
-* or the sideband subtraction method.Note that the asymmetry fit formula \f$ A(x, a_0, a_1, a_2, ...) \f$ will be converted internally to a PDF of the form
+* or the sideband subtraction method.  Note that the asymmetry fit formula \f$ A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
 *
 * @f[
-* PDF(h, x, a_0, a_1, a_2,...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ...)
+* PDF(h, x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = 1 + h \cdot P \cdot A(x, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...)
 * @f]
 *
-* The variable names should be replaced in the fit formula by `h`\f$\rightarrow\f$`[0]`, `x`\f$\rightarrow\f$`[1]`, `a_0`\f$\rightarrow\f$`[2]`, etc.
+* The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `a_0`\f$\rightarrow\f$`x[1]`, etc.
 *
 * @param outdir Name of output directory
 * @param outroot Name of output ROOT file
@@ -2491,5 +2491,484 @@ void getKinBinnedAsymUBML2D(
     out << "------------------- END of getKinBinnedAsymUBML2D -------------------\n";
 
 } // getKinBinnedAsymUBML2D()
+
+/**
+* @brief Loop kinematic bins and fit a 1D asymmetry, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
+*
+* Loop bins and compute an asymmetry using an unbinned maximum likelihood fit.
+* Optionally apply an invariant mass fit and background correction using the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
+* or the sideband subtraction method.  Note that the asymmetry fit formula \f$ A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ... ) \f$ will be converted internally to a PDF of the form
+*
+* @f[
+* PDF(h, x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = 1 + h \cdot P \cdot A(x, y, a_0, a_1, a_2, ..., d_0, d_1, d_2, ...).
+* @f]
+*
+* The variable names should be replaced in the fit formula by `x`\f$\rightarrow\f$`x[0]`, `y`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[2]`, etc.
+*
+* @param outdir Name of output directory
+* @param outroot Name of output ROOT file
+* @param frame ROOT RDataframe from which to create RooFit datasets
+* @param method Asymmetry fit method
+* @param binvar Kinematic binning variable
+* @param nbins Number of kinematic variable bins
+* @param bins List of bin limits, which must have dimension nbins+1
+* @param pol Luminosity averaged beam polarization
+* @param depolvars List of depolarization variables (up to 5)
+* @param workspace_name Name of workspace in which to work
+* @param workspace_title Title of workspace in which to work
+* @param dataset_name Dataset name
+* @param dataset_title Dataset title
+* @param helicity Name of helicity variable
+* @param fitvarx Name of first fit variable
+* @param xmin Minimum bound for first fit variable
+* @param xmax Maximum bound for first fit variable
+* @param fitvary Name of second fit variable
+* @param ymin Minimum bound for second fit variable
+* @param ymax Maximum bound for second fit variable
+* @param massvar Invariant mass variable name
+* @param mass_min Minimum bound for invariant mass variable
+* @param mass_max Maximum bound for invariant mass variable
+* @param sgYield_name Signal yield variable name
+* @param bgYield_name Background yield variable name
+* @param model_name Full PDF name
+* @param fitformula The asymmetry formula
+* @param nparams Number of parameters in the asymmetry formula (up to 5)
+* @param params List of initial values for asymmetry parameters
+* @param fitvarxtitle Title of fit variable
+* @param fitvarytitle Title of fit variable
+* @param use_sumW2Error Option to use RooFit::SumW2Error() option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
+* @param use_splot Option to use sPlot method and perform fit with sWeighted dataset
+* @param graph_title Title of kinematically binned graph of asymmetry parameters
+* @param marker_color Graph ROOT marker color
+* @param marker_style Graph ROOT style color
+* @param out Output stream
+* @param sgcut Signal region cut for sideband subtraction background correction
+* @param bgcut Signal region cut for sideband subtraction background correction
+* @param mass_nbins_hist Number of bins for the invariant mass histogram
+* @param mass_nbins_conv Number of invariant mass bins for convolution of PDFs
+* @param sig_pdf_name Signal PDF name
+* @param sg_region_min Invariant mass signal region lower bound
+* @param sg_region_max Invariant mass signal region upper bound
+* @param use_sb_subtraction Option to use sideband subtraction for background correction
+*/
+void getKinBinnedAsym2D(
+        std::string outdir,
+        TFile      *outroot,
+        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
+        std::string     method, // ONLY getKinBinBSAGeneric ('BSA') is allowed at the moment
+        std::string binvar, // Variable name to bin in
+        int         nbins, // Number of bins
+        double      *bins, // Bin limits (length=nbins+1)
+        double      pol,
+        std::vector<std::string> depolvars,
+        std::string workspace_name  = "w",
+        std::string workspace_title = "workspace",
+        std::string dataset_name    = "dataset",
+        std::string dataset_title   = "dataset",
+        std::string helicity   = "heli",
+        std::string fitvarx         = "x",
+        double      xmin            = 0.0,
+        double      xmax            = 1.0,
+        std::string fitvary         = "y",
+        double      ymin            = 0.0,
+        double      ymax            = 1.0,
+        std::string massvar         = "mass_ppim",
+        double      mass_min        = 1.08,
+        double      mass_max        = 1.24,
+        std::string sgYield_name    = "sgYield",
+        std::string bgYield_name    = "bgYield",
+        std::string model_name      = "model",
+        std::string fitformula      = "x[0]*(x[2]*x[4]*cos(x[1])+x[3]*x[5]*cos(2.0*x[1]))",
+        int         nparams         = 2,
+        std::vector<double> params  = std::vector<double>(2),
+        std::string fitvarxtitle    = "x",
+        std::string fitvarytitle    = "y",
+        bool        use_sumW2Error  = true,
+        bool use_average_depol      = false,
+        bool use_extended_nll       = false,
+        bool        use_splot       = true,
+        std::string graph_title     = "BSA A_{LU} vs. #Delta#phi", // Histogram title
+        int         marker_color    = 4, // 4 is blue
+        int         marker_style    = 20, // 20 is circle
+        std::ostream &out           = std::cout,
+        std::string sgcut           = "Q2>1",
+        std::string bgcut           = "Q2>1",
+        int mass_nbins_hist         = 100,
+        int mass_nbins_conv         = 1000,
+        std::string sig_pdf_name    = "cb", //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")
+        double sg_region_min        = 1.11,
+        double sg_region_max        = 1.13,
+        bool   use_sb_subtraction   = false
+    ) {
+
+    // Check arguments
+    if (method != "BSA2D") {std::cerr<<" *** ERROR *** Method must be BSA2D.  Exiting...\n"; return;}
+    if (nbins<1) {std::cerr<<" *** ERROR *** Number of " << binvar << " bins is too small.  Exiting...\n"; return;}
+    if (depolvars.size()!=nparams) {std::cerr<<" *** WARNING *** depolvars.size() does not match the number of parameters injected."<<std::endl;}
+    if (use_sb_subtraction && use_splot) {std::cerr<<" *** ERROR *** Cannot simultaneously use sideband subtraction and sPlot.  Exiting...\n"; return;}
+
+    // Starting message
+    out << "----------------------- getKinBinnedAsym2D ----------------------\n";
+    out << "Getting " << binvar << " binned hist...\n";
+    out << "bins = { "; for (int i=0; i<nbins; i++) { out << bins[i] << " , ";} out << bins[nbins] << " }\n";
+
+    // Make output directory in ROOT file and cd
+    outroot->mkdir(outdir.c_str());
+    outroot->cd(outdir.c_str());
+
+    // Initialize data arrays
+    double xs[nbins];
+    double exs[nbins];
+    int    counts[nbins];
+
+    double ys[nparams][nbins];
+    double eys[nparams][nbins];
+    double ys_sb[nparams][nbins];
+    double eys_sb[nparams][nbins];
+    double depols[nparams][nbins];
+    double edepols[nparams][nbins];
+    double ys_corrected[nparams][nbins];
+    double eys_corrected[nparams][nbins];
+
+    // Create bin var vector and outer bin lims vector
+    std::vector binvars = {binvar};
+    std::vector<std::vector<double>> binvarlims_outer = {{bins[0],bins[nbins]}};
+    std::vector<std::vector<double>> depolvarlims;
+    for (int idx=0; idx<depolvars.size(); idx++) {
+        depolvarlims.push_back({0.0,1.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
+    }
+
+    // Filter frames for signal and sideband
+    auto frame_sg = frame.Filter(sgcut.c_str());
+    auto frame_sb = frame.Filter(bgcut.c_str());
+
+    // Loop bins and get data
+    for (int binidx=0; binidx<nbins; binidx++) {
+
+        // Get bin limits
+        double bin_min = bins[binidx];
+        double bin_max = bins[binidx+1];
+
+        // Create workspace
+        RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
+        RooWorkspace *ws_sg = new RooWorkspace(Form("%s_sg",workspace_name.c_str()),Form("%s_signal",workspace_title.c_str()));
+        RooWorkspace *ws_sb = new RooWorkspace(Form("%s_sb",workspace_name.c_str()),Form("%s_sideband",workspace_title.c_str())); //NOTE: Use separate signal and sideband workspaces for dataset, variable, and pdf name uniqueness.
+
+        // Make bin cut on frame
+        std::string  bincut = Form("(%s>=%.16f && %s<%.16f)",binvar.c_str(),bin_min,binvar.c_str(),bin_max);
+        auto binframe = frame.Filter(bincut.c_str());
+        auto binframe_sg = frame_sg.Filter(bincut.c_str());
+
+        std::map<std::string,int> helicity_states;
+        helicity_states["plus"]  =  1;
+        helicity_states["zero"]  =  0;
+        helicity_states["minus"] = -1;
+
+        // Create bin dataset
+        createDataset2D(
+            binframe,
+            ws,
+            dataset_name,
+            dataset_title,
+            helicity,
+            helicity_states,
+            fitvarx,
+            xmin,
+            xmax,
+            fitvary,
+            ymin,
+            ymax,
+            massvar,
+            mass_min,
+            mass_max,
+            binvars,
+            binvarlims_outer,
+            depolvars,
+            depolvarlims
+        );
+
+        // Apply Lambda mass fit to FULL bin frame
+        std::string bin_id = Form("%s_%.3f_%.3f",binvar.c_str(),bin_min,bin_max);
+        std::vector<double> epss = applyLambdaMassFit(
+                ws,
+                massvar,
+                dataset_name,
+                sgYield_name,
+                bgYield_name,
+                binframe,
+                mass_nbins_hist,
+                mass_min,
+                mass_max,
+                mass_nbins_conv,
+                model_name,
+                sig_pdf_name,
+                sg_region_min,
+                sg_region_max,
+                "",//ws_unique_id->This changes pdf,yieldvar names, but NOT (bin,depol,mass,fit)vars,pdf parameters which are saved internally.
+                1,//use_poly4_bg
+                bin_id
+            );
+
+        // Apply sPlot
+        std::string fit_dataset_name = dataset_name; // -> Use this for sPlot
+        if (use_splot) {
+            std::string dataset_sg_name = (std::string)Form("%s_sg_sw",dataset_name.c_str());
+            std::string dataset_bg_name = (std::string)Form("%s_bg_sw",dataset_name.c_str());
+            applySPlot(
+                ws,
+                dataset_name,
+                sgYield_name,
+                bgYield_name,
+                model_name,
+                dataset_sg_name,
+                dataset_bg_name
+            );
+            fit_dataset_name = dataset_sg_name;
+        }
+
+        // Create signal region dataset for sideband subtraction
+        if (use_sb_subtraction) {
+            createDataset2D(
+                binframe_sg,
+                ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
+                dataset_name,
+                dataset_title,
+                helicity,
+                helicity_states,
+                fitvarx,
+                xmin,
+                xmax,
+                fitvary,
+                ymin,
+                ymax,
+                massvar,
+                mass_min,
+                mass_max,
+                binvars,
+                binvarlims_outer,
+                depolvars,
+                depolvarlims
+            );
+        }
+
+        // Compute signal region bin results
+        std::string  binoutdir = Form("method_%s_bin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
+        TArrayF* bin_data = getKinBinAsymUBML2D(
+                                binoutdir,
+                                outroot,
+                                (use_sb_subtraction ? binframe_sg : binframe), //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
+                                (use_sb_subtraction ? ws_sg : ws),
+                                fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
+                                binvars,
+                                binvarlims_outer,
+                                bincut,
+                                (std::string)Form("bin_%d",binidx),//Bintitle
+                                pol,
+                                depolvars,
+                                helicity,
+                                helicity_states,
+                                fitformula,
+                                nparams,
+                                params,
+                                fitvarx,
+                                fitvarxtitle,
+                                xmin,
+                                xmax,
+                                fitvary,
+                                fitvarytitle,
+                                ymin,
+                                ymax,
+                                use_sumW2Error,
+                                use_average_depol,
+                                use_extended_nll,
+                                out
+                            );
+
+        // Compute sideband region bin results
+        std::string  sbbinoutdir = Form("method_%s_sbbin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
+        TArrayF* bin_data_sb;
+        if (use_sb_subtraction) {
+
+            // Make bin cut on sideband frame
+            auto binframe_sb = frame_sb.Filter(bincut.c_str());
+
+            // Create sideband dataset
+            createDataset2D(
+                binframe_sb,
+                ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
+                dataset_name,
+                dataset_title,
+                helicity,
+                helicity_states,
+                fitvarx,
+                xmin,
+                xmax,
+                fitvary,
+                ymin,
+                ymax,
+                massvar,
+                mass_min,
+                mass_max,
+                binvars,
+                binvarlims_outer,
+                depolvars,
+                depolvarlims
+            );
+
+            // Compute sideband bin results
+            bin_data_sb = getKinBinAsymUBML2D(
+                                binoutdir,
+                                outroot,
+                                binframe_sb, //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
+                                ws_sb,
+                                dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
+                                binvars,
+                                binvarlims_outer,
+                                bincut,
+                                (std::string)Form("bin_%d",binidx),//Bintitle
+                                pol,
+                                depolvars,
+                                helicity,
+                                helicity_states,
+                                fitformula,
+                                nparams,
+                                params,
+                                fitvarx,
+                                fitvarxtitle,
+                                xmin,
+                                xmax,
+                                fitvary,
+                                fitvarytitle,
+                                ymin,
+                                ymax,
+                                use_sumW2Error,
+                                use_average_depol,
+                                use_extended_nll,
+                                out
+                            );
+        } 
+
+        // Get bin data
+        int k = 0;
+        counts[binidx] = bin_data->GetAt(k++);
+        xs[binidx]     = bin_data->GetAt(k++); //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
+        exs[binidx]    = bin_data->GetAt(k++);
+        for (int idx=0; idx<depolvars.size(); idx++) {
+            depols[idx][binidx] = bin_data->GetAt(k++);
+            edepols[idx][binidx] = bin_data->GetAt(k++);
+        }
+        for (int idx=0; idx<nparams; idx++) {
+            ys[idx][binidx] = bin_data->GetAt(k++);
+            eys[idx][binidx] = bin_data->GetAt(k++);
+        }
+
+        // Apply sideband subtraction to asymmetries assuming that depolarization factors do not vary much
+        double epsilon, epsilon_err;
+        if (use_sb_subtraction) {
+            int k2 = 3 + depolvars.size();
+            epsilon = epss[0];
+            epsilon_err = epss[1];
+            for (int idx=0; idx<nparams; idx++) {
+                ys_sb[idx][binidx] = bin_data_sb->GetAt(k2++);
+                eys_sb[idx][binidx] = bin_data_sb->GetAt(k2++);
+                ys[idx][binidx]  = (ys[idx][binidx] - epsilon * ys_sb[idx][binidx]) / (1.0 - epsilon);
+                eys[idx][binidx] = TMath::Sqrt(eys[idx][binidx]*eys[idx][binidx] + epsilon * epsilon * eys_sb[idx][binidx]*eys_sb[idx][binidx]) / (1.0 - epsilon) ;
+            }
+        }
+
+        // Divide out depolarization factors
+        if (use_average_depol) {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx] / depols[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx] / depols[idx][binidx];
+            }
+        } else {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_corrected[idx][binidx] = ys[idx][binidx];
+                eys_corrected[idx][binidx] = eys[idx][binidx];
+            }
+        }
+
+        // Output message
+        out << "--- Accpetance, background, and depolarization corrected signal ---\n";
+        for (int idx=0; idx<nparams; idx++) {
+            if (use_average_depol) {
+                out << " ys["<< idx <<"]["<<binidx<<"]             = " << ys[idx][binidx] << "\n";
+                out << " eys["<< idx <<"]["<<binidx<<"]            = " << eys[idx][binidx] << "\n";
+                out << " depols["<< idx <<"]["<<binidx<<"]         = " << depols[idx][binidx] << "\n";
+                out << " edepols["<< idx <<"]["<<binidx<<"]        = " << edepols[idx][binidx] << "\n";
+            } if (use_sb_subtraction) {
+                out << " ys_sb["<< idx <<"]["<<binidx<<"]       = " << ys_sb[idx][binidx] << "\n";
+                out << " eys_sb["<< idx <<"]["<<binidx<<"]      = " << eys_sb[idx][binidx] << "\n";
+            }
+            out << " ys_corrected["<< idx <<"]["<<binidx<<"]   = " << ys_corrected[idx][binidx] << "\n";
+            out << " eys_corrected["<< idx <<"]["<<binidx<<"]  = " << eys_corrected[idx][binidx] << "\n";
+        }
+        out << "---------------------------\n";
+    }
+
+    // Loop results and plot
+    for (int idx=0; idx<nparams; idx++) {
+
+        // Create graph of results binned in binvar
+        TGraphErrors *gr = new TGraphErrors(nbins,xs,ys_corrected[idx],exs,eys_corrected[idx]);
+        gr->Write("gr");
+
+        // Plot results graph
+        TCanvas *c1 = new TCanvas();
+        c1->SetBottomMargin(0.125);
+        c1->cd(0);
+
+        // Stylistic choices that aren't really necessary
+        gStyle->SetEndErrorSize(5); gStyle->SetTitleFontSize(0.05);
+        gr->SetMarkerSize(1.25);
+        gr->GetXaxis()->SetTitleSize(0.05);
+        gr->GetXaxis()->SetTitleOffset(0.9);
+        gr->GetYaxis()->SetTitleSize(0.05);
+        gr->GetYaxis()->SetTitleOffset(0.9);
+
+        // More necessary stylistic choices
+        gr->SetTitle(graph_title.c_str());
+        gr->SetMarkerColor(marker_color); // 4  blue
+        gr->SetMarkerStyle(marker_style); // 20 circle
+        gr->GetXaxis()->SetRangeUser(bins[0],bins[nbins]);                                                       
+        gr->GetXaxis()->SetTitle(binvar.c_str());
+        std::string ytitle = Form("BSA A%d",idx);
+        gr->GetYaxis()->SetTitle(ytitle.c_str());
+        gr->Draw("PA");
+
+        // Add CLAS12 Preliminary watermark
+        TLatex *lt = new TLatex(0.3,0.2,"CLAS12 Preliminary");
+        lt->SetTextAngle(45);
+        lt->SetTextColor(18);
+        lt->SetTextSize(0.1);
+        lt->SetNDC();
+        lt->Draw();
+
+        // Add zero line
+        TF1 *f2 = new TF1("f2","0",bins[0],bins[nbins]);
+        f2->SetLineColor(1); // 1 black
+        f2->SetLineWidth(1); // 1 thinnest
+        f2->Draw("SAME");
+
+        // Set outname and save
+        TString fname;
+        fname.Form("%s_%s_%s_%.3f_%.3f_A%d",method.c_str(),fitvarx.c_str(),binvar.c_str(),bins[0],bins[nbins],idx);
+        c1->Print(fname+".pdf");
+        gr->SaveAs(fname+".root","recreate");
+
+        // Output message
+        out << " Saved graph to " << fname << ".root\n";
+    }
+
+    // Cd out of outdir
+    outroot->cd("..");
+
+    // Ending message
+    out << "------------------- END of getKinBinnedAsym2D -------------------\n";
+
+} // getKinBinnedAsym2D()
 
 } // namespace analysis {
