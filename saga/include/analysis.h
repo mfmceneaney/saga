@@ -21,6 +21,7 @@
 #include <TLatex.h>
 
 // RooFit Includes
+#include <RooCategory.h>
 #include <RooRealVar.h>
 #include <RooProduct.h>
 #include <RooDataSet.h>
@@ -30,10 +31,12 @@
 #include <RooArgList.h>
 #include <RooAddPdf.h>
 #include <RooGenericPdf.h>
+#include <RooExtendPdf.h>
+#include <RooSimultaneous.h>
+#include <RooFFTConvPdf.h>
 #include <RooCrystalBall.h>
 #include <RooLandau.h>
 #include <RooGaussian.h>
-#include <RooFFTConvPdf.h>
 #include <RooChebychev.h>
 #include <RooFitResult.h>
 #include <RooWorkspace.h>
@@ -65,6 +68,7 @@ namespace analysis {
 * @param name Dataset name
 * @param title Dataset title
 * @param helicity Name of helicity variable
+* @param helicity_states Map of state names to helicity values
 * @param fitvarx Name of fit variable
 * @param xmin Minimum bound for fit variable
 * @param xmax Maximum bound for fit variable
@@ -82,6 +86,7 @@ void createDataset1D(
         std::string name,
         std::string title,
         std::string helicity,
+        std::map<std::string,int> helicity_states,
         std::string fitvarx,
         double xmin,
         double xmax,
@@ -102,8 +107,13 @@ void createDataset1D(
     int ndepolvars = depolvars.size();
     if (ndepolvars>5) {std::cerr<<"ERROR: depolvars.size() must be <=5"<<std::endl; return;}
 
+    // Define the helicity variable
+    RooCategory h(helicity.c_str(), helicity.c_str());
+    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+        h.defineType(it->first.c_str(), it->second);
+    }
+
     // Define independent variables
-    RooRealVar h(helicity.c_str(), helicity.c_str(), -1.0, 1.0);
     RooRealVar x(fitvarx.c_str(),  fitvarx.c_str(), xmin, xmax);
     RooRealVar m(massvar.c_str(),  massvar.c_str(), mmin, mmax);
 
@@ -125,7 +135,6 @@ void createDataset1D(
     RooRealVar depolvar2((ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvarlims[2][0] : -1.0), (ndepolvars>2 ? depolvarlims[2][1] : 1.0));
     RooRealVar depolvar3((ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvarlims[3][0] : -1.0), (ndepolvars>3 ? depolvarlims[3][1] : 1.0));
     RooRealVar depolvar4((ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvarlims[4][0] : -1.0), (ndepolvars>4 ? depolvarlims[4][1] : 1.0));
-    RooArgList arglist(h,x,depolvar0,depolvar1,depolvar2,depolvar3,depolvar4); //NOTE: ONLY ALLOW UP TO 5 PARAMS FOR NOW.
 
     // Define default depolarization variables if not defined so you don't get errors since variable names cannot conflict
     if (!(ndepolvars>0)) frame = frame.Define(depolvar0.GetName(),"(float)1.0");
@@ -135,13 +144,42 @@ void createDataset1D(
     if (!(ndepolvars>4)) frame = frame.Define(depolvar4.GetName(),"(float)1.0");
 
     // Create RDataFrame to RooDataSet pointer
-    ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult = frame.Book<float, float, float, float, float, float, float, float, float, float, float, float>(
+    ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult = frame.Book<float, float, float, float, float, float, float, float, float, float, float>(
       RooDataSetHelper(name.c_str(), // Name
           title.c_str(),             // Title
-          RooArgSet(h, x, m, binvar0, binvar1, binvar2, binvar3, depolvar0, depolvar1, depolvar2, depolvar3, depolvar4)         // Variables in this dataset
+          RooArgSet(x, m, binvar0, binvar1, binvar2, binvar3, depolvar0, depolvar1, depolvar2, depolvar3, depolvar4)         // Variables in this dataset
           ),
-      {helicity.c_str(), fitvarx.c_str(), massvar.c_str(), binvar0.GetName(), binvar1.GetName(), binvar2.GetName(), binvar3.GetName(), depolvar0.GetName(), depolvar1.GetName(), depolvar2.GetName(), depolvar3.GetName(), depolvar4.GetName()} // Column names in RDataFrame.
+      {fitvarx.c_str(), massvar.c_str(), binvar0.GetName(), binvar1.GetName(), binvar2.GetName(), binvar3.GetName(), depolvar0.GetName(), depolvar1.GetName(), depolvar2.GetName(), depolvar3.GetName(), depolvar4.GetName()} // Column names in RDataFrame.
     );
+
+    // Manually create dataset containing helicity as a RooCategory variable
+    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h));
+
+    // Set cuts for fit variable limits so that new dataset will have same length as old dataset
+    std::string x_cut = Form("%s>=%.8f && %s<=%.8f", fitvarx.c_str(), xmin, fitvarx.c_str(), xmax); //NOTE: Should jusst put these cuts in the executable...
+    std::string m_cut = Form("%s>=%.8f && %s<=%.8f", massvar.c_str(), mmin, massvar.c_str(), mmax);
+    std::string a_cut = Form("(%s) && (%s)", x_cut.c_str(), m_cut.c_str());
+
+    // Loop RDataFrame and fill helicity dataset
+    frame.Filter(a_cut.c_str()).Foreach(
+                  [&h,&ds_h](float val){
+
+                    // Assign the state for the categorical variable (using 1 or -1 as the states)
+                    if (val > 0) {
+                      h.setIndex(1);
+                    } else if (val < 0) {
+                      h.setIndex(-1);  // Set category to StateMinus1
+                    } else {
+                      h.setIndex(0);
+                    }
+                    // Add the event to the RooDataSet
+                    ds_h->add(RooArgSet(h));
+                  },
+                  {h.GetName()}
+                  );
+
+    // Merge datasets
+    static_cast<RooDataSet&>(*rooDataSetResult).merge(&static_cast<RooDataSet&>(*ds_h));
 
     // Import variables into workspace
     w->import(h);
@@ -942,6 +980,10 @@ void getKinBinnedAsymUBML1D(
     for (int idx=0; idx<depolvars.size(); idx++) {
         depolvarlims.push_back({-2.0,2.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
     }
+    std::map<std::string,int> helicity_states;
+    helicity_states["plus"]  =  1;
+    helicity_states["zero"]  =  0;
+    helicity_states["minus"] = -1;
 
     // Create dataset
     createDataset1D(
@@ -950,6 +992,7 @@ void getKinBinnedAsymUBML1D(
         dataset_name,
         dataset_title,
         helicity,
+        helicity_states,
         fitvarx,
         xmin,
         xmax,
@@ -1281,6 +1324,11 @@ void getKinBinnedAsym1D(
         auto binframe = frame.Filter(bincut.c_str());
         auto binframe_sg = frame_sg.Filter(bincut.c_str());
 
+        std::map<std::string,int> helicity_states;
+        helicity_states["plus"]  =  1;
+        helicity_states["zero"]  =  0;
+        helicity_states["minus"] = -1;
+
         // Create bin dataset
         createDataset1D(
             binframe,
@@ -1288,6 +1336,7 @@ void getKinBinnedAsym1D(
             dataset_name,
             dataset_title,
             helicity,
+            helicity_states,
             fitvarx,
             xmin,
             xmax,
@@ -1345,6 +1394,7 @@ void getKinBinnedAsym1D(
                 dataset_name,
                 dataset_title,
                 helicity,
+                helicity_states,
                 fitvarx,
                 xmin,
                 xmax,
@@ -1400,6 +1450,7 @@ void getKinBinnedAsym1D(
                 dataset_name,
                 dataset_title,
                 helicity,
+                helicity_states,
                 fitvarx,
                 xmin,
                 xmax,
@@ -1562,6 +1613,7 @@ void getKinBinnedAsym1D(
 * @param name Dataset name
 * @param title Dataset title
 * @param helicity Name of helicity variable
+* @param helicity_states Map of state names to helicity values
 * @param fitvarx Name of fit variable
 * @param xmin Minimum bound for fit variable 1
 * @param xmax Maximum bound for fit variable 1
@@ -1582,6 +1634,7 @@ void createDataset2D(
         std::string name,
         std::string title,
         std::string helicity,
+        std::map<std::string,int> helicity_states,
         std::string fitvarx,
         double xmin,
         double xmax,
@@ -1605,8 +1658,13 @@ void createDataset2D(
     int ndepolvars = depolvars.size();
     if (ndepolvars>5) {std::cerr<<"ERROR: depolvars.size() must be <=5"<<std::endl; return;}
 
+    // Define the helicity variable
+    RooCategory h(helicity.c_str(), helicity.c_str());
+    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+        h.defineType(it->first.c_str(), it->second);
+    }
+
     // Define independent variables
-    RooRealVar h(helicity.c_str(), helicity.c_str(), -1.0, 1.0);
     RooRealVar x(fitvarx.c_str(),  fitvarx.c_str(), xmin, xmax);
     RooRealVar y(fitvary.c_str(),  fitvary.c_str(), ymin, ymax);
     RooRealVar m(massvar.c_str(),  massvar.c_str(), mmin, mmax);
@@ -1629,7 +1687,6 @@ void createDataset2D(
     RooRealVar depolvar2((ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvarlims[2][0] : -1.0), (ndepolvars>2 ? depolvarlims[2][1] : 1.0));
     RooRealVar depolvar3((ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvarlims[3][0] : -1.0), (ndepolvars>3 ? depolvarlims[3][1] : 1.0));
     RooRealVar depolvar4((ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvarlims[4][0] : -1.0), (ndepolvars>4 ? depolvarlims[4][1] : 1.0));
-    RooArgList arglist(h,x,y,depolvar0,depolvar1,depolvar2,depolvar3,depolvar4); //NOTE: ONLY ALLOW UP TO 5 PARAMS FOR NOW.
 
     // Define default depolarization variables if not defined so you don't get errors since variable names cannot conflict
     if (!(ndepolvars>0)) frame = frame.Define(depolvar0.GetName(),"(float)1.0");
@@ -1639,13 +1696,43 @@ void createDataset2D(
     if (!(ndepolvars>4)) frame = frame.Define(depolvar4.GetName(),"(float)1.0");
 
     // Create RDataFrame to RooDataSet pointer
-    ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult = frame.Book<float, float, float, float, float, float, float, float, float, float, float, float, float>(
+    ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult = frame.Book<float, float, float, float, float, float, float, float, float, float, float, float>(
       RooDataSetHelper(name.c_str(), // Name
           title.c_str(),             // Title
-          RooArgSet(h, x, y, m, binvar0, binvar1, binvar2, binvar3, depolvar0, depolvar1, depolvar2, depolvar3, depolvar4)         // Variables in this dataset
+          RooArgSet(x, y, m, binvar0, binvar1, binvar2, binvar3, depolvar0, depolvar1, depolvar2, depolvar3, depolvar4)         // Variables in this dataset
           ),
-      {helicity.c_str(), fitvarx.c_str(), fitvary.c_str(), massvar.c_str(), binvar0.GetName(), binvar1.GetName(), binvar2.GetName(), binvar3.GetName(), depolvar0.GetName(), depolvar1.GetName(), depolvar2.GetName(), depolvar3.GetName(), depolvar4.GetName()} // Column names in RDataFrame.
+      {fitvarx.c_str(), fitvary.c_str(), massvar.c_str(), binvar0.GetName(), binvar1.GetName(), binvar2.GetName(), binvar3.GetName(), depolvar0.GetName(), depolvar1.GetName(), depolvar2.GetName(), depolvar3.GetName(), depolvar4.GetName()} // Column names in RDataFrame.
     );
+
+    // Manually create dataset containing helicity as a RooCategory variable
+    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h));
+
+    // Set cuts for fit variable limits so that new dataset will have same length as old dataset
+    std::string x_cut = Form("%s>=%.8f && %s<=%.8f", fitvarx.c_str(), xmin, fitvarx.c_str(), xmax); //NOTE: Should jusst put these cuts in the executable...
+    std::string y_cut = Form("%s>=%.8f && %s<=%.8f", fitvary.c_str(), ymin, fitvary.c_str(), ymax);
+    std::string m_cut = Form("%s>=%.8f && %s<=%.8f", massvar.c_str(), mmin, massvar.c_str(), mmax);
+    std::string a_cut = Form("(%s) && (%s) && (%s)", x_cut.c_str(), y_cut.c_str(), m_cut.c_str());
+
+    // Loop RDataFrame and fill helicity dataset
+    frame.Filter(a_cut.c_str()).Foreach(
+                  [&h,&ds_h](float val){
+
+                    // Assign the state for the categorical variable (using 1 or -1 as the states)
+                    if (val > 0) {
+                      h.setIndex(1);
+                    } else if (val < 0) {
+                      h.setIndex(-1);  // Set category to StateMinus1
+                    } else {
+                      h.setIndex(0);
+                    }
+                    // Add the event to the RooDataSet
+                    ds_h->add(RooArgSet(h));
+                  },
+                  {h.GetName()}
+                  );
+
+    // Merge datasets
+    static_cast<RooDataSet&>(*rooDataSetResult).merge(&static_cast<RooDataSet&>(*ds_h));
 
     // Import variables into workspace
     w->import(h);
@@ -2024,6 +2111,10 @@ void getKinBinnedAsymUBML2D(
     for (int idx=0; idx<depolvars.size(); idx++) {
         depolvarlims.push_back({-2.0,2.0});//DEBUGGING: FOR NOW ASSUME ALL DEPOLARIZATION VARIABLES ARE IN THIS RANGE.
     }
+    std::map<std::string,int> helicity_states;
+    helicity_states["plus"]  =  1;
+    helicity_states["zero"]  =  0;
+    helicity_states["minus"] = -1;
 
     // Create dataset
     createDataset2D(
@@ -2032,6 +2123,7 @@ void getKinBinnedAsymUBML2D(
         dataset_name,
         dataset_title,
         helicity,
+        helicity_states,
         fitvarx,
         xmin,
         xmax,
