@@ -145,18 +145,6 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: fitopt: " << fitopt << std::endl;
 
-    std::string fsgasymsformula = "";
-    if (node["fsgasymsformula"]) {
-        fsgasymsformula = node["fsgasymsformula"].as<std::string>();
-    }
-    std::cout << "INFO: fsgasymsformula: " << fsgasymsformula << std::endl;
-
-    std::string fbgasymsformula = "";
-    if (node["fbgasymsformula"]) {
-        fbgasymsformula = node["fbgasymsformula"].as<std::string>();
-    }
-    std::cout << "INFO: fbgasymsformula: " << fbgasymsformula << std::endl;
-
     std::string gammavar = "gamma";
     if (node["gammavar"]) {
         gammavar = node["gammavar"].as<std::string>();
