@@ -350,17 +350,17 @@ def get_tgrapherror_arrs(
     -----------
     Compute the average x and y graph values as well as errors and other statistical information across a list of input files.
     The keys of the returned map are as follows:
-    'x_mean'
-    'y_mean'
-    'xerr_mean'
-    'yerr_mean'
-    'y_min'
-    'y_max'
-    'y_std'
-    'ydiff_mean'
-    'ydiff_std'
-    'ydiff_mins'
-    'ydiff_maxs'
+    `x_mean`,
+    `y_mean`,
+    `xerr_mean`,
+    `yerr_mean`,
+    `y_min`,
+    `y_max`,
+    `y_std`,
+    `ydiff_mean`,
+    `ydiff_std`,
+    `ydiff_mins`,
+    `ydiff_maxs`.
     """
 
     # Initialize output list
