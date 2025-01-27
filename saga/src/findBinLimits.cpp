@@ -144,7 +144,7 @@ void execute(const YAML::Node& node) {
 
     // Pre-define additional variables.
     auto d2 = d.Define("_randvar_","(float)1.0");//NOTE: Need the type of d2 declared outside the loop to match the type assigned inside the loop below.
-    for (int idx=1; idx<defvars.size(); idx++) {
+    for (int idx=0; idx<defvars.size(); idx++) {
         d2 = d2.Define(defvars[idx].c_str(),defvar_formulas[idx].c_str());
     }
     

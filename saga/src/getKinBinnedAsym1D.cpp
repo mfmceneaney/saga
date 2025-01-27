@@ -597,21 +597,21 @@ void execute(const YAML::Node& node) {
 
     if (inject_asym) {
         // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
-        for (int idx=1; idx<depolvars.size(); idx++) {
+        for (int idx=0; idx<depolvars.size(); idx++) {
             replace_all(fsgasyms_xs_formula, Form("depolvars_mc%d",idx), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
         }
         replace_all(fsgasyms_xs_formula, "fitvar1_mc", fitvar1_mc.c_str()); // Replace fitvar1_mc
-        for (int idx=1; idx<sgasyms.size(); idx++) {
+        for (int idx=0; idx<sgasyms.size(); idx++) {
             replace_all(fsgasyms_xs_formula, Form("sgasyms%d",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
         }
         std::cout << "INFO: Updated " << fsgasyms_xs_name.c_str() << " = " << fsgasyms_xs_formula.c_str() << std::endl;
 
         // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
-        for (int idx=1; idx<depolvars.size(); idx++) {
+        for (int idx=0; idx<depolvars.size(); idx++) {
             replace_all(fbgasyms_xs_formula, Form("depolvars_mc%d",idx), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
         }
         replace_all(fbgasyms_xs_formula, "fitvar1_mc", fitvar1_mc.c_str()); // Replace fitvar1_mc
-        for (int idx=1; idx<bgasyms.size(); idx++) {
+        for (int idx=0; idx<bgasyms.size(); idx++) {
             replace_all(fbgasyms_xs_formula, Form("bgasyms%d",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
         }
         std::cout << "INFO: Updated " << fbgasyms_xs_name.c_str() << " = " << fbgasyms_xs_formula.c_str() << std::endl;
@@ -629,7 +629,7 @@ void execute(const YAML::Node& node) {
                 .Define(epsilonvar_mc.c_str(),epsilonvarformulamc.c_str())
                 .Define(depolvars[0].c_str(),depolvarformulas[0].c_str())
                 .Define(depolvars_mc[0].c_str(),depolvarformulasmc[0].c_str()); 
-    for (int idx=1; idx<depolvars.size(); idx++) {
+    for (int idx=1; idx<depolvars.size(); idx++) { //NOTE: START AT 1 HERE BECAUSE FIRST DEPOLARIZATION VARIABLE IS DEFINED ABOVE.
         d2 = (!inject_asym) ? d2.
                                 Define(depolvars[idx].c_str(),depolvarformulas[idx].c_str()) :
                                 d2
@@ -661,7 +661,7 @@ void execute(const YAML::Node& node) {
     std::vector<std::string> dtheta_vars;
     std::vector<std::string> dphi_vars;
     if (inject_asym) {
-        for (int idx=1; idx<particle_suffixes.size(); idx++) {
+        for (int idx=0; idx<particle_suffixes.size(); idx++) {
             theta_vars.push_back(Form("theta%s",particle_suffixes[idx].c_str()));
             phi_vars.push_back(Form("phi%s",particle_suffixes[idx].c_str()));
             theta_mc_vars.push_back(Form("theta%s_mc",particle_suffixes[idx].c_str()));
@@ -673,7 +673,7 @@ void execute(const YAML::Node& node) {
 
     // Define MC matching angular difference variable branches
     if (inject_asym) {
-        for (int idx=1; idx<particle_suffixes.size(); idx++) {
+        for (int idx=0; idx<particle_suffixes.size(); idx++) {
             d2_filtered = d2_filtered.Define(dtheta_vars[idx].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[idx].c_str(),theta_mc_vars[idx].c_str()})
                 .Define(dphi_vars[idx].c_str(),[](float phi, float phi_mc){
                     return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
