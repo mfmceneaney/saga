@@ -695,8 +695,8 @@ void execute(const YAML::Node& node) {
     auto frame = (!inject_asym) ? d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str()) :
                     d2_filtered.Define(randvar_name.c_str(),[&gRandom](){ return (float)gRandom->Rndm(); },{})
                     .Define(xs_name.c_str(), [&beam_polarization]
-                        (float mc_sg_match, float fsgasyms_xs, float fbgasyms_xs) {
-                            return (float)((mc_sg_match==1.0) ?
+                        (bool mc_sg_match, float fsgasyms_xs, float fbgasyms_xs) {
+                            return (float)((mc_sg_match) ?
                             0.5*(1.0 + beam_polarization*fsgasyms_xs) :
                             0.5*(1.0 + beam_polarization*fbgasyms_xs));
                         },
