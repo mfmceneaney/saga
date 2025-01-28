@@ -121,7 +121,7 @@ To make projections of the uncertainties on planned asymmetry measurements for f
 
 To scale these uncertainties, one first assumes Poissonian statistics so
 
-![\Large $\delta N = \frac{1}{\sqrt{N}}$.]
+$\delta N = \frac{1}{\sqrt{N}}$.
 
 You must also compute ratio of the acceptance ratios
 
