@@ -115,6 +115,12 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: fitvar1title: " << fitvar1title << std::endl;
 
+    int fitvar1bins = 16;
+    if (node["fitvar1bins"]) {
+        fitvar1bins = node["fitvar1bins"].as<int>();
+    }
+    std::cout << "INFO: fitvar1bins: " << fitvar1bins << std::endl;
+
     // Define fit / injection function formulas
     std::string fitformula = "";
     if (node["fitformula"]) {
@@ -771,6 +777,7 @@ void execute(const YAML::Node& node) {
             nparams, //int         nparams         = 2,
             params, //std::vector<double> params  = std::vector<double>(5),
             fitvar1title, //std::string fitvarxtitle    = "#phi_{h p#pi^{-}}",
+            fitvar1bins, //int         xbins           = 16,
             use_sumW2Error, //bool        use_sumW2Error  = true,
             use_average_depol, //bool use_average_depol      = false,
             use_extended_nll, // bool use_extended_nll       = false,

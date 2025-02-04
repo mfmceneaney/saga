@@ -23,6 +23,7 @@
 // RooFit Includes
 #include <RooCategory.h>
 #include <RooRealVar.h>
+#include <RooFormulaVar.h>
 #include <RooProduct.h>
 #include <RooDataSet.h>
 #include <RooPlot.h>
@@ -697,6 +698,7 @@ void applySPlot(
 * @param params List of initial values for asymmetry parameters
 * @param fitvarx Name of fit variable
 * @param fitvarxtitle Title of fit variable
+* @param xbins Number of bins in fit variable for plotting asymmetry
 * @param xmin Minimum bound for fit variable
 * @param xmax Maximum bound for fit variable
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
@@ -725,6 +727,7 @@ std::vector<double> getKinBinAsymUBML1D(
     std::vector<double> params = std::vector<double>(5),
     std::string  fitvarx       = "phi_h",
     std::string  fitvarxtitle  = "#phi_{h p#pi^{-}}",
+    int xbins                  = 16,
     double xmin                = 0.0,
     double xmax                = 2*TMath::Pi(),
     bool use_sumW2Error        = true,
@@ -848,10 +851,13 @@ std::vector<double> getKinBinAsymUBML1D(
     std::cout << "covariance matrix" << std::endl;
     covMat.Print();
 
+    // Define the asymmetry as a function
+    RooFormulaVar f_asym("f_asym","Asymmetry function",Form("%.3f*%s",pol,fitformula.c_str()), *arglist);//NOTE: NEED TO CORRECT FOR POLARIZATION FACTOR.
+
     // Plot projection of fitted distribution in x.
-    RooPlot *xframe = x->frame(RooFit::Title(Form("%s Projection, Bin: %s",fitvarxtitle.c_str(),bincut.c_str())));
-    bin_ds->plotOn(xframe, RooFit::DataError(RooAbsData::SumW2));
-    gen->plotOn(xframe, RooFit::ProjWData(h, *bin_ds));
+    RooPlot *xframe = x->frame(RooFit::Bins(xbins), RooFit::Title(Form("%s Projection, Bin: %s",fitvarxtitle.c_str(),bincut.c_str())));
+    bin_ds->plotOn(xframe, RooFit::Asymmetry(h));
+    f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
     // Draw the frame on the canvas
     std::string c1_x_name = Form("c1_%s__fitvarx_%s",outdir.c_str(),fitvarx.c_str());
@@ -979,6 +985,7 @@ std::vector<double> getKinBinAsymUBML1D(
 * @param nparams Number of parameters in the asymmetry formula (up to 5)
 * @param params List of initial values for asymmetry parameters
 * @param fitvarxtitle Title of fit variable
+* @param xbins Number of bins in fit variable for plotting asymmetry
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
@@ -1016,6 +1023,7 @@ void getKinBinnedAsymUBML1D(
         int         nparams         = 2,
         std::vector<double> params  = std::vector<double>(5),
         std::string fitvarxtitle    = "#phi_{h p#pi^{-}}",
+        int         xbins           = 16,
         bool        use_sumW2Error  = true,
         bool        use_average_depol = false,
         bool        use_extended_nll = false,
@@ -1148,6 +1156,7 @@ void getKinBinnedAsymUBML1D(
                                 params,
                                 fitvarx,
                                 fitvarxtitle,
+                                xbins,
                                 xmin,
                                 xmax,
                                 use_sumW2Error,
@@ -1304,6 +1313,7 @@ void getKinBinnedAsymUBML1D(
 * @param nparams Number of parameters in the asymmetry formula (up to 5)
 * @param params List of initial values for asymmetry parameters
 * @param fitvarxtitle Title of fit variable
+* @param xbins Number of bins in fit variable for plotting asymmetry
 * @param use_sumW2Error Option to use RooFit::SumW2Error() option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
@@ -1349,6 +1359,7 @@ void getKinBinnedAsym1D(
         int         nparams         = 2,
         std::vector<double> params  = std::vector<double>(5),
         std::string fitvarxtitle    = "#phi_{h p#pi^{-}}",
+        int         xbins           = 16,
         bool        use_sumW2Error  = true,
         bool use_average_depol      = false,
         bool use_extended_nll       = false,
@@ -1532,6 +1543,7 @@ void getKinBinnedAsym1D(
                                 params,
                                 fitvarx,
                                 fitvarxtitle,
+                                xbins,
                                 xmin,
                                 xmax,
                                 use_sumW2Error,
@@ -1588,6 +1600,7 @@ void getKinBinnedAsym1D(
                                 params,
                                 fitvarx,
                                 fitvarxtitle,
+                                xbins,
                                 xmin,
                                 xmax,
                                 use_sumW2Error,
