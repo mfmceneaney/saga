@@ -1919,10 +1919,12 @@ void createDataset2D(
 * @param params List of initial values for asymmetry parameters
 * @param fitvarx Name of fit variable 1
 * @param fitvarxtitle Title of fit variable 1
+* @param xbins Number of bins in fit variable 1 for plotting asymmetry
 * @param xmin Minimum bound for fit variable 1
 * @param xmax Maximum bound for fit variable 1
 * @param fitvary Name of fit variable 2
 * @param fitvarytitle Title of fit variable 2
+* @param ybins Number of bins in fit variable 2 for plotting asymmetry
 * @param ymin Minimum bound for fit variable 2
 * @param ymax Maximum bound for fit variable 2
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
@@ -1951,10 +1953,12 @@ std::vector<double> getKinBinAsymUBML2D(
     std::vector<double> params = std::vector<double>(5),
     std::string  fitvarx       = "phi_h",
     std::string  fitvarxtitle  = "#phi_{h p#pi^{-}}",
+    int xbins                  = 16,
     double xmin                = 0.0,
     double xmax                = 2*TMath::Pi(),
     std::string  fitvary       = "phi_h",
     std::string  fitvarytitle  = "#phi_{h p#pi^{-}}",
+    int ybins                  = 16,
     double ymin                = 0.0,
     double ymax                = 2*TMath::Pi(),
     bool use_sumW2Error        = true,
@@ -2080,10 +2084,13 @@ std::vector<double> getKinBinAsymUBML2D(
     std::cout << "covariance matrix" << std::endl;
     covMat.Print();
 
+    // Define the asymmetry as a function
+    RooFormulaVar f_asym("f_asym","Asymmetry function",Form("%.3f*%s",pol,fitformula.c_str()), *arglist);//NOTE: NEED TO CORRECT FOR POLARIZATION FACTOR.
+
     // Plot projection of fitted distribution in x.
-    RooPlot *xframe = x->frame(RooFit::Title(Form("%s Projection, Bin: %s",fitvarxtitle.c_str(),bincut.c_str())));
-    bin_ds->plotOn(xframe, RooFit::DataError(RooAbsData::SumW2));
-    gen->plotOn(xframe, RooFit::ProjWData(h, *bin_ds));
+    RooPlot *xframe = x->frame(RooFit::Bins(xbins), RooFit::Title(Form("%s Projection, Bin: %s",fitvarxtitle.c_str(),bincut.c_str())));
+    bin_ds->plotOn(xframe, RooFit::Asymmetry(h));
+    f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
     // Draw the frame on the canvas
     std::string c1_x_name = Form("c1_%s__fitvarx_%s",outdir.c_str(),fitvarx.c_str());
@@ -2094,9 +2101,9 @@ std::vector<double> getKinBinAsymUBML2D(
     c1_x->Print(Form("%s.pdf",c1_x_name.c_str()));
 
     // Plot projection of fitted distribution in y.
-    RooPlot *yframe = y->frame(RooFit::Title(Form("%s Projection, Bin: %s",fitvarytitle.c_str(),bincut.c_str())));
-    bin_ds->plotOn(yframe, RooFit::DataError(RooAbsData::SumW2));
-    gen->plotOn(yframe, RooFit::ProjWData(h, *bin_ds));
+    RooPlot *yframe = y->frame(RooFit::Bins(ybins), RooFit::Title(Form("%s Projection, Bin: %s",fitvarytitle.c_str(),bincut.c_str())));
+    bin_ds->plotOn(yframe, RooFit::Asymmetry(h));
+    f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
     // Draw the frame on the canvas
     std::string c1_y_name = Form("c1_%s__fitvary_%s",outdir.c_str(),fitvary.c_str());
@@ -2227,6 +2234,8 @@ std::vector<double> getKinBinAsymUBML2D(
 * @param params List of initial values for asymmetry parameters
 * @param fitvarxtitle Title of fit variable 1
 * @param fitvarytitle Title of fit variable 2
+* @param xbins Number of bins in fit variable 1 for plotting asymmetry
+* @param ybins Number of bins in fit variable 2 for plotting asymmetry
 * @param use_sumW2Error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
@@ -2268,6 +2277,8 @@ void getKinBinnedAsymUBML2D(
         std::vector<double> params  = std::vector<double>(5),
         std::string fitvarxtitle    = "x",
         std::string fitvarytitle    = "y",
+        int         xbins           = 16,
+        int         ybins           = 16,
         bool        use_sumW2Error  = true,
         bool        use_average_depol = false,
         bool        use_extended_nll = false,
@@ -2403,10 +2414,12 @@ void getKinBinnedAsymUBML2D(
                                 params,
                                 fitvarx,
                                 fitvarxtitle,
+                                xbins,
                                 xmin,
                                 xmax,
                                 fitvary,
                                 fitvarytitle,
+                                ybins,
                                 ymin,
                                 ymax,
                                 use_sumW2Error,
@@ -2566,6 +2579,8 @@ void getKinBinnedAsymUBML2D(
 * @param params List of initial values for asymmetry parameters
 * @param fitvarxtitle Title of fit variable
 * @param fitvarytitle Title of fit variable
+* @param xbins Number of bins in fit variable 1 for plotting asymmetry
+* @param ybins Number of bins in fit variable 2 for plotting asymmetry
 * @param use_sumW2Error Option to use RooFit::SumW2Error() option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
@@ -2615,6 +2630,8 @@ void getKinBinnedAsym2D(
         std::vector<double> params  = std::vector<double>(2),
         std::string fitvarxtitle    = "x",
         std::string fitvarytitle    = "y",
+        int         xbins           = 16,
+        int         ybins           = 16,
         bool        use_sumW2Error  = true,
         bool use_average_depol      = false,
         bool use_extended_nll       = false,
@@ -2804,10 +2821,12 @@ void getKinBinnedAsym2D(
                                 params,
                                 fitvarx,
                                 fitvarxtitle,
+                                xbins,
                                 xmin,
                                 xmax,
                                 fitvary,
                                 fitvarytitle,
+                                ybins,
                                 ymin,
                                 ymax,
                                 use_sumW2Error,
@@ -2867,10 +2886,12 @@ void getKinBinnedAsym2D(
                                 params,
                                 fitvarx,
                                 fitvarxtitle,
+                                xbins,
                                 xmin,
                                 xmax,
                                 fitvary,
                                 fitvarytitle,
+                                ybins,
                                 ymin,
                                 ymax,
                                 use_sumW2Error,
