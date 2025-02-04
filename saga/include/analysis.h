@@ -706,7 +706,7 @@ void applySPlot(
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
 */
-TArrayF* getKinBinAsymUBML1D(
+std::vector<double> getKinBinAsymUBML1D(
     std::string  outdir,
     TFile      * outroot,
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
@@ -915,25 +915,24 @@ TArrayF* getKinBinAsymUBML1D(
     outroot->cd("..");
 
     // Fill return array
-    TArrayF *arr = new TArrayF((int)(1+2*binvars.size()+2*depolvars.size()+2*nparams));
-    int k = 0;
-    arr->AddAt(count,k++);
+    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams
+    arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
-        arr->AddAt(binvar_means[idx],k++);
-        arr->AddAt(binvar_errs[idx],k++);
+        arr.push_back(binvar_means[idx]);
+        arr.push_back(binvar_errs[idx]);
     }
     for (int idx=0; idx<depolvars.size(); idx++) {
-        arr->AddAt(depols[idx],k++);
-        arr->AddAt(depolerrs[idx],k++);
+        arr.push_back(depols[idx]);
+        arr.push_back(depolerrs[idx]);
     }
     for (int idx=0; idx<nparams; idx++) {
-        arr->AddAt(pars[idx],k++);
-        arr->AddAt(Epars[idx],k++);
+        arr.push_back(pars[idx]);
+        arr.push_back(Epars[idx]);
     }
 
     return arr;
 
-} // TArrayF* getKinBinAsymUBML1D()
+} // std::vector<double> getKinBinAsymUBML1D()
 
 /**
 * @brief Loop kinematic bins and fit a 1D asymmetry.
@@ -1130,7 +1129,7 @@ void getKinBinnedAsymUBML1D(
 
         // Compute bin results
         std::string  binoutdir = Form("method_%s_bin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
-        TArrayF* bin_data = getKinBinAsymUBML1D(
+        std::vector<double> bin_data = getKinBinAsymUBML1D(
                                 binoutdir,
                                 outroot,
                                 frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
@@ -1159,16 +1158,16 @@ void getKinBinnedAsymUBML1D(
 
         // Get bin data
         int k = 0;
-        counts[binidx] = bin_data->GetAt(k++);
-        xs[binidx]     = bin_data->GetAt(k++); //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
-        exs[binidx]    = bin_data->GetAt(k++);
+        counts[binidx] = (int)bin_data[k++];
+        xs[binidx]     = bin_data[k++]; //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
+        exs[binidx]    = bin_data[k++];
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx][binidx] = bin_data->GetAt(k++);
-            edepols[idx][binidx] = bin_data->GetAt(k++);
+            depols[idx][binidx] = bin_data[k++];
+            edepols[idx][binidx] = bin_data[k++];
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx][binidx] = bin_data->GetAt(k++);
-            eys[idx][binidx] = bin_data->GetAt(k++);
+            ys[idx][binidx] = bin_data[k++];
+            eys[idx][binidx] = bin_data[k++];
         }
 
         // Divide out depolarization factors
@@ -1514,7 +1513,7 @@ void getKinBinnedAsym1D(
 
         // Compute signal region bin results
         std::string  binoutdir = Form("method_%s_bin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
-        TArrayF* bin_data = getKinBinAsymUBML1D(
+        std::vector<double> bin_data = getKinBinAsymUBML1D(
                                 binoutdir,
                                 outroot,
                                 (use_sb_subtraction ? binframe_sg : binframe), //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
@@ -1543,7 +1542,7 @@ void getKinBinnedAsym1D(
 
         // Compute sideband region bin results
         std::string  sbbinoutdir = Form("method_%s_sbbin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
-        TArrayF* bin_data_sb;
+        std::vector<double> bin_data_sb;
         if (use_sb_subtraction) {
 
             // Make bin cut on sideband frame
@@ -1600,16 +1599,16 @@ void getKinBinnedAsym1D(
 
         // Get bin data
         int k = 0;
-        counts[binidx] = bin_data->GetAt(k++);
-        xs[binidx]     = bin_data->GetAt(k++); //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
-        exs[binidx]    = bin_data->GetAt(k++);
+        counts[binidx] = (int)bin_data[k++];
+        xs[binidx]     = bin_data[k++]; //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
+        exs[binidx]    = bin_data[k++];
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx][binidx] = bin_data->GetAt(k++);
-            edepols[idx][binidx] = bin_data->GetAt(k++);
+            depols[idx][binidx] = bin_data[k++];
+            edepols[idx][binidx] = bin_data[k++];
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx][binidx] = bin_data->GetAt(k++);
-            eys[idx][binidx] = bin_data->GetAt(k++);
+            ys[idx][binidx] = bin_data[k++];
+            eys[idx][binidx] = bin_data[k++];
         }
 
         // Apply sideband subtraction to asymmetries assuming that depolarization factors do not vary much
@@ -1619,8 +1618,8 @@ void getKinBinnedAsym1D(
             epsilon = epss[0];
             epsilon_err = epss[1];
             for (int idx=0; idx<nparams; idx++) {
-                ys_sb[idx][binidx] = bin_data_sb->GetAt(k2++);
-                eys_sb[idx][binidx] = bin_data_sb->GetAt(k2++);
+                ys_sb[idx][binidx] = bin_data_sb[k2++];
+                eys_sb[idx][binidx] = bin_data_sb[k2++];
                 ys[idx][binidx]  = (ys[idx][binidx] - epsilon * ys_sb[idx][binidx]) / (1.0 - epsilon);
                 eys[idx][binidx] = TMath::Sqrt(eys[idx][binidx]*eys[idx][binidx] + epsilon * epsilon * eys_sb[idx][binidx]*eys_sb[idx][binidx]) / (1.0 - epsilon) ;
             }
@@ -1920,7 +1919,7 @@ void createDataset2D(
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
 */
-TArrayF* getKinBinAsymUBML2D(
+std::vector<double> getKinBinAsymUBML2D(
     std::string  outdir,
     TFile      * outroot,
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
@@ -2148,25 +2147,24 @@ TArrayF* getKinBinAsymUBML2D(
     outroot->cd("..");
 
     // Fill return array
-    TArrayF *arr = new TArrayF((int)(1+2*binvars.size()+2*depolvars.size()+2*nparams));
-    int k = 0;
-    arr->AddAt(count,k++);
+    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams
+    arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
-        arr->AddAt(binvar_means[idx],k++);
-        arr->AddAt(binvar_errs[idx],k++);
+        arr.push_back(binvar_means[idx]);
+        arr.push_back(binvar_errs[idx]);
     }
     for (int idx=0; idx<depolvars.size(); idx++) {
-        arr->AddAt(depols[idx],k++);
-        arr->AddAt(depolerrs[idx],k++);
+        arr.push_back(depols[idx]);
+        arr.push_back(depolerrs[idx]);
     }
     for (int idx=0; idx<nparams; idx++) {
-        arr->AddAt(pars[idx],k++);
-        arr->AddAt(Epars[idx],k++);
+        arr.push_back(pars[idx]);
+        arr.push_back(Epars[idx]);
     }
 
     return arr;
 
-} // TArrayF* getKinBinAsymUBML2D()
+} // std::vector<double> getKinBinAsymUBML2D()
 
 /**
 * @brief Loop kinematic bins and fit a 2D asymmetry.
@@ -2373,7 +2371,7 @@ void getKinBinnedAsymUBML2D(
 
         // Compute bin results
         std::string  binoutdir = Form("method_%s_bin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
-        TArrayF* bin_data = getKinBinAsymUBML2D(
+        std::vector<double> bin_data = getKinBinAsymUBML2D(
                                 binoutdir,
                                 outroot,
                                 frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
@@ -2406,16 +2404,16 @@ void getKinBinnedAsymUBML2D(
 
         // Get bin data
         int k = 0;
-        counts[binidx] = bin_data->GetAt(k++);
-        xs[binidx]     = bin_data->GetAt(k++); //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
-        exs[binidx]    = bin_data->GetAt(k++);
+        counts[binidx] = (int)bin_data[k++];
+        xs[binidx]     = bin_data[k++]; //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
+        exs[binidx]    = bin_data[k++];
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx][binidx] = bin_data->GetAt(k++);
-            edepols[idx][binidx] = bin_data->GetAt(k++);
+            depols[idx][binidx] = bin_data[k++];
+            edepols[idx][binidx] = bin_data[k++];
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx][binidx] = bin_data->GetAt(k++);
-            eys[idx][binidx] = bin_data->GetAt(k++);
+            ys[idx][binidx] = bin_data[k++];
+            eys[idx][binidx] = bin_data[k++];
         }
 
         // Divide out depolarization factors
@@ -2774,7 +2772,7 @@ void getKinBinnedAsym2D(
 
         // Compute signal region bin results
         std::string  binoutdir = Form("method_%s_bin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
-        TArrayF* bin_data = getKinBinAsymUBML2D(
+        std::vector<double> bin_data = getKinBinAsymUBML2D(
                                 binoutdir,
                                 outroot,
                                 (use_sb_subtraction ? binframe_sg : binframe), //NOTE: FRAME SHOULD ALREADY BE FILTERED WITH OVERALL CUTS
@@ -2807,7 +2805,7 @@ void getKinBinnedAsym2D(
 
         // Compute sideband region bin results
         std::string  sbbinoutdir = Form("method_%s_sbbin_%s_%.3f_%.3f",method.c_str(),binvar.c_str(),bin_min,bin_max);
-        TArrayF* bin_data_sb;
+        std::vector<double> bin_data_sb;
         if (use_sb_subtraction) {
 
             // Make bin cut on sideband frame
@@ -2871,16 +2869,16 @@ void getKinBinnedAsym2D(
 
         // Get bin data
         int k = 0;
-        counts[binidx] = bin_data->GetAt(k++);
-        xs[binidx]     = bin_data->GetAt(k++); //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
-        exs[binidx]    = bin_data->GetAt(k++);
+        counts[binidx] = (int)bin_data[k++];
+        xs[binidx]     = bin_data[k++]; //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
+        exs[binidx]    = bin_data[k++];
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx][binidx] = bin_data->GetAt(k++);
-            edepols[idx][binidx] = bin_data->GetAt(k++);
+            depols[idx][binidx] = bin_data[k++];
+            edepols[idx][binidx] = bin_data[k++];
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx][binidx] = bin_data->GetAt(k++);
-            eys[idx][binidx] = bin_data->GetAt(k++);
+            ys[idx][binidx] = bin_data[k++];
+            eys[idx][binidx] = bin_data[k++];
         }
 
         // Apply sideband subtraction to asymmetries assuming that depolarization factors do not vary much
@@ -2890,8 +2888,8 @@ void getKinBinnedAsym2D(
             epsilon = epss[0];
             epsilon_err = epss[1];
             for (int idx=0; idx<nparams; idx++) {
-                ys_sb[idx][binidx] = bin_data_sb->GetAt(k2++);
-                eys_sb[idx][binidx] = bin_data_sb->GetAt(k2++);
+                ys_sb[idx][binidx] = bin_data_sb[k2++];
+                eys_sb[idx][binidx] = bin_data_sb[k2++];
                 ys[idx][binidx]  = (ys[idx][binidx] - epsilon * ys_sb[idx][binidx]) / (1.0 - epsilon);
                 eys[idx][binidx] = TMath::Sqrt(eys[idx][binidx]*eys[idx][binidx] + epsilon * epsilon * eys_sb[idx][binidx]*eys_sb[idx][binidx]) / (1.0 - epsilon) ;
             }
