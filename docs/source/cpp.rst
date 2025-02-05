@@ -10,3 +10,6 @@ C++ API
 
 .. doxygennamespace:: bins
    :project: saga
+
+.. doxygennamespace:: data
+   :project: saga

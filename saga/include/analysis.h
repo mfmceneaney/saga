@@ -43,7 +43,10 @@
 #include <RooWorkspace.h>
 
 // RooStats includes
-#include "RooStats/SPlot.h"
+#include <RooStats/SPlot.h>
+
+// Local includes
+#include <data.h>
 
 #pragma once
 
@@ -57,150 +60,6 @@
 */
 
 namespace analysis {
-
-/**
-* @brief Create a dataset for a 1D fit
-*
-* Create a RooFit dataset for use with an invariant mass signal fit
-* and an asymmetry fit, adding helicity, fit, mass, binning, and depolarization variables.
-*
-* @param frame ROOT RDataframe from which to create a RooDataSet
-* @param w RooWorkspace in which to work
-* @param name Dataset name
-* @param title Dataset title
-* @param helicity Name of helicity variable
-* @param helicity_states Map of state names to helicity values
-* @param fitvarx Name of fit variable
-* @param xmin Minimum bound for fit variable
-* @param xmax Maximum bound for fit variable
-* @param massvar Invariant mass variable name
-* @param mmin Minimum bound for invariant mass variable
-* @param mmax Maximum bound for invariant mass variable
-* @param binvars List of kinematic binning variables (up to 4)
-* @param binvarlims List of minimum and maximum bounds for each kinematic binning variable
-* @param depolvars List of depolarization variables (up to 5)
-* @param depolvarlims List of minimum and maximum bounds for each depolarization variable
-*/
-void createDataset1D(
-        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-        RooWorkspace *w,
-        std::string name,
-        std::string title,
-        std::string helicity,
-        std::map<std::string,int> helicity_states,
-        std::string fitvarx,
-        double xmin,
-        double xmax,
-        std::string massvar, //TODO: add options for variable titles and then propagate to produced plots...
-        double mmin,
-        double mmax,
-        std::vector<std::string> binvars,
-        std::vector<std::vector<double>> binvarlims, //NOTE: THAT THESE SHOULD JUST BE THE OUTERMOST LIMITS!!!
-        std::vector<std::string> depolvars,
-        std::vector<std::vector<double>> depolvarlims //NOTE: THAT THESE SHOULD JUST BE THE OUTERMOST LIMITS!!!
-    ) {
-
-    // Check number of binning variables
-    int nbinvars = binvars.size();
-    if (nbinvars>4) {std::cerr<<"ERROR: binvars.size() must be <=4"<<std::endl; return;}
-
-    // Check number of binning variables
-    int ndepolvars = depolvars.size();
-    if (ndepolvars>5) {std::cerr<<"ERROR: depolvars.size() must be <=5"<<std::endl; return;}
-
-    // Define the helicity variable
-    RooCategory h(helicity.c_str(), helicity.c_str());
-    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
-        h.defineType(it->first.c_str(), it->second);
-    }
-
-    // Define independent variables
-    RooRealVar x(fitvarx.c_str(),  fitvarx.c_str(), xmin, xmax);
-    RooRealVar m(massvar.c_str(),  massvar.c_str(), mmin, mmax);
-
-    // Create binning variables
-    RooRealVar binvar0(((nbinvars>0 && binvars[0]!=massvar) ? binvars[0].c_str() : "binvar0"), ((nbinvars>0 && binvars[0]!=massvar) ? binvars[0].c_str() : "binvar0"), ((nbinvars>0 && binvars[0]!=massvar) ? binvarlims[0][0] : -1.0), (nbinvars>0 ? binvarlims[0][1] : 1.0)); //NOTE: IMPORTANT!  These have to be declared individually here.  Creating in a loop and adding to a list will not work.
-    RooRealVar binvar1(((nbinvars>1 && binvars[0]!=massvar) ? binvars[1].c_str() : "binvar1"), ((nbinvars>1 && binvars[0]!=massvar) ? binvars[1].c_str() : "binvar1"), ((nbinvars>1 && binvars[0]!=massvar) ? binvarlims[1][0] : -1.0), (nbinvars>1 ? binvarlims[1][1] : 1.0));
-    RooRealVar binvar2(((nbinvars>2 && binvars[0]!=massvar) ? binvars[2].c_str() : "binvar2"), ((nbinvars>2 && binvars[0]!=massvar) ? binvars[2].c_str() : "binvar2"), ((nbinvars>2 && binvars[0]!=massvar) ? binvarlims[2][0] : -1.0), (nbinvars>2 ? binvarlims[2][1] : 1.0));
-    RooRealVar binvar3(((nbinvars>3 && binvars[0]!=massvar) ? binvars[3].c_str() : "binvar3"), ((nbinvars>3 && binvars[0]!=massvar) ? binvars[3].c_str() : "binvar3"), ((nbinvars>3 && binvars[0]!=massvar) ? binvarlims[3][0] : -1.0), (nbinvars>3 ? binvarlims[3][1] : 1.0));
-
-    // Define default bin variables if not defined so you don't get errors since variable names cannot conflict
-    if (!(nbinvars>0)) frame = frame.Define(binvar0.GetName(),"(float)1.0");
-    if (!(nbinvars>1)) frame = frame.Define(binvar1.GetName(),"(float)1.0");
-    if (!(nbinvars>2)) frame = frame.Define(binvar2.GetName(),"(float)1.0");
-    if (!(nbinvars>3)) frame = frame.Define(binvar3.GetName(),"(float)1.0");
-
-    // Create depolarization variables
-    RooRealVar depolvar0((ndepolvars>0 ? depolvars[0].c_str() : "depolvar0"), (ndepolvars>0 ? depolvars[0].c_str() : "depolvar0"), (ndepolvars>0 ? depolvarlims[0][0] : -1.0), (ndepolvars>0 ? depolvarlims[0][1] : 1.0)); //NOTE: IMPORTANT!  These have to be declared individually here.  Creating in a loop and adding to a list will not work.
-    RooRealVar depolvar1((ndepolvars>1 ? depolvars[1].c_str() : "depolvar1"), (ndepolvars>1 ? depolvars[1].c_str() : "depolvar1"), (ndepolvars>1 ? depolvarlims[1][0] : -1.0), (ndepolvars>1 ? depolvarlims[1][1] : 1.0));
-    RooRealVar depolvar2((ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvarlims[2][0] : -1.0), (ndepolvars>2 ? depolvarlims[2][1] : 1.0));
-    RooRealVar depolvar3((ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvarlims[3][0] : -1.0), (ndepolvars>3 ? depolvarlims[3][1] : 1.0));
-    RooRealVar depolvar4((ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvarlims[4][0] : -1.0), (ndepolvars>4 ? depolvarlims[4][1] : 1.0));
-
-    // Define default depolarization variables if not defined so you don't get errors since variable names cannot conflict
-    if (!(ndepolvars>0)) frame = frame.Define(depolvar0.GetName(),"(float)1.0");
-    if (!(ndepolvars>1)) frame = frame.Define(depolvar1.GetName(),"(float)1.0");
-    if (!(ndepolvars>2)) frame = frame.Define(depolvar2.GetName(),"(float)1.0");
-    if (!(ndepolvars>3)) frame = frame.Define(depolvar3.GetName(),"(float)1.0");
-    if (!(ndepolvars>4)) frame = frame.Define(depolvar4.GetName(),"(float)1.0");
-
-    // Create RDataFrame to RooDataSet pointer
-    ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult = frame.Book<float, float, float, float, float, float, float, float, float, float, float>(
-      RooDataSetHelper(name.c_str(), // Name
-          title.c_str(),             // Title
-          RooArgSet(x, m, binvar0, binvar1, binvar2, binvar3, depolvar0, depolvar1, depolvar2, depolvar3, depolvar4)         // Variables in this dataset
-          ),
-      {fitvarx.c_str(), massvar.c_str(), binvar0.GetName(), binvar1.GetName(), binvar2.GetName(), binvar3.GetName(), depolvar0.GetName(), depolvar1.GetName(), depolvar2.GetName(), depolvar3.GetName(), depolvar4.GetName()} // Column names in RDataFrame.
-    );
-
-    // Manually create dataset containing helicity as a RooCategory variable
-    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h));
-
-    // Set cuts for fit variable limits so that new dataset will have same length as old dataset
-    std::string x_cut = Form("%s>=%.8f && %s<=%.8f", fitvarx.c_str(), xmin, fitvarx.c_str(), xmax); //NOTE: Should jusst put these cuts in the executable...
-    std::string m_cut = Form("%s>=%.8f && %s<=%.8f", massvar.c_str(), mmin, massvar.c_str(), mmax);
-    std::string a_cut = Form("(%s) && (%s)", x_cut.c_str(), m_cut.c_str());
-
-    // Loop RDataFrame and fill helicity dataset
-    frame.Filter(a_cut.c_str()).Foreach(
-                  [&h,&ds_h](float val){
-
-                    // Assign the state for the categorical variable (using 1 or -1 as the states)
-                    if (val > 0) {
-                      h.setIndex(1);
-                    } else if (val < 0) {
-                      h.setIndex(-1);  // Set category to StateMinus1
-                    } else {
-                      h.setIndex(0);
-                    }
-                    // Add the event to the RooDataSet
-                    ds_h->add(RooArgSet(h));
-                  },
-                  {h.GetName()}
-                  );
-
-    // Merge datasets
-    static_cast<RooDataSet&>(*rooDataSetResult).merge(&static_cast<RooDataSet&>(*ds_h));
-
-    // Import variables into workspace
-    w->import(h);
-    w->import(x);
-    w->import(m);
-    w->import(binvar0);
-    w->import(binvar1);
-    w->import(binvar2);
-    w->import(binvar3);
-    w->import(depolvar0);
-    w->import(depolvar1);
-    w->import(depolvar2);
-    w->import(depolvar3);
-    w->import(depolvar4);
-
-    // Import data into the workspace
-    w->import(*rooDataSetResult);
-
-    return;
-}
 
 /**
 * @brief Apply a \f$\Lambda\f$ baryon mass fit
@@ -1076,19 +935,15 @@ void getKinBinnedAsymUBML1D(
     helicity_states["minus"] = -1;
 
     // Create dataset
-    createDataset1D(
+    data::createDataset(
         frame,
         w,
         dataset_name,
         dataset_title,
         helicity,
         helicity_states,
-        fitvarx,
-        xmin,
-        xmax,
-        massvar,
-        mmin,
-        mmax,
+        {fitvarx,massvar},
+        {{xmin,xmax},{mmin,mmax}},
         binvars,
         binvarlims_outer,
         depolvars,
@@ -1442,19 +1297,15 @@ void getKinBinnedAsym1D(
         helicity_states["minus"] = -1;
 
         // Create bin dataset
-        createDataset1D(
+        data::createDataset(
             binframe,
             ws,
             dataset_name,
             dataset_title,
             helicity,
             helicity_states,
-            fitvarx,
-            xmin,
-            xmax,
-            massvar,
-            mass_min,
-            mass_max,
+            {fitvarx,massvar},
+            {{xmin,xmax},{mass_min,mass_max}},
             binvars,
             binvarlims_outer,
             depolvars,
@@ -1502,19 +1353,15 @@ void getKinBinnedAsym1D(
 
         // Create signal region dataset for sideband subtraction
         if (use_sb_subtraction) {
-            createDataset1D(
+            data::createDataset(
                 binframe_sg,
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
                 helicity,
                 helicity_states,
-                fitvarx,
-                xmin,
-                xmax,
-                massvar,
-                mass_min,
-                mass_max,
+                {fitvarx,massvar},
+                {{xmin,xmax},{mass_min,mass_max}},
                 binvars,
                 binvarlims_outer,
                 depolvars,
@@ -1561,19 +1408,15 @@ void getKinBinnedAsym1D(
             auto binframe_sb = frame_sb.Filter(bincut.c_str());
 
             // Create sideband dataset
-            createDataset1D(
+            data::createDataset(
                 binframe_sb,
                 ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
                 helicity,
                 helicity_states,
-                fitvarx,
-                xmin,
-                xmax,
-                massvar,
-                mass_min,
-                mass_max,
+                {fitvarx,massvar},
+                {{xmin,xmax},{mass_min,mass_max}},
                 binvars,
                 binvarlims_outer,
                 depolvars,
@@ -1730,159 +1573,6 @@ void getKinBinnedAsym1D(
     out << "------------------- END of getKinBinnedAsym1D -------------------\n";
 
 } // getKinBinnedAsym1D()
-
-/**
-* @brief Create a dataset for a 2D fit
-*
-* Create a RooFit dataset for use with an invariant mass signal fit
-* and an asymmetry fit, adding helicity, fit, mass, binning, and depolarization variables.
-*
-* @param frame ROOT RDataframe from which to create a RooDataSet
-* @param w RooWorkspace in which to work
-* @param name Dataset name
-* @param title Dataset title
-* @param helicity Name of helicity variable
-* @param helicity_states Map of state names to helicity values
-* @param fitvarx Name of fit variable
-* @param xmin Minimum bound for fit variable 1
-* @param xmax Maximum bound for fit variable 1
-* @param fitvary Name of fit variable 2
-* @param ymin Minimum bound for fit variable 2
-* @param ymax Maximum bound for fit variable 2
-* @param massvar Invariant mass variable name
-* @param mmin Minimum bound for invariant mass variable
-* @param mmax Maximum bound for invariant mass variable
-* @param binvars List of kinematic binning variables (up to 4)
-* @param binvarlims List of minimum and maximum bounds for each kinematic binning variable
-* @param depolvars List of depolarization variables (up to 5)
-* @param depolvarlims List of minimum and maximum bounds for each depolarization variable
-*/
-void createDataset2D(
-        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-        RooWorkspace *w,
-        std::string name,
-        std::string title,
-        std::string helicity,
-        std::map<std::string,int> helicity_states,
-        std::string fitvarx,
-        double xmin,
-        double xmax,
-        std::string fitvary,
-        double ymin,
-        double ymax,
-        std::string massvar,
-        double mmin,
-        double mmax,
-        std::vector<std::string> binvars,
-        std::vector<std::vector<double>> binvarlims, //NOTE: THAT THESE SHOULD JUST BE THE OUTERMOST LIMITS!!!
-        std::vector<std::string> depolvars,
-        std::vector<std::vector<double>> depolvarlims //NOTE: THAT THESE SHOULD JUST BE THE OUTERMOST LIMITS!!!
-    ) {
-
-    // Check number of binning variables
-    int nbinvars = binvars.size();
-    if (nbinvars>4) {std::cerr<<"ERROR: binvars.size() must be <=4"<<std::endl; return;}
-
-    // Check number of binning variables
-    int ndepolvars = depolvars.size();
-    if (ndepolvars>5) {std::cerr<<"ERROR: depolvars.size() must be <=5"<<std::endl; return;}
-
-    // Define the helicity variable
-    RooCategory h(helicity.c_str(), helicity.c_str());
-    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
-        h.defineType(it->first.c_str(), it->second);
-    }
-
-    // Define independent variables
-    RooRealVar x(fitvarx.c_str(),  fitvarx.c_str(), xmin, xmax);
-    RooRealVar y(fitvary.c_str(),  fitvary.c_str(), ymin, ymax);
-    RooRealVar m(massvar.c_str(),  massvar.c_str(), mmin, mmax);
-
-    // Create binning variables
-    RooRealVar binvar0(((nbinvars>0 && binvars[0]!=massvar) ? binvars[0].c_str() : "binvar0"), ((nbinvars>0 && binvars[0]!=massvar) ? binvars[0].c_str() : "binvar0"), ((nbinvars>0 && binvars[0]!=massvar) ? binvarlims[0][0] : -1.0), (nbinvars>0 ? binvarlims[0][1] : 1.0)); //NOTE: IMPORTANT!  These have to be declared individually here.  Creating in a loop and adding to a list will not work.
-    RooRealVar binvar1(((nbinvars>1 && binvars[0]!=massvar) ? binvars[1].c_str() : "binvar1"), ((nbinvars>1 && binvars[0]!=massvar) ? binvars[1].c_str() : "binvar1"), ((nbinvars>1 && binvars[0]!=massvar) ? binvarlims[1][0] : -1.0), (nbinvars>1 ? binvarlims[1][1] : 1.0));
-    RooRealVar binvar2(((nbinvars>2 && binvars[0]!=massvar) ? binvars[2].c_str() : "binvar2"), ((nbinvars>2 && binvars[0]!=massvar) ? binvars[2].c_str() : "binvar2"), ((nbinvars>2 && binvars[0]!=massvar) ? binvarlims[2][0] : -1.0), (nbinvars>2 ? binvarlims[2][1] : 1.0));
-    RooRealVar binvar3(((nbinvars>3 && binvars[0]!=massvar) ? binvars[3].c_str() : "binvar3"), ((nbinvars>3 && binvars[0]!=massvar) ? binvars[3].c_str() : "binvar3"), ((nbinvars>3 && binvars[0]!=massvar) ? binvarlims[3][0] : -1.0), (nbinvars>3 ? binvarlims[3][1] : 1.0));
-
-    // Define default bin variables if not defined so you don't get errors since variable names cannot conflict
-    if (!(nbinvars>0)) frame = frame.Define(binvar0.GetName(),"(float)1.0");
-    if (!(nbinvars>1)) frame = frame.Define(binvar1.GetName(),"(float)1.0");
-    if (!(nbinvars>2)) frame = frame.Define(binvar2.GetName(),"(float)1.0");
-    if (!(nbinvars>3)) frame = frame.Define(binvar3.GetName(),"(float)1.0");
-
-    // Create depolarization variables
-    RooRealVar depolvar0((ndepolvars>0 ? depolvars[0].c_str() : "depolvar0"), (ndepolvars>0 ? depolvars[0].c_str() : "depolvar0"), (ndepolvars>0 ? depolvarlims[0][0] : -1.0), (ndepolvars>0 ? depolvarlims[0][1] : 1.0)); //NOTE: IMPORTANT!  These have to be declared individually here.  Creating in a loop and adding to a list will not work.
-    RooRealVar depolvar1((ndepolvars>1 ? depolvars[1].c_str() : "depolvar1"), (ndepolvars>1 ? depolvars[1].c_str() : "depolvar1"), (ndepolvars>1 ? depolvarlims[1][0] : -1.0), (ndepolvars>1 ? depolvarlims[1][1] : 1.0));
-    RooRealVar depolvar2((ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvars[2].c_str() : "depolvar2"), (ndepolvars>2 ? depolvarlims[2][0] : -1.0), (ndepolvars>2 ? depolvarlims[2][1] : 1.0));
-    RooRealVar depolvar3((ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvars[3].c_str() : "depolvar3"), (ndepolvars>3 ? depolvarlims[3][0] : -1.0), (ndepolvars>3 ? depolvarlims[3][1] : 1.0));
-    RooRealVar depolvar4((ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvars[4].c_str() : "depolvar4"), (ndepolvars>4 ? depolvarlims[4][0] : -1.0), (ndepolvars>4 ? depolvarlims[4][1] : 1.0));
-
-    // Define default depolarization variables if not defined so you don't get errors since variable names cannot conflict
-    if (!(ndepolvars>0)) frame = frame.Define(depolvar0.GetName(),"(float)1.0");
-    if (!(ndepolvars>1)) frame = frame.Define(depolvar1.GetName(),"(float)1.0");
-    if (!(ndepolvars>2)) frame = frame.Define(depolvar2.GetName(),"(float)1.0");
-    if (!(ndepolvars>3)) frame = frame.Define(depolvar3.GetName(),"(float)1.0");
-    if (!(ndepolvars>4)) frame = frame.Define(depolvar4.GetName(),"(float)1.0");
-
-    // Create RDataFrame to RooDataSet pointer
-    ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult = frame.Book<float, float, float, float, float, float, float, float, float, float, float, float>(
-      RooDataSetHelper(name.c_str(), // Name
-          title.c_str(),             // Title
-          RooArgSet(x, y, m, binvar0, binvar1, binvar2, binvar3, depolvar0, depolvar1, depolvar2, depolvar3, depolvar4)         // Variables in this dataset
-          ),
-      {fitvarx.c_str(), fitvary.c_str(), massvar.c_str(), binvar0.GetName(), binvar1.GetName(), binvar2.GetName(), binvar3.GetName(), depolvar0.GetName(), depolvar1.GetName(), depolvar2.GetName(), depolvar3.GetName(), depolvar4.GetName()} // Column names in RDataFrame.
-    );
-
-    // Manually create dataset containing helicity as a RooCategory variable
-    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h));
-
-    // Set cuts for fit variable limits so that new dataset will have same length as old dataset
-    std::string x_cut = Form("%s>=%.8f && %s<=%.8f", fitvarx.c_str(), xmin, fitvarx.c_str(), xmax); //NOTE: Should jusst put these cuts in the executable...
-    std::string y_cut = Form("%s>=%.8f && %s<=%.8f", fitvary.c_str(), ymin, fitvary.c_str(), ymax);
-    std::string m_cut = Form("%s>=%.8f && %s<=%.8f", massvar.c_str(), mmin, massvar.c_str(), mmax);
-    std::string a_cut = Form("(%s) && (%s) && (%s)", x_cut.c_str(), y_cut.c_str(), m_cut.c_str());
-
-    // Loop RDataFrame and fill helicity dataset
-    frame.Filter(a_cut.c_str()).Foreach(
-                  [&h,&ds_h](float val){
-
-                    // Assign the state for the categorical variable (using 1 or -1 as the states)
-                    if (val > 0) {
-                      h.setIndex(1);
-                    } else if (val < 0) {
-                      h.setIndex(-1);  // Set category to StateMinus1
-                    } else {
-                      h.setIndex(0);
-                    }
-                    // Add the event to the RooDataSet
-                    ds_h->add(RooArgSet(h));
-                  },
-                  {h.GetName()}
-                  );
-
-    // Merge datasets
-    static_cast<RooDataSet&>(*rooDataSetResult).merge(&static_cast<RooDataSet&>(*ds_h));
-
-    // Import variables into workspace
-    w->import(h);
-    w->import(x);
-    w->import(y);
-    w->import(m);
-    w->import(binvar0);
-    w->import(binvar1);
-    w->import(binvar2);
-    w->import(binvar3);
-    w->import(depolvar0);
-    w->import(depolvar1);
-    w->import(depolvar2);
-    w->import(depolvar3);
-    w->import(depolvar4);
-
-    // Import data into the workspace
-    w->import(*rooDataSetResult);
-
-    return;
-}
 
 /**
 * @brief Compute an asymmetry using an unbinned maximum likelihood fit with 2 fit variables.
@@ -2331,22 +2021,15 @@ void getKinBinnedAsymUBML2D(
     helicity_states["minus"] = -1;
 
     // Create dataset
-    createDataset2D(
+    data::createDataset(
         frame,
         w,
         dataset_name,
         dataset_title,
         helicity,
         helicity_states,
-        fitvarx,
-        xmin,
-        xmax,
-        fitvary,
-        ymin,
-        ymax,
-        massvar,
-        mmin,
-        mmax,
+        {fitvarx,fitvary,massvar},
+        {{xmin,xmax},{ymin,ymax},{mmin,mmax}},
         binvars,
         binvarlims_outer,
         depolvars,
@@ -2714,22 +2397,15 @@ void getKinBinnedAsym2D(
         helicity_states["minus"] = -1;
 
         // Create bin dataset
-        createDataset2D(
+        data::createDataset(
             binframe,
             ws,
             dataset_name,
             dataset_title,
             helicity,
             helicity_states,
-            fitvarx,
-            xmin,
-            xmax,
-            fitvary,
-            ymin,
-            ymax,
-            massvar,
-            mass_min,
-            mass_max,
+            {fitvarx,fitvary,massvar},
+            {{xmin,xmax},{ymin,ymax},{mass_min,mass_max}},
             binvars,
             binvarlims_outer,
             depolvars,
@@ -2777,22 +2453,15 @@ void getKinBinnedAsym2D(
 
         // Create signal region dataset for sideband subtraction
         if (use_sb_subtraction) {
-            createDataset2D(
+            data::createDataset(
                 binframe_sg,
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
                 helicity,
                 helicity_states,
-                fitvarx,
-                xmin,
-                xmax,
-                fitvary,
-                ymin,
-                ymax,
-                massvar,
-                mass_min,
-                mass_max,
+                {fitvarx,fitvary,massvar},
+                {{xmin,xmax},{ymin,ymax},{mass_min,mass_max}},
                 binvars,
                 binvarlims_outer,
                 depolvars,
@@ -2844,22 +2513,15 @@ void getKinBinnedAsym2D(
             auto binframe_sb = frame_sb.Filter(bincut.c_str());
 
             // Create sideband dataset
-            createDataset2D(
+            data::createDataset(
                 binframe_sb,
                 ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
                 helicity,
                 helicity_states,
-                fitvarx,
-                xmin,
-                xmax,
-                fitvary,
-                ymin,
-                ymax,
-                massvar,
-                mass_min,
-                mass_max,
+                {fitvarx,fitvary,massvar},
+                {{xmin,xmax},{ymin,ymax},{mass_min,mass_max}},
                 binvars,
                 binvarlims_outer,
                 depolvars,
