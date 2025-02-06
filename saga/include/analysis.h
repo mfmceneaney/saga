@@ -523,6 +523,330 @@ void applySPlot(
 }
 
 /**
+* @brief Compute an asymmetry using an unbinned maximum likelihood fit.
+*
+* Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
+* and fit parameter values and errors using an unbinned maximum likelihood fit with an optional extended likelihood term.
+* Note that the given asymmetry formula \f$ A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
+*
+* @f[
+* \begin{aligned}
+* PDF(h, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h \cdot P \cdot A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* \end{aligned}
+* @f]
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
+*
+* The variable names should be replaced in the fit formula by `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
+*
+* @param outdir Name of output directory
+* @param outroot Name of output ROOT file
+* @param w RooWorkspace in which to work
+* @param dataset_name Dataset name
+* @param pol Luminosity averaged beam polarization
+* @param helicity Name of helicity variable
+* @param helicity_states Map of state names to helicity values
+* @param binvars List of kinematic binning variables
+* @param bincut Kinematic variable cut for bin
+* @param binid Bin unique id
+* @param depolvars List of depolarization variables (up to 5)
+* @param fitvars List of names for each fit variable
+* @param fitvarbins List of number of bins in each fit variable for plotting asymmetry
+* @param fitvarlims List of minimum and maximum bounds of fit variables
+* @param fitformula The asymmetry formula in ROOT TFormula format
+* @param initparams List of initial values for asymmetry parameters
+* @param initparamlims List of initial asymmetry parameter minimum and maximum bounds
+* @param use_sumw2error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
+* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
+* @param use_chi2_fit Option to use a \f$\chi^2\f$ fit to the data
+* @param use_binned_fit Option to use a binned fit to the data
+* @param out Output stream
+*
+* @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
+*/
+std::vector<double> fitAsym(
+        std::string                      outdir,
+        TFile                           *outroot,
+        RooWorkspace                    *w,
+        std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
+        double                           pol,
+        std::string                      helicity,
+        std::map<std::string,int>        helicity_states,
+        std::vector<std::string>         binvars,
+        std::string                      bincut,
+        int                              binid,
+        std::vector<std::string>         depolvars,
+        std::vector<std::string>         fitvars,
+        std::vector<int>                 fitvarbins,
+        std::vector<std::vector<double>> fitvarlims,
+        std::string                      fitformula,
+        std::vector<double>              initparams,
+        std::vector<std::vector<double>> initparamlims,
+        bool use_sumw2error              = true,
+        bool use_average_depol           = false,
+        bool use_extended_nll            = false,
+        bool use_chi2_fit                = false,
+        bool use_binned_fit              = false,
+        std::ostream &out                = std::cout
+    ) {
+
+    // Set method name
+    std::string method_name = "fitAsym";
+
+    // Make subdirectory
+    outroot->mkdir(outdir.c_str());
+    outroot->cd(outdir.c_str());
+
+    // Switch off histogram stats
+    gStyle->SetOptStat(0);
+
+    // Define the helicity variable
+    RooCategory h(helicity.c_str(), helicity.c_str());
+    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+        h.defineType(it->first.c_str(), it->second);
+    }
+
+    // Load fit variables from workspace
+    RooRealVar * f[(const int)fitvars.size()];
+    for (int i=0; i<fitvars.size(); i++) {
+        f[i] = w->var(fitvars[i].c_str());
+    }
+
+    // Load dataset from workspace
+    RooDataSet *ds = (RooDataSet*)w->data(dataset_name.c_str());
+
+    // Apply bin cuts
+    RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
+
+    // Get count
+    auto count = (int)bin_ds->sumEntries();
+
+    // Get bin variable means and errors
+    std::vector<double> binvarmeans;
+    std::vector<double> binvarerrs;
+    RooRealVar * b[(const int)binvars.size()];
+    for (int i=0; i<binvars.size(); i++) {
+        b[i] = w->var(binvars[i].c_str());
+        double mean   = bin_ds->mean(*b[i]);
+        double stddev = TMath::Sqrt(bin_ds->moment(*b[i],2.0));
+        binvarmeans.push_back(mean);
+        binvarerrs.push_back(stddev);
+    }
+
+    // Get depolarization factor means and errors
+    std::vector<double> depols;
+    std::vector<double> depolerrs;
+    RooRealVar * d[(const int)depolvars.size()];
+    for (int i=0; i<depolvars.size(); i++) {
+        d[i] = w->var(depolvars[i].c_str());
+        double mean   = bin_ds->mean(*d[i]);
+        double stddev = TMath::Sqrt(bin_ds->moment(*d[i],2.0));
+        depols.push_back(mean);
+        depolerrs.push_back(stddev);
+    }
+
+    // Create asymmetry amplitude parameters
+    std::vector<std::string> anames;
+    int nparams = initparams.size();
+    RooRealVar *a[nparams];
+    for (int aa=0; aa<nparams; aa++) {
+        std::string aname = Form("a%d",aa);
+        anames.push_back(aname);
+        a[aa] = new RooRealVar(anames[aa].c_str(),anames[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
+    }
+
+    // Add parameters to argument list in order
+    RooArgSet *argset = new RooArgSet();
+    for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
+        argset->add(*f[ff]);
+    }
+    for (int aa=0; aa<nparams; aa++) { // Fit asymmetry amplitude parameters
+        argset->add(*a[aa]);
+    }
+    if (!use_average_depol) {
+        for (int dd=0; dd<depolvars.size(); dd++) { // Fit depolarization factor variables
+            argset->add(*d[dd]);
+        }
+    }
+
+    // Create pdf positive helicity
+    std::string fitformula_pos = Form("1.0+%.3f*%s",pol,fitformula.c_str());
+    RooGenericPdf _model_pos("_model_pos", fitformula_pos.c_str(), *argset);
+
+    // Create extended pdf positive helicity
+    RooRealVar nsig_pos("nsig_pos", "number of signal events", count/2, 0.0, count);
+    RooExtendPdf model_pos("model_pos", "extended signal pdf", _model_pos, nsig_pos);
+
+    // Create pdf negative helicity
+    std::string fitformula_neg = Form("1.0-%.3f*%s",pol,fitformula.c_str());
+    RooGenericPdf _model_neg("_model_neg", fitformula_neg.c_str(), *argset);
+
+    // Create extended pdf negative helicity
+    RooRealVar nsig_neg("nsig_neg", "number of signal events", count/2, 0.0, count);
+    RooExtendPdf model_neg("model_neg", "extended signal pdf", _model_neg, nsig_neg);
+
+    // Create simultaneous pdf
+    RooSimultaneous * model;
+    std::string model_name = Form("model_%s_%d",method_name.c_str(),binid); //TODO: Make model names more specific above to avoid naming conflicts...
+    if (use_extended_nll) { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &model_pos}, {"minus", &model_neg}}, h); } //TODO: Set these from helicity states...
+    else { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &_model_pos}, {"minus", &_model_neg}}, h); }
+
+    // Fit the pdf to data
+    std::unique_ptr<RooFitResult> r;
+    std::unique_ptr<RooDataHist> dh;
+    if (use_binned_fit) {
+
+        // Set bin numbers for each fit variable
+        for (int idx=0; idx<fitvars.size(); idx++) {
+            f[idx]->setBins(fitvarbins[idx]);
+        }
+
+        // Create binned data
+        dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
+
+        // Fit pdf
+        if (use_chi2_fit) r = (std::unique_ptr<RooFitResult>)model->chi2FitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        else r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+
+    } else {
+
+        // Fit pdf
+        if (use_chi2_fit) r = (std::unique_ptr<RooFitResult>)model->chi2FitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        else r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+
+        // Set bin numbers for each fit variable
+        for (int idx=0; idx<fitvars.size(); idx++) {
+            f[idx]->setBins(fitvarbins[idx]);
+        }
+
+        // Create binned data
+        dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
+    }
+
+    // Compute chi2 value
+    RooFit::OwningPtr<RooAbsReal> chi2 = model->createChi2(*dh, RooFit::Range("fullRange"),
+                 RooFit::Extended(true), RooFit::DataError(RooAbsData::Poisson));
+    int nbins = 1;
+    for (int idx=0; idx<fitvarbins.size(); idx++) nbins = nbins * fitvarbins[idx];
+    int ndf = nbins - nparams; //NOTE: ASSUME ALL BINS NONZERO
+    double chi2ndf = (double) chi2->getVal()/ndf;
+    
+    // Print fit result
+    r->Print("v");
+
+    // Extract covariance and correlation matrix as TMatrixDSym
+    const TMatrixDSym &corMat = r->correlationMatrix();
+    const TMatrixDSym &covMat = r->covarianceMatrix();
+
+    // Print correlation, covariance matrix
+    std::cout << "correlation matrix" << std::endl;
+    corMat.Print();
+    std::cout << "covariance matrix" << std::endl;
+    covMat.Print();
+
+    // Define the asymmetry as a function
+    RooFormulaVar f_asym("f_asym","Asymmetry function",Form("%.3f*%s",pol,fitformula.c_str()), *argset);//NOTE: NEED TO CORRECT FOR POLARIZATION FACTOR.
+
+    // Loop fit variables and plot fit projections
+    for (int idx=0; idx<fitvars.size(); idx++) {
+
+        // Plot projection of fitted distribution in fit variable
+        RooPlot *xframe = f[idx]->frame(RooFit::Bins(fitvarbins[idx]), RooFit::Title(Form("%s Projection, Bin: %s",f[idx]->GetTitle(),bincut.c_str())));
+        bin_ds->plotOn(xframe, RooFit::Asymmetry(h));
+        f_asym.plotOn(xframe, RooFit::LineColor(kRed));
+
+        // Draw the frame on the canvas
+        std::string c1_x_name = Form("c1_%s__fitvar_%s__binid_%d",outdir.c_str(),fitvars[idx].c_str(),binid);
+        TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
+        gPad->SetLeftMargin(0.15);
+        xframe->GetYaxis()->SetTitleOffset(1.4);
+        xframe->Draw();
+        c1_x->Print(Form("%s.pdf",c1_x_name.c_str()));
+    }
+
+    // Get fit parameter values and errors
+    std::vector<double> params;
+    std::vector<double> paramerrs;
+    for (int aa=0; aa<nparams; aa++) {
+        params.push_back((double)a[aa]->getVal());
+        paramerrs.push_back((double)a[aa]->getError());
+    }
+
+    // Print out fit info
+    out << "--------------------------------------------------" << std::endl;
+    out << " "<<method_name.c_str()<<"():" << std::endl;
+    out << " pol        = " << pol << std::endl;
+    out << " bincut     = " << bincut.c_str() << std::endl;
+    out << " bincount   = " << count << std::endl;
+    out << " binvar means = [" ;
+    for (int idx=0; idx<binvars.size(); idx++) {
+        out << binvarmeans[idx] << "±" << binvarerrs[idx];
+        if (idx<binvars.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    out << " depolvars  = [" ;
+    for (int idx=0; idx<depolvars.size(); idx++) {
+        out << depolvars[idx];
+        if (idx<depolvars.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    out << " depols  = [" ;
+    for (int idx=0; idx<depols.size(); idx++) {
+        out << depols[idx];
+        if (idx<depols.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    out << " fitvars  = [" ;
+    for (int idx=0; idx<fitvars.size(); idx++) {
+        out << fitvars[idx];
+        if (idx<fitvars.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    out << " fitformula = " << fitformula.c_str() << std::endl;
+    out << " nparams    = " << nparams <<std::endl;
+    out << " initial params = [" ;
+    for (int idx=0; idx<nparams; idx++) {
+        out << initparams[idx];
+        if (idx<nparams-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    out << " params = [" ;
+    for (int idx=0; idx<nparams; idx++) {
+        out << params[idx] << "±" << paramerrs[idx];
+        if (idx<nparams-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    if (use_extended_nll) {
+        out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
+        out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
+    }
+    out << "--------------------------------------------------" << std::endl;
+
+    // Go back to parent directory
+    outroot->cd("..");
+
+    // Fill return array
+    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams
+    arr.push_back(count);
+    for (int idx=0; idx<binvars.size(); idx++) {
+        arr.push_back(binvarmeans[idx]);
+        arr.push_back(binvarerrs[idx]);
+    }
+    for (int idx=0; idx<depolvars.size(); idx++) {
+        arr.push_back(depols[idx]);
+        arr.push_back(depolerrs[idx]);
+    }
+    for (int idx=0; idx<nparams; idx++) {
+        arr.push_back(params[idx]);
+        arr.push_back(paramerrs[idx]);
+    }
+
+    return arr;
+
+} // std::vector<double> fitAsym()
+
+/**
 * @brief Compute an asymmetry using an unbinned maximum likelihood fit with 1 fit variable.
 * 
 * Compute the bin count, bin variable values and errors, depolarization variable values and errors,
