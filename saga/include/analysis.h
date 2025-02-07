@@ -547,13 +547,11 @@ void applySPlot(
 * @param dataset_name Dataset name
 * @param pol Luminosity averaged beam polarization
 * @param helicity Name of helicity variable
-* @param binvars List of kinematic binning variables
-* @param bincut Kinematic variable cut for bin
 * @param binid Bin unique id
+* @param bincut Kinematic variable cut for bin
+* @param binvars List of kinematic binning variables
 * @param depolvars List of depolarization variables
-* @param depolvarbins List of number of bins in each depolarization variable for binned fit
-* @param fitvars List of names for each fit variable
-* @param fitvarbins List of number of bins in each fit variable for plotting asymmetry and binned fit
+* @param fitvars List of asymmetry fit variables
 * @param fitformula The asymmetry formula in ROOT TFormula format
 * @param initparams List of initial values for asymmetry parameters
 * @param initparamlims List of initial asymmetry parameter minimum and maximum bounds
