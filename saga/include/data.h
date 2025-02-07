@@ -53,12 +53,22 @@ void createDataset(
         std::string title,
         std::string helicity,
         std::map<std::string,int> helicity_states,
-        std::vector<std::string> fitvars,
-        std::vector<std::vector<double>> fitvarlims,
         std::vector<std::string> binvars,
-        std::vector<std::vector<double>> binvarlims, //NOTE: THAT THESE SHOULD JUST BE THE OUTERMOST LIMITS!!!
+        std::vector<std::string> binvar_titles,
+        std::vector<std::vector<double>> binvar_lims,
+        std::vector<int> binvar_bins,
         std::vector<std::string> depolvars,
-        std::vector<std::vector<double>> depolvarlims //NOTE: THAT THESE SHOULD JUST BE THE OUTERMOST LIMITS!!!
+        std::vector<std::string> depolvar_titles,
+        std::vector<std::vector<double>> depolvar_lims,
+        std::vector<int> depolvar_bins,
+        std::vector<std::string> asymfitvars,
+        std::vector<std::string> asymfitvar_titles,
+        std::vector<std::vector<double>> asymfitvar_lims,
+        std::vector<int> asymfitvar_bins,
+        std::vector<std::string> massfitvars,
+        std::vector<std::string> massfitvar_titles,
+        std::vector<std::vector<double>> massfitvar_lims,
+        std::vector<int> massfitvar_bins,
     ) {
 
     // Define the helicity variable
@@ -69,19 +79,32 @@ void createDataset(
 
     // Define the full variables and limits lists
     std::vector<std::string> vars;
-    for (int idx=0; idx<fitvars.size();   idx++) vars.push_back(fitvars[idx]);
-    for (int idx=0; idx<binvars.size();   idx++) vars.push_back(binvars[idx]);
-    for (int idx=0; idx<depolvars.size(); idx++) vars.push_back(depolvars[idx]);
-    std::vector<std::vector<double>> varlims;
-    for (int idx=0; idx<fitvarlims.size();   idx++) varlims.push_back(fitvarlims[idx]);
-    for (int idx=0; idx<binvarlims.size();   idx++) varlims.push_back(binvarlims[idx]);
-    for (int idx=0; idx<depolvarlims.size(); idx++) varlims.push_back(depolvarlims[idx]);
+    for (int idx=0; idx<binvars.size();     idx++) vars.push_back(binvars[idx]);
+    for (int idx=0; idx<depolvars.size();   idx++) vars.push_back(depolvars[idx]);
+    for (int idx=0; idx<asymfitvars.size(); idx++) vars.push_back(asymfitvars[idx]);
+    for (int idx=0; idx<massfitvars.size(); idx++) vars.push_back(massfitvars[idx]);
+    std::vector<std::string> var_titles;
+    for (int idx=0; idx<binvars.size();     idx++) var_titles.push_back(binvar_titles[idx]);
+    for (int idx=0; idx<depolvars.size();   idx++) var_titles.push_back(depolvar_titles[idx]);
+    for (int idx=0; idx<asymfitvars.size(); idx++) var_titles.push_back(asymfitvar_titles[idx]);
+    for (int idx=0; idx<massfitvars.size(); idx++) var_titles.push_back(massfitvar_titles[idx]);
+    std::vector<std::vector<double>> var_lims;
+    for (int idx=0; idx<binvars.size();     idx++) var_lims.push_back(binvar_lims[idx]);
+    for (int idx=0; idx<depolvars.size();   idx++) var_lims.push_back(depolvar_lims[idx]);
+    for (int idx=0; idx<asymfitvars.size(); idx++) var_lims.push_back(asymfitvar_lims[idx]);
+    for (int idx=0; idx<massfitvars.size(); idx++) var_lims.push_back(massfitvar_lims[idx]);
+    std::vector<int> var_bins;
+    for (int idx=0; idx<binvars.size();     idx++) var_bins.push_back(binvar_bins[idx]);
+    for (int idx=0; idx<depolvars.size();   idx++) var_bins.push_back(depolvar_bins[idx]);
+    for (int idx=0; idx<asymfitvars.size(); idx++) var_bins.push_back(asymfitvar_bins[idx]);
+    for (int idx=0; idx<massfitvars.size(); idx++) var_bins.push_back(massfitvar_bins[idx]);
     int nvars = vars.size();
 
     // Define RooRealVar variables
     RooRealVar *rrvars[nvars];
     for (int rr=0; rr<nvars; rr++) {
-        rrvars[rr] = new RooRealVar(vars[rr].c_str(), vars[rr].c_str(), varlims[rr][0], varlims[rr][1]);
+        rrvars[rr] = new RooRealVar(vars[rr].c_str(), var_titles[rr].c_str(), var_lims[rr][0], var_lims[rr][1]);
+        rrvars[rr]->setBins(var_bins[rr]);
     }
 
     // Define variable list for RooDataSetHelper
