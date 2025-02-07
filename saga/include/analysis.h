@@ -691,16 +691,6 @@ std::vector<double> fitAsym(
     std::unique_ptr<RooFitResult> r;
     if (use_binned_fit) {
 
-        // Set bin numbers for each fit variable
-        for (int idx=0; idx<fitvars.size(); idx++) {
-            f[idx]->setBins(fitvarbins[idx]);
-        }
-        if (!use_average_depol) {
-            for (int idx=0; idx<depolvars.size(); idx++) {
-                d[idx]->setBins(depolvarbins[idx]);
-            }
-        }
-
         // Create binned data
         std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
@@ -711,16 +701,6 @@ std::vector<double> fitAsym(
 
         // Fit pdf
         r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
-
-        // Set bin numbers for each fit variable
-        for (int idx=0; idx<fitvars.size(); idx++) {
-            f[idx]->setBins(fitvarbins[idx]);
-        }
-        if (!use_average_depol) {
-            for (int idx=0; idx<depolvars.size(); idx++) {
-                d[idx]->setBins(depolvarbins[idx]);
-            }
-        }
     }
     
     // Print fit result
