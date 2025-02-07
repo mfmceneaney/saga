@@ -526,7 +526,7 @@ void applySPlot(
 * @brief Fit an asymmetry.
 *
 * Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
-* and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood or \f$\chi^{2}\f$ fit method with an optional extended likelihood term.
+* and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood fit method with an optional extended likelihood term.
 * Note that for the maximum likelihood fit, the given asymmetry formula \f$ A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally using
 * <a href="https://root.cern.ch/doc/master/classRooGenericPdf.html">RooGenericPdf</a> to a PDF of the form:
 *
@@ -559,7 +559,6 @@ void applySPlot(
 * @param use_sumw2error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
-* @param use_chi2_fit Option to use a \f$\chi^2\f$ fit to the data
 * @param use_binned_fit Option to use a binned fit to the data
 * @param out Output stream
 *
@@ -584,7 +583,6 @@ std::vector<double> fitAsym(
         bool use_sumw2error              = true,
         bool use_average_depol           = false,
         bool use_extended_nll            = false,
-        bool use_chi2_fit                = false,
         bool use_binned_fit              = false,
         std::ostream &out                = std::cout
     ) {
@@ -689,7 +687,6 @@ std::vector<double> fitAsym(
 
     // Fit the pdf to data
     std::unique_ptr<RooFitResult> r;
-    std::unique_ptr<RooDataHist> dh;
     if (use_binned_fit) {
 
         // Set bin numbers for each fit variable
@@ -698,34 +695,21 @@ std::vector<double> fitAsym(
         }
 
         // Create binned data
-        dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
+        std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit pdf
-        if (use_chi2_fit) r = (std::unique_ptr<RooFitResult>)model->chi2FitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
-        else r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
 
     } else {
 
         // Fit pdf
-        if (use_chi2_fit) r = (std::unique_ptr<RooFitResult>)model->chi2FitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
-        else r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
 
         // Set bin numbers for each fit variable
         for (int idx=0; idx<fitvars.size(); idx++) {
             f[idx]->setBins(fitvarbins[idx]);
         }
-
-        // Create binned data
-        dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
     }
-
-    // Compute chi2 value
-    RooFit::OwningPtr<RooAbsReal> chi2 = model->createChi2(*dh, RooFit::Range("fullRange"),
-                 RooFit::Extended(true), RooFit::DataError(RooAbsData::Poisson));
-    int nbins = 1;
-    for (int idx=0; idx<fitvarbins.size(); idx++) nbins = nbins * fitvarbins[idx];
-    int ndf = nbins - nparams; //NOTE: ASSUME ALL BINS NONZERO
-    double chi2ndf = (double) chi2->getVal()/ndf;
     
     // Print fit result
     r->Print("v");
