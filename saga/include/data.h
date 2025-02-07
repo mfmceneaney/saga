@@ -30,8 +30,8 @@ namespace data {
 * @brief Create a dataset for an asymmetry fit.
 *
 * Create a RooFit dataset for an asymmetry fit from a ROOT RDataFrame,
-* adding helicity, fit, invariant mass fit, binning, and depolarization variables.
-* Store RooFit dataset and corresponding variables in a RooWorkspace.
+* adding helicity, binning, depolarization, asymmetry fit, and invariant mass fit variables.
+* Store all variables and RooDataSet in a RooWorkspace.
 *
 * @param frame ROOT RDataframe from which to create a RooDataSet
 * @param w RooWorkspace in which to work
@@ -39,12 +39,22 @@ namespace data {
 * @param title Dataset title
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
-* @param fitvars List of fit variables
-* @param fitvarlims List of minimum and maximum bounds for each fit variable
-* @param binvars List of kinematic binning variables (up to 4)
-* @param binvarlims List of minimum and maximum bounds for each kinematic binning variable
-* @param depolvars List of depolarization variables (up to 5)
-* @param depolvarlims List of minimum and maximum bounds for each depolarization variable
+* @param binvars List of kinematic binning variables names
+* @param binvar_titles List of kinematic binning variables titles
+* @param binvar_lims List kinematic binning variable minimum and maximum bounds 
+* @param binvar_bins List of kinematic binning variables bins
+* @param depolvars List of depolarization variables names
+* @param depolvar_titles List of depolarization variables titles
+* @param depolvar_lims List depolarization variable minimum and maximum bounds 
+* @param depolvar_bins List of depolarization variables bins
+* @param asymfitvars List of asymmetry fit variables names
+* @param asymfitvar_titles List of asymmetry fit variables titles
+* @param asymfitvar_lims List asymmetry fit variable minimum and maximum bounds 
+* @param asymfitvar_bins List of asymmetry fit variables bins
+* @param massfitvars List of invariant mass fit variables names
+* @param massfitvar_titles List of invariant mass fit variables titles
+* @param massfitvar_lims List invariant mass fit variable minimum and maximum bounds 
+* @param massfitvar_bins List of invariant mass fit variables bins
 */
 void createDataset(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
