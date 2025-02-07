@@ -523,11 +523,12 @@ void applySPlot(
 }
 
 /**
-* @brief Compute an asymmetry using an unbinned maximum likelihood fit.
+* @brief Fit an asymmetry.
 *
 * Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
-* and fit parameter values and errors using an unbinned maximum likelihood fit with an optional extended likelihood term.
-* Note that the given asymmetry formula \f$ A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally to a PDF of the form
+* and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood or \f$\chi^{2}\f$ fit method with an optional extended likelihood term.
+* Note that for the maximum likelihood fit, the given asymmetry formula \f$ A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally using
+* <a href="https://root.cern.ch/doc/master/classRooGenericPdf.html">RooGenericPdf</a> to a PDF of the form:
 *
 * @f[
 * \begin{aligned}
@@ -537,7 +538,8 @@ void applySPlot(
 * @f]
 * and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
 *
-* The variable names should be replaced in the fit formula by `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
+* The variable names in the fit formula should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
+* `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
 *
 * @param outdir Name of output directory
 * @param outroot Name of output ROOT file
