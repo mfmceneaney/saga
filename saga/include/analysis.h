@@ -512,9 +512,9 @@ void applySPlot(
 
     // Run sPlot and create weighted datasets
     RooStats::SPlot sData{"sData", "sPlot Data", *rooDataSetResult, model, RooArgList(*sgYield, *bgYield)};
-    auto& data1 = static_cast<RooDataSet&>(*rooDataSetResult);
-    RooDataSet data_sg_sw{dataset_sg_name.c_str(), data1.GetTitle(), &data1, *data1.get(), nullptr, "sgYield_sw"};
-    RooDataSet data_bg_sw{dataset_bg_name.c_str(), data1.GetTitle(), &data1, *data1.get(), nullptr, "bgYield_sw"};
+    auto& data = static_cast<RooDataSet&>(*rooDataSetResult);
+    RooDataSet data_sg_sw{dataset_sg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",sgYield_name.c_str())};
+    RooDataSet data_bg_sw{dataset_bg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",bgYield_name.c_str())};
 
     // Import sweighted datasets into workspace
     w->import(data_sg_sw);
