@@ -572,13 +572,11 @@ std::vector<double> fitAsym(
         std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
         double                           pol,
         std::string                      helicity,
-        std::vector<std::string>         binvars,
-        std::string                      bincut,
         int                              binid,
+        std::string                      bincut,
+        std::vector<std::string>         binvars,
         std::vector<std::string>         depolvars,
-        std::vector<int>                 depolvarbins,
         std::vector<std::string>         fitvars,
-        std::vector<int>                 fitvarbins,
         std::string                      fitformula,
         std::vector<double>              initparams,
         std::vector<std::vector<double>> initparamlims,
@@ -723,7 +721,7 @@ std::vector<double> fitAsym(
     for (int idx=0; idx<fitvars.size(); idx++) {
 
         // Plot projection of fitted distribution in fit variable
-        RooPlot *xframe = f[idx]->frame(RooFit::Bins(fitvarbins[idx]), RooFit::Title(Form("%s Projection, Bin: %s",f[idx]->GetTitle(),bincut.c_str())));
+        RooPlot *xframe = f[idx]->frame(RooFit::Title(Form("%s Projection, Bin: %s",f[idx]->GetTitle(),bincut.c_str())));
         bin_ds->plotOn(xframe, RooFit::Asymmetry(*h));
         f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
