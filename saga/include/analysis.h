@@ -547,14 +547,12 @@ void applySPlot(
 * @param dataset_name Dataset name
 * @param pol Luminosity averaged beam polarization
 * @param helicity Name of helicity variable
-* @param helicity_states Map of state names to helicity values
 * @param binvars List of kinematic binning variables
 * @param bincut Kinematic variable cut for bin
 * @param binid Bin unique id
 * @param depolvars List of depolarization variables (up to 5)
 * @param fitvars List of names for each fit variable
 * @param fitvarbins List of number of bins in each fit variable for plotting asymmetry
-* @param fitvarlims List of minimum and maximum bounds of fit variables
 * @param fitformula The asymmetry formula in ROOT TFormula format
 * @param initparams List of initial values for asymmetry parameters
 * @param initparamlims List of initial asymmetry parameter minimum and maximum bounds
@@ -574,14 +572,12 @@ std::vector<double> fitAsym(
         std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
         double                           pol,
         std::string                      helicity,
-        std::map<std::string,int>        helicity_states,
         std::vector<std::string>         binvars,
         std::string                      bincut,
         int                              binid,
         std::vector<std::string>         depolvars,
         std::vector<std::string>         fitvars,
         std::vector<int>                 fitvarbins,
-        std::vector<std::vector<double>> fitvarlims,
         std::string                      fitformula,
         std::vector<double>              initparams,
         std::vector<std::vector<double>> initparamlims,
@@ -603,11 +599,8 @@ std::vector<double> fitAsym(
     // Switch off histogram stats
     gStyle->SetOptStat(0);
 
-    // Define the helicity variable
-    RooCategory h(helicity.c_str(), helicity.c_str());
-    for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
-        h.defineType(it->first.c_str(), it->second);
-    }
+    // Load helicity variable from workspace
+    RooCategory * h = w->cat(helicity.c_str());
 
     // Load fit variables from workspace
     RooRealVar * f[(const int)fitvars.size()];
@@ -691,8 +684,8 @@ std::vector<double> fitAsym(
     // Create simultaneous pdf
     RooSimultaneous * model;
     std::string model_name = Form("model_%s_%d",method_name.c_str(),binid); //TODO: Make model names more specific above to avoid naming conflicts...
-    if (use_extended_nll) { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &model_pos}, {"minus", &model_neg}}, h); } //TODO: Set these from helicity states...
-    else { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &_model_pos}, {"minus", &_model_neg}}, h); }
+    if (use_extended_nll) { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &model_pos}, {"minus", &model_neg}}, *h); } //TODO: Set these from helicity states...
+    else { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &_model_pos}, {"minus", &_model_neg}}, *h); }
 
     // Fit the pdf to data
     std::unique_ptr<RooFitResult> r;
@@ -755,7 +748,7 @@ std::vector<double> fitAsym(
 
         // Plot projection of fitted distribution in fit variable
         RooPlot *xframe = f[idx]->frame(RooFit::Bins(fitvarbins[idx]), RooFit::Title(Form("%s Projection, Bin: %s",f[idx]->GetTitle(),bincut.c_str())));
-        bin_ds->plotOn(xframe, RooFit::Asymmetry(h));
+        bin_ds->plotOn(xframe, RooFit::Asymmetry(*h));
         f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
         // Draw the frame on the canvas
