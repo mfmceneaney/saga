@@ -575,6 +575,7 @@ std::vector<double> fitAsym(
         std::string                      bincut,
         int                              binid,
         std::vector<std::string>         depolvars,
+        std::vector<int>                 depolvarbins,
         std::vector<std::string>         fitvars,
         std::vector<int>                 fitvarbins,
         std::string                      fitformula,
@@ -693,6 +694,11 @@ std::vector<double> fitAsym(
         for (int idx=0; idx<fitvars.size(); idx++) {
             f[idx]->setBins(fitvarbins[idx]);
         }
+        if (!use_average_depol) {
+            for (int idx=0; idx<depolvars.size(); idx++) {
+                d[idx]->setBins(depolvarbins[idx]);
+            }
+        }
 
         // Create binned data
         std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
@@ -708,6 +714,11 @@ std::vector<double> fitAsym(
         // Set bin numbers for each fit variable
         for (int idx=0; idx<fitvars.size(); idx++) {
             f[idx]->setBins(fitvarbins[idx]);
+        }
+        if (!use_average_depol) {
+            for (int idx=0; idx<depolvars.size(); idx++) {
+                d[idx]->setBins(depolvarbins[idx]);
+            }
         }
     }
     
