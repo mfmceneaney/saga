@@ -78,7 +78,7 @@ void createDataset(
         std::vector<std::string> massfitvars,
         std::vector<std::string> massfitvar_titles,
         std::vector<std::vector<double>> massfitvar_lims,
-        std::vector<int> massfitvar_bins,
+        std::vector<int> massfitvar_bins
     ) {
 
     // Define the helicity variable
