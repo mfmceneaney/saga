@@ -161,7 +161,7 @@ void execute(const YAML::Node& node) {
         int nbins = nbins_list[binvar_idx];
 
         // Find bin limits
-        std::vector<double> _binlimits = bins::findBinLimits(
+        std::vector<double> _binlimits = saga::bins::findBinLimits(
             d2_filtered,
             binvars[binvar_idx],
             nbins

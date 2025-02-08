@@ -61,6 +61,8 @@
 * or the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a> for background correction.
 */
 
+namespace saga {
+
 namespace analysis {
 
 /**
@@ -1183,3 +1185,5 @@ void getKinBinnedAsym(
 } // getKinBinnedAsym()
 
 } // namespace analysis {
+
+} // namespace saga {

@@ -246,7 +246,7 @@ void execute(const YAML::Node& node) {
             }
             binscheme[binvar] = binlims;
 
-            bincuts = util::getBinCuts(binscheme,0);
+            bincuts = saga::util::getBinCuts(binscheme,0);
         } // for (auto it = node["binscheme"].begin(); it != node["binscheme"].end(); ++it) {
 
     } else if (node["bincuts_yaml"]) {
@@ -752,10 +752,10 @@ void execute(const YAML::Node& node) {
     TRandom *gRandom = new TRandom(seed); //NOTE: IMPORTANT: Need `new` here to get a pointer.
 
     // Add all absolute variable limits to overall cuts
-    util::addLimitCuts(cuts,binvars,binvar_lims);
-    util::addLimitCuts(cuts,depolvars,depolvar_lims);
-    util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
-    util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
+    saga::util::addLimitCuts(cuts,binvars,binvar_lims);
+    saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
+    saga::util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
+    saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
     std::cout << "INFO: cuts = "<<cuts.c_str() << std::endl;
 
     // Create RDataFrame
@@ -777,25 +777,25 @@ void execute(const YAML::Node& node) {
     if (inject_asym) {
         // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            util::replaceAll(fsgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
         }
         for (int idx=0; idx<sgasyms.size(); idx++) {
-            util::replaceAll(fsgasyms_xs_formula, Form("sgasyms%d",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fsgasyms_xs_formula, Form("sgasyms%d",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            util::replaceAll(fsgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
         }
         std::cout << "INFO: Updated " << fsgasyms_xs_name.c_str() << " = " << fsgasyms_xs_formula.c_str() << std::endl;
 
         // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            util::replaceAll(fbgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
         }
         for (int idx=0; idx<bgasyms.size(); idx++) {
-            util::replaceAll(fbgasyms_xs_formula, Form("bgasyms%d",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fbgasyms_xs_formula, Form("bgasyms%d",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            util::replaceAll(fbgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
         }
         std::cout << "INFO: Updated " << fbgasyms_xs_name.c_str() << " = " << fbgasyms_xs_formula.c_str() << std::endl;
     }
@@ -900,14 +900,14 @@ void execute(const YAML::Node& node) {
     TFile * outroot = TFile::Open(outpath.c_str(),"RECREATE");
 
     // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
-    analysis::getKinBinnedAsym(
+    saga::analysis::getKinBinnedAsym(
         outdir, //std::string                      outdir,
         outroot, //TFile                           *outroot,
         frame, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
         "w", //std::string                      workspace_name,
         "workspace", //std::string                      workspace_title,
 
-        // parameters passed to data::createDataset()
+        // parameters passed to saga::data::createDataset()
         "dataset", //std::string                      dataset_name,
         "dataset", //std::string                      dataset_title,
         helicity_name, // std::string                      helicity,
@@ -940,7 +940,7 @@ void execute(const YAML::Node& node) {
         use_extended_nll, //bool                             use_extended_nll,
         use_binned_fit, //bool                             use_binned_fit,
 
-        // parameters passed to data::createDataset() and analysis::applyLambdaMassFit() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+        // parameters passed to saga::data::createDataset() and analysis::applyLambdaMassFit() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
         massfit_model_name, //std::string                      massfit_model_name,
         massfit_nbins_conv, //int                              massfit_nbins_conv,
         massfit_sig_pdf_name, //std::string                      massfit_sig_pdf_name, //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")

@@ -22,6 +22,8 @@
 * @brief Find ideal bin limits and compute bin migration fractions.
 */
 
+namespace saga {
+
 namespace bins {
 
 /**
@@ -229,3 +231,5 @@ void getBinMigrationHistograms1D(
 } // void getBinMigrationHistograms1D()
 
 } // namespace bins {
+
+} // namespace saga {

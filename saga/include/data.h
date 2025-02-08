@@ -24,6 +24,8 @@
 * @brief Create asymmetry fit datasets.
 */
 
+namespace saga {
+
 namespace data {
 
 /**
@@ -278,3 +280,5 @@ void createDataset(
 }
 
 } // namespace data
+
+} // namespace saga {

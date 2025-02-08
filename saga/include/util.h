@@ -15,6 +15,8 @@
 * @brief Utility functions for asymmetry fits.
 */
 
+namespace saga {
+
 namespace util {
 
 /**
@@ -148,3 +150,5 @@ void addLimitCuts(
 }
 
 } // using namespace util;
+
+} // namespace saga {
