@@ -13,3 +13,6 @@ C++ API
 
 .. doxygennamespace:: data
    :project: saga
+
+.. doxygennamespace:: utils
+   :project: saga
