@@ -36,8 +36,8 @@ target_include_directories(saga PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # Set executables directory
 set(EXECUTABLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-add_executable(getKinBinnedAsym1D ${EXECUTABLES_DIR}/getKinBinnedAsym1D.cpp)
-target_link_libraries(getKinBinnedAsym1D PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::RooStats ROOT::ROOTDataFrame yaml-cpp)
+add_executable(getKinBinnedAsym ${EXECUTABLES_DIR}/getKinBinnedAsym.cpp)
+target_link_libraries(getKinBinnedAsym PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::RooStats ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(findBinLimits ${EXECUTABLES_DIR}/findBinLimits.cpp)
 target_link_libraries(findBinLimits PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
