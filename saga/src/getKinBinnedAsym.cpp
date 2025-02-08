@@ -18,6 +18,7 @@
 
 // Project Includes
 #include <analysis.h>
+#include <bins.h>
 #include <util.h>
 
 void execute(const YAML::Node& node) {
@@ -246,7 +247,7 @@ void execute(const YAML::Node& node) {
             }
             binscheme[binvar] = binlims;
 
-            bincuts = saga::util::getBinCuts(binscheme,0);
+            bincuts = saga::bins::getBinCuts(binscheme,0);
         } // for (auto it = node["binscheme"].begin(); it != node["binscheme"].end(); ++it) {
 
     } else if (node["bincuts_yaml"]) {

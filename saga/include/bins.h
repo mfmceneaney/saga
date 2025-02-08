@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <map>
 
 // ROOT Includes
 #include <TFile.h>
@@ -165,6 +166,67 @@ std::vector<double> getBinLims(
     return binlims;
 
 } // std::vector<double> getBinLims(
+
+/**
+* @brief Produce binning scheme cuts for a grid binning scheme.
+*
+* Produce a map of unique integer bin identifiers to bin cuts given a map of bin variables
+* to their respective bin limits.  Note that this will produce cuts for all bins
+* within the grid scheme and bin identifiers by default start at zero but can be made to
+* start at any integer.
+*
+* @param binscheme Map of bin variable names to their respective bin limits
+* @param start_bin_id Starting unique integer bin identifier
+*
+* @return Map of unique integer bin ids to bin cuts
+*/
+std::map<int,std::string> getBinCuts(
+        std::map<std::string,std::vector<double>> binscheme,
+        int                                       start_bin_id
+    ) {
+
+    std::vector<std::string> cuts;
+
+    // Loop bin variables
+    for (auto it = binscheme.begin(); it != binscheme.end(); ++it) {
+
+        // Get bin variable name and limits
+        std::string binvar = it->first;
+        std::vector<double> lims = it->second;
+
+        // Loop bin limits and get bin cuts
+        std::vector<std::string> varcuts;
+        for (int bin=0; bin<lims.size()-1; bin++) {
+            double bin_min = lims[bin];
+            double bin_max = lims[bin+1];
+            std::string cut = Form("(%s>=%.8f && %s<%.8f)",binvar.c_str(),bin_min,binvar.c_str(),bin_max);
+            varcuts.push_back(cut);
+        }
+
+        // Loop previous cuts
+        std::vector<std::string> newcuts;
+        for (int idx=0; idx<cuts.size(); idx++) {
+            
+            // Loop this variable's cuts
+            for (int bin=0; bin<varcuts.size(); bin++) {
+                std::string newcut = Form("%s && %s",cuts[idx].c_str(),varcuts[bin].c_str());
+                newcuts.push_back(newcut);
+            }
+        }
+
+        // Reassign cuts
+        if (cuts.size()==0) { cuts = varcuts; }
+        else { cuts = newcuts; }
+    }
+
+    // Convert vector to map starting at given start index
+    std::map<int,std::string> bincuts;
+    for (int idx=0; idx<cuts.size(); idx++) {
+        bincuts[start_bin_id+idx] = cuts[idx];
+    }
+
+    return bincuts;
+}
 
 /**
 * @brief Compute 1D bin migration fractions and store in a histogram.
