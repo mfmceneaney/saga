@@ -5,14 +5,5 @@ C++ API
     
     This project is under active development.
 
-.. doxygennamespace:: analysis
-   :project: saga
-
-.. doxygennamespace:: bins
-   :project: saga
-
-.. doxygennamespace:: data
-   :project: saga
-
-.. doxygennamespace:: utils
+.. doxygennamespace:: saga
    :project: saga
