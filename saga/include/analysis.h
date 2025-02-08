@@ -2,6 +2,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <map>
 
 // ROOT Includes
 #include <TFile.h>
