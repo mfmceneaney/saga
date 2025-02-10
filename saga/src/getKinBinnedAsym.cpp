@@ -673,7 +673,7 @@ void execute(const YAML::Node& node) {
     saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
     saga::util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
     saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
-    std::cout << "INFO: cuts = "<<cuts.c_str() << std::endl;
+    std::cout << "INFO: cuts: "<<cuts.c_str() << std::endl;
 
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
