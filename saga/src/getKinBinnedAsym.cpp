@@ -685,18 +685,18 @@ void execute(const YAML::Node& node) {
     // BEGIN SPLOT ARGUMENTS
 
     // SGYIELD_NAME
-    std::string sgYield_name = "sgYield";
+    std::string sgyield_name = "sgyield";
     if (node["sgyield_name"]) {
-        sgYield_name = node["sgYield_name"].as<std::string>();
+        sgyield_name = node["sgyield_name"].as<std::string>();
     }
-    std::cout << "INFO: sgYield_name: " << sgYield_name << std::endl;
+    std::cout << "INFO: sgyield_name: " << sgyield_name << std::endl;
 
     // BGYIELD_NAME
-    std::string bgYield_name = "bgYield";
+    std::string bgyield_name = "bgyield";
     if (node["bgyield_name"]) {
-        bgYield_name = node["bgYield_name"].as<std::string>();
+        bgyield_name = node["bgyield_name"].as<std::string>();
     }
-    std::cout << "INFO: bgYield_name: " << bgYield_name << std::endl;
+    std::cout << "INFO: bgyield_name: " << bgyield_name << std::endl;
 
     // USE_SPLOT
     bool use_splot = true;
@@ -949,8 +949,8 @@ void execute(const YAML::Node& node) {
         massfit_sg_region_max, //double                           massfit_sg_region_max,
 
         // Parameters passed to analysis::applySPlots()
-        sgYield_name, //std::string                      sgYield_name,
-        bgYield_name, //std::string                      bgYield_name,
+        sgyield_name, //std::string                      sgYield_name,
+        bgyield_name, //std::string                      bgYield_name,
         use_splot, //bool                             use_splot,
 
         // Parameters used for sb subtraction
