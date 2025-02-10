@@ -3,6 +3,9 @@
 #include <string>
 #include <map>
 
+// YAML Includes
+#include <yaml-cpp/yaml.h>
+
 // ROOT Includes
 #include <TFile.h>
 #include <TStyle.h>
@@ -227,6 +230,77 @@ std::map<int,std::string> getBinCuts(
 
     return bincuts;
 }
+
+/**
+* @brief Read a YAML node and create a map of bin scheme names to maps of bin id to cuts.
+*
+* Produce a map of unique bin scheme names to maps of unique integer bin identifiers to bin cuts
+* given a YAML node containing a map of bin variables to their respective bin limits.
+* Note that this will produce cuts for all bins within the grid scheme and bin identifiers
+* by default start at zero but can be made to start at any integer.
+*
+* @param node_binschemes YAML node containing bin scheme definitions
+* @param start_bin_id Starting unique integer bin identifier
+*
+* @return Map of bin scheme names to maps of unique integer bin ids to bin cuts
+*/
+std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
+
+    // Set minimum allowed bin id
+    int min_bin_id = start_bin_id;
+
+    // Initialize bin cuts map
+    std::map<std::string,std::map<int,std::string>> bincuts_map;
+
+    // Loop bin schemes
+    for (auto it_binschemes = node_binschemes.begin(); it_binschemes != node_binschemes.end(); ++it_binschemes) {
+
+        // Get bin scheme name
+        std::string binscheme_name = it_binschemes->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
+
+        // Get bin scheme node
+        auto node_binscheme = node_binschemes[binscheme_name];
+
+        // Read bin scheme
+        if (node_binscheme && node_binscheme.IsMap()) {
+
+            // Loop bin scheme yaml and create grid bin scheme
+            std::map<std::string,std::vector<double>> binscheme;
+            for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+
+                // Get bin variable name
+                std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+
+                // Compute bin limits or read directly from yaml 
+                int nbins = 0;
+                std::vector<double> binlims;
+                auto node_binvar = node_binscheme[binvar];
+                if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
+                    int nbins = node_binvar["nbins"].as<int>();
+                    std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
+                    if (nbins>0 && lims.size()==2) {
+                        binlims = getBinLims(nbins,lims[0],lims[1]);
+                    } else { std::cerr<<"ERROR: Could not read bins for binvar: "<<binvar.c_str()<<std::endl; }
+                } else {
+                    binlims = node_binvar.as<std::vector<double>>();
+                }
+
+                // Add bin limits list to bin scheme
+                binscheme[binvar] = binlims;
+
+            } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+
+            // Get bin cuts map and reset bin id minimum
+            std::map<int,std::string> bincuts = getBinCuts(binscheme,min_bin_id);
+            bincuts_map[binscheme_name] = bincuts;
+            min_bin_id = bincuts.size(); //NOTE: IMPORTANT: Increment the minimum allowed bin id.
+
+        } // if (node_binscheme && node_binscheme.IsMap()) {
+
+    } // for (auto it = node["binschemes"].begin(); it != node["binschemes"].end(); ++it) {
+
+    return bincuts_map;
+} // std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
 
 /**
 * @brief Compute 1D bin migration fractions and store in a histogram.

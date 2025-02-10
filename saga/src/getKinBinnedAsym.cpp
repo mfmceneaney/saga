@@ -179,13 +179,6 @@ void execute(const YAML::Node& node) {
     // END MC ASYMMETRY INJECTION ARGUMENTS
     //----------------------------------------------------------------------//
 
-    // OUTDIR
-    std::string outdir = "";
-    if (node["outdir"]) {
-        outdir = node["outdir"].as<std::string>();
-    }
-    std::cout << "INFO: outdir: " << outdir << std::endl;
-
     // VAR_FORMULAS
     std::vector<std::vector<std::string>> var_formulas;
     if (node["var_formulas"]) {
@@ -231,44 +224,27 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN BINNING SCHEME ARGUMENTS
 
-    // Get bin variables and poly4 bg maps
-    std::map<int,std::string> bincuts;
-    if (node["binscheme"] && node["binscheme"].IsMap()) {
-        std::map<std::string,std::vector<double>> binscheme;
-        for (auto it = node["binscheme"].begin(); it != node["binscheme"].end(); ++it) {
+    // BINSCHEMES
+    std::map<std::string,std::map<int,std::string>> bincuts_map;
+    if (node["binschemes"] && node["binschemes"].IsMap()) {
 
-            // Get bin variable name
-            std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+        // Get bin scheme node and get bin cuts maps
+        auto node_binschemes = node["binschemes"];
+        bincuts_map = saga::bins::getBinCutsMap(node["binschemes"]);
 
-            // Compute bin limits or read from yaml 
-            int nbins = 0;
-            std::vector<double> binlims;
-            auto node_binvar = node["binscheme"][binvar];
-            if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
-                int nbins = node_binvar["nbins"].as<int>();
-                std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
-                if (nbins>0 && lims.size()==2) {
-                    double binwidth = (lims[1] - lims[0])/nbins;
-                    for (int bin=0; bin<nbins+1; bin++) {
-                        double binval = lims[0] + binwidth * bin;
-                        binlims.push_back(binval);
-                    }
-                } else { std::cerr<<"ERROR: Could not read bins for binvar: "<<binvar.c_str()<<std::endl; }
-            } else {
-                binlims = node_binvar.as<std::vector<double>>();
-            }
-            binscheme[binvar] = binlims;
+    } else if (node["binschemes_paths"]) {
+        
+        // Get list of paths to yamls containing bin scheme definitions 
+        std::vector<std::string> binschemes_paths = node["binschemes_paths"].as<std::vector<std::string>>();
 
-            bincuts = saga::bins::getBinCuts(binscheme,0);
-        } // for (auto it = node["binscheme"].begin(); it != node["binscheme"].end(); ++it) {
+        // Loop paths and add bin schemes
+        for (int idx=0; idx<binschemes_paths.size(); idx++) {
 
-    } else if (node["bincuts_yaml"]) {
-        // Load YAML file
-        std::string bincuts_yaml = node["bincuts_yaml"].as<std::string>();
-        std::cout<<"INFO: Loading bincuts from : "<<bincuts_yaml.c_str()<<std::endl;
-        YAML::Node bincut_config = YAML::LoadFile(bincuts_yaml.c_str());
-        if (bincut_config["bincuts"]) {
-            bincuts = bincut_config["bincuts"].as<std::map<int,std::string>>();
+            // Load YAML file and get bin cuts maps
+            std::cout<<"INFO: Loading bin scheme from : "<<binschemes_paths[idx].c_str()<<std::endl;
+            YAML::Node bincut_config = YAML::LoadFile(binschemes_paths[idx].c_str());
+            std::map<std::string,std::map<int,std::string>> new_bincuts_map = saga::bins::getBinCutsMap(bincut_config);
+            bincuts_map.insert(new_bincuts_map.begin(), new_bincuts_map.end());
         }
     }
     // END BINNING SCHEME ARGUMENTS
@@ -796,67 +772,75 @@ void execute(const YAML::Node& node) {
     // Create output ROOT file
     TFile * outroot = TFile::Open(outpath.c_str(),"RECREATE");
 
-    // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
-    saga::analysis::getKinBinnedAsym(
-        outdir, //std::string                      outdir,
-        outroot, //TFile                           *outroot,
-        frame, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-        "w", //std::string                      workspace_name,
-        "workspace", //std::string                      workspace_title,
+    // Loop bin schemes
+    for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
-        // parameters passed to saga::data::createDataset()
-        "dataset", //std::string                      dataset_name,
-        "dataset", //std::string                      dataset_title,
-        helicity_name, // std::string                      helicity,
-        helicity_states, //std::map<std::string,int>        helicity_states,
-        bincuts, //std::map<int,std::string>        bincuts,
-        binvars, //std::vector<std::string>         binvars,
-        binvar_titles, //std::vector<std::string>         binvar_titles,
-        binvar_lims, //std::vector<std::vector<double>> binvar_lims,
-        binvar_bins, //std::vector<int>                 binvar_bins,
-        depolvars, //std::vector<std::string>         depolvars,
-        depolvar_titles, //std::vector<std::string>         depolvar_titles,
-        depolvar_lims, //std::vector<std::vector<double>> depolvar_lims,
-        depolvar_bins, //std::vector<int>                 depolvar_bins,
-        asymfitvars, //std::vector<std::string>         asymfitvars,
-        asymfitvar_titles, //std::vector<std::string>         asymfitvar_titles,
-        asymfitvar_lims, //std::vector<std::vector<double>> asymfitvar_lims,
-        asymfitvar_bins, //std::vector<int>                 asymfitvar_bins,
-        massfitvars, //std::vector<std::string>         massfitvars,
-        massfitvar_titles, //std::vector<std::string>         massfitvar_titles,
-        massfitvar_lims, //std::vector<std::vector<double>> massfitvar_lims,
-        massfitvar_bins, //std::vector<int>                 massfitvar_bins,
+        // Get bin scheme name and bin cut map
+        std::string binscheme_name = it->first;
+        std::map<int,std::string> bincuts = it->second;
 
-        // parameterss passed to analysis::fitAsym()
-        pol, //double                           pol,
-        asymfit_formula, //std::string                      asymfit_formula,
-        asymfitpar_inits, //std::vector<double>              asymfitpar_inits,
-        asymfitpar_initlims, //std::vector<std::vector<double>> asymfitpar_initlims,
-        use_sumw2error, //bool                             use_sumw2error,
-        use_average_depol, //bool                             use_average_depol,
-        use_extended_nll, //bool                             use_extended_nll,
-        use_binned_fit, //bool                             use_binned_fit,
+        // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
+        saga::analysis::getKinBinnedAsym(
+            binscheme_name, //std::string                      outdir,
+            outroot, //TFile                           *outroot,
+            frame, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
+            "w", //std::string                      workspace_name,
+            "workspace", //std::string                      workspace_title,
 
-        // parameters passed to saga::data::createDataset() and analysis::applyLambdaMassFit() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
-        massfit_model_name, //std::string                      massfit_model_name,
-        massfit_nbins_conv, //int                              massfit_nbins_conv,
-        massfit_sig_pdf_name, //std::string                      massfit_sig_pdf_name, //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")
-        massfit_sg_region_min, //double                           massfit_sg_region_min,
-        massfit_sg_region_max, //double                           massfit_sg_region_max,
+            // parameters passed to saga::data::createDataset()
+            "dataset", //std::string                      dataset_name,
+            "dataset", //std::string                      dataset_title,
+            helicity_name, // std::string                      helicity,
+            helicity_states, //std::map<std::string,int>        helicity_states,
+            bincuts, //std::map<int,std::string>        bincuts,
+            binvars, //std::vector<std::string>         binvars,
+            binvar_titles, //std::vector<std::string>         binvar_titles,
+            binvar_lims, //std::vector<std::vector<double>> binvar_lims,
+            binvar_bins, //std::vector<int>                 binvar_bins,
+            depolvars, //std::vector<std::string>         depolvars,
+            depolvar_titles, //std::vector<std::string>         depolvar_titles,
+            depolvar_lims, //std::vector<std::vector<double>> depolvar_lims,
+            depolvar_bins, //std::vector<int>                 depolvar_bins,
+            asymfitvars, //std::vector<std::string>         asymfitvars,
+            asymfitvar_titles, //std::vector<std::string>         asymfitvar_titles,
+            asymfitvar_lims, //std::vector<std::vector<double>> asymfitvar_lims,
+            asymfitvar_bins, //std::vector<int>                 asymfitvar_bins,
+            massfitvars, //std::vector<std::string>         massfitvars,
+            massfitvar_titles, //std::vector<std::string>         massfitvar_titles,
+            massfitvar_lims, //std::vector<std::vector<double>> massfitvar_lims,
+            massfitvar_bins, //std::vector<int>                 massfitvar_bins,
 
-        // Parameters passed to analysis::applySPlots()
-        sgyield_name, //std::string                      sgYield_name,
-        bgyield_name, //std::string                      bgYield_name,
-        use_splot, //bool                             use_splot,
+            // parameterss passed to analysis::fitAsym()
+            pol, //double                           pol,
+            asymfit_formula, //std::string                      asymfit_formula,
+            asymfitpar_inits, //std::vector<double>              asymfitpar_inits,
+            asymfitpar_initlims, //std::vector<std::vector<double>> asymfitpar_initlims,
+            use_sumw2error, //bool                             use_sumw2error,
+            use_average_depol, //bool                             use_average_depol,
+            use_extended_nll, //bool                             use_extended_nll,
+            use_binned_fit, //bool                             use_binned_fit,
 
-        // Parameters used for sb subtraction
-        massfit_sgcut, //std::string                      massfit_sgcut,
-        massfit_bgcut, //std::string                      massfit_bgcut,
-        use_sb_subtraction, //bool                             use_sb_subtraction,
+            // parameters passed to saga::data::createDataset() and analysis::applyLambdaMassFit() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+            massfit_model_name, //std::string                      massfit_model_name,
+            massfit_nbins_conv, //int                              massfit_nbins_conv,
+            massfit_sig_pdf_name, //std::string                      massfit_sig_pdf_name, //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")
+            massfit_sg_region_min, //double                           massfit_sg_region_min,
+            massfit_sg_region_max, //double                           massfit_sg_region_max,
 
-        // Output stream
-        out //std::ostream &out                = std::cout
-    );
+            // Parameters passed to analysis::applySPlots()
+            sgyield_name, //std::string                      sgYield_name,
+            bgyield_name, //std::string                      bgYield_name,
+            use_splot, //bool                             use_splot,
+
+            // Parameters used for sb subtraction
+            massfit_sgcut, //std::string                      massfit_sgcut,
+            massfit_bgcut, //std::string                      massfit_bgcut,
+            use_sb_subtraction, //bool                             use_sb_subtraction,
+
+            // Output stream
+            out //std::ostream &out                = std::cout
+        );
+    } // for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
 } // void execute()
 

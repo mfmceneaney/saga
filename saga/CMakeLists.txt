@@ -29,6 +29,7 @@ message(STATUS "SRC_LIB_FILES = ${SRC_LIB_FILES}")#DEBUGGING
 message(STATUS "SRC_HEADER_FILES = ${SRC_LIB_FILES}")#DEBUGGING
 add_library (saga ${SRC_HEADER_FILES} ${SRC_LIB_FILES}) #NOTE: Need both header and src files here even if empty.
 target_include_directories(saga PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(saga PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::RooStats ROOT::ROOTDataFrame yaml-cpp)
 
 #----------------------------------------------------------------------#
 # ADD EXECUTABLES
