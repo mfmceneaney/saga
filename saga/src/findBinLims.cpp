@@ -12,73 +12,46 @@
 // Project Includes
 #include <bins.h>
 
-// Define find and replace function following solution here: https://stackoverflow.com/questions/5878775/how-to-find-and-replace-string
-void replace_all(
-    std::string& s,
-    std::string const& toReplace,
-    std::string const& replaceWith
-) {
-    std::string buf;
-    std::size_t pos = 0;
-    std::size_t prevPos;
-
-    // Reserves rough estimate of final size of string.
-    buf.reserve(s.size());
-
-    while (true) {
-        prevPos = pos;
-        pos = s.find(toReplace, pos);
-        if (pos == std::string::npos)
-            break;
-        buf.append(s, prevPos, pos - prevPos);
-        buf += replaceWith;
-        pos += toReplace.size();
-    }
-
-    buf.append(s, prevPos, s.size() - prevPos);
-    s.swap(buf);
-}
-
 void execute(const YAML::Node& node) {
 
     // Process arguments
 
-    // Get input ROOT tree path
+    // INPATH
     std::string inpath = "";
     if (node["inpath"]) {
         inpath = node["inpath"].as<std::string>();
     }
     std::cout << "INFO: inpath: " << inpath << std::endl;
 
-    // Get tree name
+    // TREREGet tree name
     std::string tree = "";
     if (node["tree"]) {
         tree = node["tree"].as<std::string>();
     }
     std::cout << "INFO: tree: " << tree << std::endl;
 
-    // Get number of threads for frame
+    // NTHREADS
     int nthreads = 1;
     if (node["nthreads"]) {
         nthreads = node["nthreads"].as<int>();
     }
     std::cout << "INFO: nthreads: " << nthreads << std::endl;
 
-    // Get frame cuts
+    // CUTS
     std::string cuts = "";
     if (node["cuts"]) {
         cuts = node["cuts"].as<std::string>();
     }
     std::cout << "INFO: cuts: " << cuts << std::endl;
 
-    // Get output path
+    // OUTPATH
     std::string outpath = "out.yaml";
     if (node["outpath"]) {
         outpath = node["outpath"].as<std::string>();
     }
     std::cout << "INFO: outpath: " << outpath << std::endl;
     
-    // Get bin variable names
+    // BINVVARS
     std::vector<std::string> binvars;
     if (node["binvars"]) {
         binvars = node["binvars"].as<std::vector<std::string>>();
@@ -90,7 +63,7 @@ void execute(const YAML::Node& node) {
     }
     std::cout << " ]" << std::endl;
 
-    // Get defined variable names
+    // NBINS_LIST
     std::vector<int> nbins_list;
     if (node["nbins_list"]) {
         nbins_list = node["nbins_list"].as<std::vector<int>>();
@@ -105,35 +78,20 @@ void execute(const YAML::Node& node) {
         std::cerr << "ERROR: binvars.size() must match nbins_list.size()" << std::endl;
     }
 
-    // Get defined variable names
-    std::vector<std::string> defvars;
-    if (node["defvars"]) {
-        defvars = node["defvars"].as<std::vector<std::string>>();
+    // VAR_FORMULAS
+    std::vector<std::vector<std::string>> var_formulas;
+    if (node["var_formulas"]) {
+        var_formulas = node["var_formulas"].as<std::vector<std::vector<std::string>>>();
     }
-    std::cout << "INFO: defvars: [ ";
-    for (int idx=0; idx<defvars.size(); idx++) {
-        if (idx!=defvars.size()-1) { std::cout << defvars[idx]<<", "; }
-        else { std::cout << defvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // Get defined variable names
-    std::vector<std::string> defvar_formulas;
-    if (node["defvar_formulas"]) {
-        defvar_formulas = node["defvar_formulas"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: defvar_formulas: [ ";
-    for (int idx=0; idx<defvar_formulas.size(); idx++) {
-        if (idx!=defvar_formulas.size()-1) { std::cout << defvar_formulas[idx]<<", "; }
-        else { std::cout << defvar_formulas[idx]; }
+    std::cout << "INFO: var_formulas: [ \n";
+    for (int idx=0; idx<var_formulas.size(); idx++) {
+        if (idx!=var_formulas.size()-1) { std::cout << "\t[ " << var_formulas[idx][0]<<", " << var_formulas[idx][1]<<" ],\n"; }
+        else { std::cout << "\t[ " << var_formulas[idx][0]<<", " << var_formulas[idx][1]<<" ]\n"; }
     }
     std::cout << " ]" << std::endl;
-    if (defvars.size()!=defvar_formulas.size()) {
-        std::cerr << "ERROR: defvars.size() must match defvar_formulas.size()" << std::endl;
-    }
 
     //----------------------------------------------------------------------------------------------------//
-    // FINDBINLIMITS
+    // FINDBINLIMS
     //----------------------------------------------------------------------------------------------------//
     
     // Allow multithreading
@@ -142,10 +100,11 @@ void execute(const YAML::Node& node) {
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
 
-    // Pre-define additional variables.
-    auto d2 = d.Define("_randvar_","(float)1.0");//NOTE: Need the type of d2 declared outside the loop to match the type assigned inside the loop below.
-    for (int idx=0; idx<defvars.size(); idx++) {
-        d2 = d2.Define(defvars[idx].c_str(),defvar_formulas[idx].c_str());
+    // Define variables from formulas
+    auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
+    for (int idx=0; idx<var_formulas.size(); idx++) {
+        d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
+        std::cout<<"INFO: Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
     
     // Apply overall cuts AFTER defining variables
