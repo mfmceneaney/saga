@@ -42,7 +42,7 @@ namespace bins {
 *
 * @return Bin limits
 */
-std::vector<double> findBinLimits(
+std::vector<double> findBinLims(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
         std::string varname,
         const int nbins
@@ -142,7 +142,7 @@ std::vector<double> findBinLimits(
 
     return binlims;
 
-} // std::vector<double> findBinLimits()
+} // std::vector<double> findBinLims()
 
 /**
 * @brief Compute bin limits on a regular interval between a minimum and maximum.
