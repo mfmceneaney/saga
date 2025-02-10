@@ -681,7 +681,7 @@ void execute(const YAML::Node& node) {
     // Create branch names for mc variables assuming they all append `_mc` to the corresponding data branch name
     std::vector<std::string> asymfitvars_mc;
     for (int idx=0; idx<asymfitvars.size(); idx++) {
-        asymfitvars_mc[idx] = Form("%s_mc",asymfitvars[idx].c_str());
+        asymfitvars_mc.push_back(Form("%s_mc",asymfitvars[idx].c_str()));
         std::cout << "INFO: Defined MC variable : " << asymfitvars_mc[idx].c_str() << std::endl;
     }
     std::vector<std::string> depolvars_mc;
