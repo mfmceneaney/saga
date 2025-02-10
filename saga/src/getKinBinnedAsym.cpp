@@ -781,7 +781,7 @@ void execute(const YAML::Node& node) {
             saga::util::replaceAll(fsgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
         }
         for (int idx=0; idx<sgasyms.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_formula, Form("sgasyms%d",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fsgasyms_xs_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
             saga::util::replaceAll(fsgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
@@ -793,7 +793,7 @@ void execute(const YAML::Node& node) {
             saga::util::replaceAll(fbgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
         }
         for (int idx=0; idx<bgasyms.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_formula, Form("bgasyms%d",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fbgasyms_xs_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
             saga::util::replaceAll(fbgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
