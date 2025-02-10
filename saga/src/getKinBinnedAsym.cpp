@@ -186,6 +186,18 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: outdir: " << outdir << std::endl;
 
+    // VAR_FORMULAS
+    std::vector<std::vector<std::string>> var_formulas;
+    if (node["var_formulas"]) {
+        var_formulas = node["var_formulas"].as<std::vector<std::vector<std::string>>>();
+    }
+    std::cout << "INFO: var_formulas: [ \n";
+    for (int idx=0; idx<var_formulas.size(); idx++) {
+        if (idx!=var_formulas.size()-1) { std::cout << "\t[ " << var_formulas[idx][0]<<", " << var_formulas[idx][1]<<" ],\n"; }
+        else { std::cout << "\t[ " << var_formulas[idx][0]<<", " << var_formulas[idx][1]<<" ]\n"; }
+    }
+    std::cout << " ]" << std::endl;
+
     //----------------------------------------------------------------------//
     // BEGIN HELICITY VARIABLES
     
@@ -277,30 +289,6 @@ void execute(const YAML::Node& node) {
     }
     std::cout << " ]" << std::endl;
 
-    // BINVAR_FORMULAS
-    std::vector<std::string> binvar_formulas;
-    if (node["binvar_formulas"]) {
-        binvar_formulas = node["binvar_formulas"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: binvar_formulas: [ ";
-    for (int idx=0; idx<binvar_formulas.size(); idx++) {
-        if (idx!=binvar_formulas.size()-1) { std::cout << binvar_formulas[idx]<<", "; }
-        else { std::cout << binvar_formulas[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // BINVAR_FORMULAS_MC
-    std::vector<std::string> binvar_formulas_mc;
-    if (node["binvar_formulas_mc"]) {
-        binvar_formulas_mc = node["binvar_formulas_mc"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: binvar_formulas_mc: [ ";
-    for (int idx=0; idx<binvar_formulas_mc.size(); idx++) {
-        if (idx!=binvar_formulas_mc.size()-1) { std::cout << binvar_formulas_mc[idx]<<", "; }
-        else { std::cout << binvar_formulas_mc[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
     // BINVAR_TITLES
     std::vector<std::string> binvar_titles = binvars; //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
     if (node["binvar_titles"]) {
@@ -352,30 +340,6 @@ void execute(const YAML::Node& node) {
     for (int idx=0; idx<depolvars.size(); idx++) {
         if (idx!=depolvars.size()-1) { std::cout << depolvars[idx]<<", "; }
         else { std::cout << depolvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // DEPOLVAR_FORMULAS
-    std::vector<std::string> depolvar_formulas;
-    if (node["depolvar_formulas"]) {
-        depolvar_formulas = node["depolvar_formulas"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: depolvar_formulas: [ ";
-    for (int idx=0; idx<depolvar_formulas.size(); idx++) {
-        if (idx!=depolvar_formulas.size()-1) { std::cout << depolvar_formulas[idx]<<", "; }
-        else { std::cout << depolvar_formulas[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // DEPOLVAR_FORMULAS_MC
-    std::vector<std::string> depolvar_formulas_mc;
-    if (node["depolvar_formulas_mc"]) {
-        depolvar_formulas_mc = node["depolvar_formulas_mc"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: depolvar_formulas_mc: [ ";
-    for (int idx=0; idx<depolvar_formulas_mc.size(); idx++) {
-        if (idx!=depolvar_formulas_mc.size()-1) { std::cout << depolvar_formulas_mc[idx]<<", "; }
-        else { std::cout << depolvar_formulas_mc[idx]; }
     }
     std::cout << " ]" << std::endl;
 
@@ -433,30 +397,6 @@ void execute(const YAML::Node& node) {
     }
     std::cout << " ]" << std::endl;
 
-    // ASYMFITVAR_FORMULAS
-    std::vector<std::string> asymfitvar_formulas;
-    if (node["asymfitvar_formulas"]) {
-        asymfitvar_formulas = node["asymfitvar_formulas"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: asymfitvar_formulas: [ ";
-    for (int idx=0; idx<asymfitvar_formulas.size(); idx++) {
-        if (idx!=asymfitvar_formulas.size()-1) { std::cout << asymfitvar_formulas[idx]<<", "; }
-        else { std::cout << asymfitvar_formulas[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // ASYMFITVAR_FORMULAS_MC
-    std::vector<std::string> asymfitvar_formulas_mc;
-    if (node["asymfitvar_formulas_mc"]) {
-        asymfitvar_formulas_mc = node["asymfitvar_formulas_mc"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: asymfitvar_formulas_mc: [ ";
-    for (int idx=0; idx<asymfitvar_formulas_mc.size(); idx++) {
-        if (idx!=asymfitvar_formulas_mc.size()-1) { std::cout << asymfitvar_formulas_mc[idx]<<", "; }
-        else { std::cout << asymfitvar_formulas_mc[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
     // ASYMFITVAR_TITLES
     std::vector<std::string> asymfitvar_titles = asymfitvars; //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
     if (node["asymfitvar_titles"]) {
@@ -508,30 +448,6 @@ void execute(const YAML::Node& node) {
     for (int idx=0; idx<massfitvars.size(); idx++) {
         if (idx!=massfitvars.size()-1) { std::cout << massfitvars[idx]<<", "; }
         else { std::cout << massfitvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // MASSFITVAR_FORMULAS
-    std::vector<std::string> massfitvar_formulas;
-    if (node["massfitvar_formulas"]) {
-        massfitvar_formulas = node["massfitvar_formulas"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: massfitvar_formulas: [ ";
-    for (int idx=0; idx<massfitvar_formulas.size(); idx++) {
-        if (idx!=massfitvar_formulas.size()-1) { std::cout << massfitvar_formulas[idx]<<", "; }
-        else { std::cout << massfitvar_formulas[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // MASSFITVAR_FORMULAS_MC
-    std::vector<std::string> massfitvar_formulas_mc;
-    if (node["massfitvar_formulas_mc"]) {
-        massfitvar_formulas_mc = node["massfitvar_formulas_mc"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: massfitvar_formulas_mc: [ ";
-    for (int idx=0; idx<massfitvar_formulas_mc.size(); idx++) {
-        if (idx!=massfitvar_formulas_mc.size()-1) { std::cout << massfitvar_formulas_mc[idx]<<", "; }
-        else { std::cout << massfitvar_formulas_mc[idx]; }
     }
     std::cout << " ]" << std::endl;
 
@@ -801,32 +717,12 @@ void execute(const YAML::Node& node) {
         std::cout << "INFO: Updated " << fbgasyms_xs_name.c_str() << " = " << fbgasyms_xs_formula.c_str() << std::endl;
     }
 
-    // Pre-define depolarization variables.
-    auto d2 = (!inject_asym) ? d
-                .Define(depolvars[0].c_str(),depolvar_formulas[0].c_str()) :
-                d
-                .Define(depolvars[0].c_str(),depolvar_formulas[0].c_str())
-                .Define(depolvars_mc[0].c_str(),depolvar_formulas_mc[0].c_str());
-    for (int idx=1; idx<depolvars.size(); idx++) { //NOTE: BEGIN AT idx=1 SINCE FIRST DEPOLARIZATION VARIABLE IS DEFINED ABOVE
-        d2 = (!inject_asym) ? d2.
-                                Define(depolvars[idx].c_str(),depolvar_formulas[idx].c_str()) :
-                                d2
-                                .Define(depolvars[idx].c_str(),depolvar_formulas[idx].c_str())
-                                .Define(depolvars_mc[idx].c_str(),depolvar_formulas_mc[idx].c_str());
+    // Define variables from formulas
+    auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
+    for (int idx=0; idx<var_formulas.size(); idx++) {
+        d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
+        std::cout<<"INFO: Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
-    //TODO: Add output message about defined branches
-
-    // Define fit variables if fit formulas are not empty
-    for (int idx=0; idx<asymfitvars.size(); idx++) {
-        if (asymfitvars[idx].size()!=0 && (inject_asym==(asymfitvars[idx].size()!=0))) {
-            d2 = (!inject_asym) ? d2.
-                                    Define(asymfitvars[idx].c_str(),asymfitvar_formulas[idx].c_str()) :
-                                    d2
-                                    .Define(asymfitvars[idx].c_str(),asymfitvar_formulas[idx].c_str())
-                                    .Define(asymfitvars_mc[idx].c_str(),asymfitvar_formulas_mc[idx].c_str());
-        }
-    }
-    //TODO: Add output message about defined branches
 
     // Apply overall cuts AFTER defining depolarization and fit variables
     auto d2_filtered = (!inject_asym) ? d2.Filter(cuts.c_str()) :
