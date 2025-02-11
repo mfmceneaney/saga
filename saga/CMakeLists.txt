@@ -45,3 +45,6 @@ target_link_libraries(findBinLims PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame
 
 add_executable(getBinMigration ${EXECUTABLES_DIR}/getBinMigration.cpp)
 target_link_libraries(getBinMigration PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+
+add_executable(getBinKinematics ${EXECUTABLES_DIR}/getBinKinematics.cpp)
+target_link_libraries(getBinKinematics PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)

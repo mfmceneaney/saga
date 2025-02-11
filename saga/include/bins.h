@@ -432,6 +432,71 @@ void getBinMigration(
 
 } // void getBinMigration()
 
+/**
+* @brief Compute bin statistics and kinematics and save to a CSV file.
+*
+* @param frame ROOT RDataframe from which to compute bin migration fraction
+* @param scheme_name Bin scheme name
+* @param bincuts Map of unique integer bin identifiers to bin cuts
+* @param kinvars List of kinematic variable names
+*/
+void getBinKinematics(
+    ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+    std::string                                                   scheme_name,
+    std::map<int,std::string>                                     bincuts,
+    std::vector<std::string>                                      kinvars
+    ) {
+
+    // Open output CSV
+    std::string csvpath = Form("%s_kinematics.csv",scheme_name.c_str());
+    std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
+    std::ostream &csvout = csvoutf;
+    std::string csv_separator = ",";
+
+    // Set CSV column headers
+    // COLS: bin,{kinvar,kinvar_err}
+    csvout << "bin" << csv_separator.c_str();
+    csvout << "count"; if (kinvars.size()>0) { csvout << csv_separator.c_str(); }
+    for (int idx=0; idx<kinvars.size(); idx++) {
+        csvout << kinvars[idx].c_str() << csv_separator.c_str();
+        csvout << kinvars[idx].c_str() << "_err";
+        if (idx<kinvars.size()-1) csvout << csv_separator.c_str();
+    }
+    csvout << std::endl;
+
+    // Loop bin cut maps, compute count and kinematics, and write to CSV
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+        // Get generated bin id and cut
+        int bin = it->first;
+        std::string bincut = it->second;
+
+        // Apply bin cut
+        auto frame_filtered = frame.Filter(bincut.c_str());
+
+        // Get bin count
+        int count = (int)*frame_filtered.Count();
+
+        // Set CSV column data
+        // COLS: bin,{kinvar,kinvar_err}
+        csvout << bin << csv_separator.c_str();
+        csvout << count; if (kinvars.size()>0) { csvout << csv_separator.c_str(); }
+        for (int idx=0; idx<kinvars.size(); idx++) {
+            double binvar_mean = (double)*frame_filtered.Mean(kinvars[idx].c_str());
+            double binvar_err  = (double)*frame_filtered.StdDev(kinvars[idx].c_str());
+            csvout << binvar_mean << csv_separator.c_str();
+            csvout << binvar_err << "_err";
+            if (idx<kinvars.size()-1) csvout << csv_separator.c_str();
+        }
+        csvout << std::endl;
+
+    } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+    // Close CSV file
+    csvoutf.close();
+
+} // void getBinKinematics()
+
 } // namespace bins {
 
 } // namespace saga {
