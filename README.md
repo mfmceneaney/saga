@@ -59,6 +59,9 @@ cmake .. -DBUILD_DOXYGEN=TRUE
 make
 ```
 
+## Getting Started
+See the example configuration yamls for each C++ executable and the example python scripts in [tutorials/](tutorials/).
+
 ## Running an Analysis
 Below is a detailed description of the project and how one might run an analysis.
 
