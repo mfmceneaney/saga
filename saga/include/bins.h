@@ -293,7 +293,6 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
             // Get bin cuts map and reset bin id minimum
             std::map<int,std::string> bincuts = getBinCuts(binscheme,min_bin_id);
             bincuts_map[binscheme_name] = bincuts;
-            min_bin_id = bincuts.size(); //NOTE: IMPORTANT: Increment the minimum allowed bin id.
 
         } // if (node_binscheme && node_binscheme.IsMap()) {
 
