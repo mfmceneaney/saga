@@ -64,7 +64,7 @@ def create_jobs(divisions,base_dir,submit_path,yaml_path):
         with open(submit_path_i, 'w') as submit_i:
             submit_i.write(doc)
 
-def submit_jobs(divisions,base_dir,submit_path,out_path):
+def submit_jobs(divisions,base_dir,submit_path,out_path,dry_run=False):
     """
     Parameters
     ----------
@@ -76,6 +76,9 @@ def submit_jobs(divisions,base_dir,submit_path,out_path):
         Path to base version of SLURM job submission script
     yaml_path : string, required
         Path to base version of yaml file containing arguments for the executable run in the SLURM job submission script
+    dry_run : bool, optional
+        Option to just print commands to text file and not submit jobs via sbatch
+        Default : False
 
     Description
     -----------
@@ -98,6 +101,6 @@ def submit_jobs(divisions,base_dir,submit_path,out_path):
          
         # Submit job to SLURM
         command = 'echo \''+str(counter)+' sbatch '+os.path.abspath(submit_path_i)+'\' >> '+out_path+'; '
-        command = command+'sbatch '+os.path.abspath(submit_path_i)+' >> '+out_path, #NOTE: COMMENTED OUT FOR DEBUGGING
+        if (not dry_run): command = command+'sbatch '+os.path.abspath(submit_path_i)+' >> '+out_path
         subprocess.run(command, shell=True, check=True, text=True)
         counter += 1
