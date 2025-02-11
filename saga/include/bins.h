@@ -16,6 +16,9 @@
 #include <ROOT/RDataFrame.hxx>
 #include <TLatex.h>
 
+// Local includes
+#include <util.h>
+
 #pragma once
 
 /**
@@ -345,68 +348,89 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
 } // std::vector<std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
 /**
-* @brief Compute 1D bin migration fractions and store in a histogram.
+* @brief Compute bin migration fractions and save to a CSV file.
+*
+* Compute bin migration fraction and save to a CSV file.  Note that
+* the Monte Carlo truth bin cuts will be inferred from the provided cuts
+* assuming they follow the form `(binvar>=binmin && binvar<=binmax)`.
 *
 * @param frame ROOT RDataframe from which to compute bin migration fraction
-* @param varname Bin variable name
-* @param vartitle Bin variable title
-* @param mcvarname MC bin variable name
-* @param mcvartitle MC bin variable title
-* @param bins_ Bin limits
-* @param drawopt ROOT histogram draw option
-* @param f ROOT file in which to save histogram
-*
+* @param scheme_name Bin scheme name
+* @param bincuts Map of unique integer bin identifiers to bin cuts
+* @param binvars List of bin variable names
+* @param mc_suffix Suffix for forming Monte Carlo truth variable names
 */
-void getBinMigrationHistograms1D(
+void getBinMigration(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-    std::string varname,
-    std::string vartitle,
-    std::string mcvarname,
-    std::string mcvartitle,
-    std::vector<double> bins_,
-    const char *drawopt,
-    TFile *f
+    std::string scheme_name,
+    std::map<int,std::string> bincuts,
+    std::vector<std::string> binvars,
+    std::string mc_suffix = "_mc"
     ) {
 
-    // Convert bin limits vector to array
-    const int nbins = bins_.size()-1;
-    double bins[nbins+1]; for (int i=0; i<nbins+1; i++) { bins[i] = bins_.at(i); }
-    
-    // Create histogram name and title bases
-    std::string name  = Form("h2d_bin_migration_%s",varname.c_str());
-    std::string title = Form("Bin Migration in %s",vartitle.c_str());
-
-    // Create bin migration histograms
-    TH1D h1mc_ = (TH1D)*frame.Histo1D({"h1mc_",title.c_str(),nbins,bins},mcvarname.c_str());
-    TH1D *h1mc = (TH1D*)h1mc_.Clone(Form("h1mc_%s",name.c_str()));
-    TH2D h2_    = (TH2D)*frame.Histo2D({"h2_",title.c_str(),nbins,bins,nbins,bins},mcvarname.c_str(),varname.c_str());
-    TH2D *h2   = (TH2D*)h2_.Clone(name.c_str());
-    h2->GetXaxis()->SetTitle(mcvartitle.c_str());
-    h2->GetYaxis()->SetTitle(vartitle.c_str());
-
-    // Normalize bin migration histogram
-    for (int i=1; i<=nbins; i++) { // Loop generated //NOTE: Bin indices begin at 1 in ROOT!
-        double divisor = h1mc->GetBinContent(i); //NOTE: Divide by number of generated events!
-        for (int j=1; j<=nbins; j++) { // Loop reconstructed
-            double bincontent = (divisor==0) ? 0.0 : (double)h2->GetBinContent(i,j)/divisor; // f[i->j] = [# generated in i AND reconstructed in j] / [# generated in bin i]
-            h2->SetBinContent(i,j,bincontent); //NOTE: Now this should give the correct matrix to read into numpy
+    // Form MC Truth bin cut map
+    std::map<int,std::string> bincuts_gen;
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+        int binid = it->first;
+        std::string bincut = it->second;
+        for (int idx=0; idx<binvars.size(); idx++) {
+            std::string binvar = binvars[idx];
+            saga::util::replaceAll(bincut,Form("(%s>",binvar.c_str()),Form("(%s%s>",binvar.c_str(),mc_suffix.c_str())); //NOTE: ASSUME FORM OF BIN CUTS FROM getBinCuts() METHOD.
+            saga::util::replaceAll(bincut,Form("& %s<",binvar.c_str()),Form("& %s%s<",binvar.c_str(),mc_suffix.c_str())); //NOTE: ASSUME FORM OF BIN CUTS FROM getBinCuts() METHOD.
         }
+        bincuts_gen[binid] = bincut;
     }
 
-    // Create canvas and draw histogram
-    TCanvas *c1 = new TCanvas(Form("c2d_bin_migration_%s",varname.c_str()));
-    c1->SetBottomMargin(0.125);
-    c1->cd();
-    h2->Draw(drawopt);
+    // Open output CSV
+    std::string csvpath = Form("%s_bin_migration.csv",scheme_name.c_str());
+    std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
+    std::ostream &csvout = csvoutf;
+    std::string csv_separator = ",";
 
-    // Save canvas
-    c1->Write();
-    c1->SaveAs(Form("%s.pdf",c1->GetName()));
+    // Set CSV column headers
+    // COLS: binid_gen,binid_rec,migration_fraction=N_(REC && GEN)/N_GEN
+    csvout << "binid_gen" << csv_separator.c_str();
+    csvout << "binid_rec" << csv_separator.c_str();
+    csvout << "mig" << std::endl;
 
-    // Save to file for future use
-    h2->Write();
+    // Loop bin cut maps, compute bin migration, and write to CSV
+    for (auto it_gen = bincuts_gen.begin(); it_gen != bincuts_gen.end(); ++it_gen) {
 
-} // void getBinMigrationHistograms1D()
+        // Get generated bin id and cut
+        int binid_gen = it_gen->first;
+        std::string bincut_gen = it_gen->second;
+
+        // Get generated count
+        auto frame_filtered = frame.Filter(bincut_gen.c_str());
+        double count_gen = (double)*frame_filtered.Count();
+
+        // Loop reconstructed bins
+        for (auto it_rec = bincuts.begin(); it_rec != bincuts.end(); ++it_rec) {
+
+            // Get generated bin id and cut
+            int binid_rec = it_rec->first;
+            std::string bincut_rec = it_rec->second;
+
+            // Get reconstructed count
+            double count_rec = (double)*frame_filtered.Filter(bincut_rec.c_str()).Count();
+
+            // Compute bin migration fraction
+            double mig = count_rec / count_gen; //NOTE: f[i->j] = [# generated in i AND reconstructed in j] / [# generated in bin i]
+
+            // Set CSV column data
+            // COLS: bin_id_gen,bin_id_rec,migration_fraction=N_(REC && GEN)/N_GEN
+            csvout << binid_gen << csv_separator.c_str();
+            csvout << binid_rec << csv_separator.c_str();
+            csvout << mig << std::endl;
+
+        } // for (auto it_rec = bincuts.begin(); it_rec != bincuts.end(); ++it_rec) {
+
+    } // for (auto it_gen = bincuts.begin(); it_gen != bincuts.end(); ++it_gen) {
+
+    // Close CSV file
+    csvoutf.close();
+
+} // void getBinMigration()
 
 } // namespace bins {
 
