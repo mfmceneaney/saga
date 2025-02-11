@@ -84,11 +84,11 @@ void execute(const YAML::Node& node) {
     if (node["var_formulas"]) {
         var_formulas = node["var_formulas"].as<std::map<std::string,std::string>>();
     }
-    std::cout << "INFO: var_formulas: [ \n";
+    std::cout << "INFO: var_formulas: { \n";
     for (auto it = var_formulas.begin(); it != var_formulas.end(); ++it) {
-        std::cout << "\t[ " << it->first.c_str() << ", " << it->second.c_str() << " ],\n";
+        std::cout << "\t[ " << it->first.c_str() << " : " << it->second.c_str() << " ],\n";
     }
-    std::cout << " ]" << std::endl;
+    std::cout << " }" << std::endl;
 
     //----------------------------------------------------------------------//
     // BEGIN BINNING SCHEME ARGUMENTS
