@@ -1,9 +1,12 @@
-inpath: "/work/clas12/users/mfmce/mc_jobs_rga_ppim_2_23_24__BACKUP_LEGACY_DO_NOT_DELETE/skim_*.root"
+inpath: "file.root"
 tree: "t"
 nthreads: 1
 cuts: "mass_ppim<1.24 && Q2>1 && W>2 && y<0.8 && xF_ppim>0.0 && z_ppim<1.0 && detector_p==6 && detector_pim==6"
 outpath: "out.yaml"
 binvars: ["x","xF_ppim","z_ppim","ptpt"]
 nbins_list: [2, 8, 16, 4]
-defvars: ["ptpt"]
-defvar_formulas: ["phperp_p*phperp_pim"]
+var_formulas:
+  ptpt: "phperp_p*phperp_pim"
+  depol1: "(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"
+  depol0_mc: "(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"
+  depol1_mc: "(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"
