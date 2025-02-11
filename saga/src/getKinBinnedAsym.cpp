@@ -223,11 +223,15 @@ void execute(const YAML::Node& node) {
 
     // BINSCHEMES
     std::map<std::string,std::map<int,std::string>> bincuts_map;
+    std::map<std::string,std::vector<std::string>> binschemes_vars;
     if (node["binschemes"] && node["binschemes"].IsMap()) {
 
         // Get bin scheme node and get bin cuts maps
         auto node_binschemes = node["binschemes"];
         bincuts_map = saga::bins::getBinCutsMap(node["binschemes"]);
+
+        // Get list of bin variables used in scheme
+        binschemes_vars = saga::bins::getBinSchemesVars(node["binschemes"]);
 
     } else if (node["binschemes_paths"]) {
         
@@ -242,6 +246,8 @@ void execute(const YAML::Node& node) {
             YAML::Node bincut_config = YAML::LoadFile(binschemes_paths[idx].c_str());
             std::map<std::string,std::map<int,std::string>> new_bincuts_map = saga::bins::getBinCutsMap(bincut_config);
             bincuts_map.insert(new_bincuts_map.begin(), new_bincuts_map.end());
+            std::map<std::string,std::vector<std::string>> new_binschemes_vars = saga::bins::getBinSchemesVars(bincut_config);
+            binschemes_vars.insert(new_binschemes_vars.begin(), new_binschemes_vars.end());
         }
     }
     // END BINNING SCHEME ARGUMENTS
@@ -776,6 +782,22 @@ void execute(const YAML::Node& node) {
         std::string binscheme_name = it->first;
         std::map<int,std::string> bincuts = it->second;
 
+        // Get bin scheme bin variables
+        std::vector<std::string> scheme_binvars = binschemes_vars[binscheme_name];
+
+        // Get additional bin variable attributes needed for this binning scheme
+        std::vector<std::string> scheme_binvar_titles;
+        std::vector<std::vector<double>> scheme_binvar_lims;
+        std::vector<int> scheme_binvar_bins;
+        for (int idx=0; idx<binvars.size(); idx++) {
+            int count = std::count(scheme_binvars.begin(), scheme_binvars.end(), binvars[idx]);
+            if (count>0) {
+                scheme_binvar_titles.push_back(binvar_titles[idx]);
+                scheme_binvar_lims.push_back(binvar_lims[idx]);
+                scheme_binvar_bins.push_back(binvar_bins[idx]);
+            }
+        }
+
         // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
         saga::analysis::getKinBinnedAsym(
             binscheme_name, //std::string                      outdir,
@@ -790,10 +812,10 @@ void execute(const YAML::Node& node) {
             helicity_name, // std::string                      helicity,
             helicity_states, //std::map<std::string,int>        helicity_states,
             bincuts, //std::map<int,std::string>        bincuts,
-            binvars, //std::vector<std::string>         binvars,
-            binvar_titles, //std::vector<std::string>         binvar_titles,
-            binvar_lims, //std::vector<std::vector<double>> binvar_lims,
-            binvar_bins, //std::vector<int>                 binvar_bins,
+            scheme_binvars, //std::vector<std::string>         binvars,
+            scheme_binvar_titles, //std::vector<std::string>         binvar_titles,
+            scheme_binvar_lims, //std::vector<std::vector<double>> binvar_lims,
+            scheme_binvar_bins, //std::vector<int>                 binvar_bins,
             depolvars, //std::vector<std::string>         depolvars,
             depolvar_titles, //std::vector<std::string>         depolvar_titles,
             depolvar_lims, //std::vector<std::vector<double>> depolvar_lims,

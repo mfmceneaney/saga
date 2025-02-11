@@ -303,6 +303,49 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
 } // std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
 
 /**
+* @brief Produce a list of lists of the bin variables used in each bin scheme defined in given a YAML node.
+*
+* @param node_binschemes YAML node containing bin scheme definitions
+*
+* @return Map of bin scheme names to maps of unique integer bin ids to bin cuts
+*/
+std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
+
+    // Initialize bin cuts map
+    std::map<std::string,std::vector<std::string>> binschemes_vars;
+
+    // Loop bin schemes
+    for (auto it_binschemes = node_binschemes.begin(); it_binschemes != node_binschemes.end(); ++it_binschemes) {
+
+        // Get bin scheme name
+        std::string binscheme_name = it_binschemes->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
+
+        // Get bin scheme node
+        auto node_binscheme = node_binschemes[binscheme_name];
+
+        // Read bin scheme
+        if (node_binscheme && node_binscheme.IsMap()) {
+
+            // Loop bin scheme yaml and create grid bin scheme
+            std::vector<std::string> binvars;
+            for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+
+                // Get bin variable name and add to list
+                std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+                binvars.push_back(binvar);
+
+            } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+
+            binschemes_vars[binscheme_name] = binvars;
+
+        } // if (node_binscheme && node_binscheme.IsMap()) {
+
+    } // for (auto it = node["binschemes"].begin(); it != node["binschemes"].end(); ++it) {
+
+    return binschemes_vars;
+} // std::vector<std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
+
+/**
 * @brief Compute 1D bin migration fractions and store in a histogram.
 *
 * @param frame ROOT RDataframe from which to compute bin migration fraction
