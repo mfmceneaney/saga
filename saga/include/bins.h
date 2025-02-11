@@ -362,10 +362,10 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
 */
 void getBinMigration(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-    std::string scheme_name,
-    std::map<int,std::string> bincuts,
-    std::vector<std::string> binvars,
-    std::string mc_suffix = "_mc"
+    std::string                                                   scheme_name,
+    std::map<int,std::string>                                     bincuts,
+    std::vector<std::string>                                      binvars,
+    std::string                                                   mc_suffix = "_mc"
     ) {
 
     // Form MC Truth bin cut map

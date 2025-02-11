@@ -42,3 +42,6 @@ target_link_libraries(getKinBinnedAsym PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit R
 
 add_executable(findBinLims ${EXECUTABLES_DIR}/findBinLims.cpp)
 target_link_libraries(findBinLims PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+
+add_executable(getBinMigration ${EXECUTABLES_DIR}/getBinMigration.cpp)
+target_link_libraries(getBinMigration PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
