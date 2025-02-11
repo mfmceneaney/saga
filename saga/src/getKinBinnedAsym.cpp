@@ -21,6 +21,13 @@ void execute(const YAML::Node& node) {
 
     // Process arguments
 
+    // OUTPATH
+    std::string baseoutpath = "";//NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>.csv`.
+    if (node["baseoutpath"]) {
+        baseoutpath = node["baseoutpath"].as<std::string>();
+    }
+    std::cout << "INFO: baseoutpath: " << baseoutpath << std::endl;
+
     // INPATH
     std::string inpath = "";
     if (node["inpath"]) {
@@ -788,8 +795,9 @@ void execute(const YAML::Node& node) {
         }
 
         // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
+        std::string scheme_name = Form("%s%s",baseoutpath.c_str(),binscheme_name.c_str());
         saga::analysis::getKinBinnedAsym(
-            binscheme_name, //std::string                      scheme_name,
+            scheme_name, //std::string                      scheme_name,
             frame, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
             "w", //std::string                      workspace_name,
             "workspace", //std::string                      workspace_title,
