@@ -319,7 +319,7 @@ void execute(const YAML::Node& node) {
 
         // Get statistics and average values and errors of kinematic variables in each bin
         std::string scheme_name = Form("%s%s",baseoutpath.c_str(),binscheme_name.c_str());
-        saga::bins::getBinMigration(
+        saga::bins::getBinKinematics(
             d2_filtered, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
             scheme_name, //std::string                                                   scheme_name,
             bincuts, //std::map<int,std::string>                                     bincuts,
