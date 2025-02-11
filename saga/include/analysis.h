@@ -889,7 +889,9 @@ void getKinBinnedAsym(
     }
     for (int aa=0; aa<asymfitpar_inits.size(); aa++) {
         csvout << Form("a%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
-        csvout << Form("a%d",aa) << "_err" << csv_separator.c_str();
+        csvout << Form("a%d",aa) << "_err";
+        if (aa<asymfitpar_inits.size()-1) csvout << csv_separator.c_str();
+        else csvout << std::endl;//NOTE: IMPORTANT!
     }
 
     // Loop bins and get data
@@ -1164,12 +1166,14 @@ void getKinBinnedAsym(
             csvout << exs[bb] << csv_separator.c_str();
         }
         for (int dd=0; dd<depolvars.size(); dd++) {
-            csvout << depolvars[dd].c_str() << csv_separator.c_str();
-            csvout << depolvars[dd].c_str() << "_err" << csv_separator.c_str();
+            csvout << depols[dd] << csv_separator.c_str();
+            csvout << edepols[dd] << csv_separator.c_str();
         }
         for (int aa=0; aa<nparams; aa++) {
-            csvout << Form("a%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
-            csvout << Form("a%d",aa) << "_err" << csv_separator.c_str();
+            csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
+            csvout << eys_corrected[aa];
+            if (aa<nparams-1) csvout << csv_separator.c_str();
+            else csvout << std::endl;//NOTE: IMPORTANT!
         }
     }
 
