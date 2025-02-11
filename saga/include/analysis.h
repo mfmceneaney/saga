@@ -490,7 +490,7 @@ std::vector<double> fitAsym(
         std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
         double                           pol,
         std::string                      helicity,
-        int                              binid,
+        std::string                      binid,
         std::string                      bincut,
         std::vector<std::string>         binvars,
         std::vector<std::string>         depolvars,
@@ -599,7 +599,7 @@ std::vector<double> fitAsym(
 
     // Create simultaneous pdf
     RooSimultaneous * model;
-    std::string model_name = Form("model_%s_%d",method_name.c_str(),binid); //TODO: Make model names more specific above to avoid naming conflicts...
+    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
     if (use_extended_nll) { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &model_pos}, {"minus", &model_neg}}, *h); } //TODO: Set these from helicity states...
     else { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &_model_pos}, {"minus", &_model_neg}}, *h); }
 
@@ -644,7 +644,7 @@ std::vector<double> fitAsym(
         f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
         // Draw the frame on the canvas
-        std::string c1_x_name = Form("c1_%s__fitvar_%s__binid_%d",outdir.c_str(),fitvars[idx].c_str(),binid);
+        std::string c1_x_name = Form("c1_%s__fitvar_%s__%s",outdir.c_str(),fitvars[idx].c_str(),binid.c_str());
         TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
         gPad->SetLeftMargin(0.15);
         xframe->GetYaxis()->SetTitleOffset(1.4);
@@ -901,6 +901,9 @@ void getKinBinnedAsym(
         int         bin_id  = it->first;
         std::string bin_cut = it->second;
 
+        // Set bin id string
+        std::string scheme_binid = Form("scheme_%s_bin_%d",outdir.c_str(),bin_id);
+
         // Create workspace
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
         RooWorkspace *ws_sg = new RooWorkspace(Form("%s_sg",workspace_name.c_str()),Form("%s_signal",workspace_title.c_str()));
@@ -951,7 +954,7 @@ void getKinBinnedAsym(
                 massfit_sg_region_max,
                 "",//ws_unique_id->This changes pdf,yieldvar names, but NOT (bin,depol,mass,fit)vars,pdf parameters which are saved internally.
                 1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
-                Form("bin_%d",bin_id)
+                scheme_binid
             );
 
         // Apply sPlot
@@ -1000,15 +1003,14 @@ void getKinBinnedAsym(
         }
 
         // Compute signal region bin results
-        std::string  binoutdir = Form("bin_%d",bin_id);
         std::vector<double> asymfit_result = fitAsym(
-                                binoutdir,
+                                scheme_binid,
                                 outroot,
                                 (use_sb_subtraction ? ws_sg : ws),
                                 fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 pol,
                                 helicity,
-                                bin_id,
+                                scheme_binid,
                                 bin_cut,
                                 binvars,
                                 depolvars,
@@ -1024,7 +1026,7 @@ void getKinBinnedAsym(
                             );
 
         // Compute sideband region bin results
-        std::string  sbbinoutdir = Form("sb_bin_%d",bin_id);
+        std::string sb_scheme_binid = Form("sb_%s",scheme_binid.c_str());
         std::vector<double> asymfit_result_sb;
         if (use_sb_subtraction) {
 
@@ -1059,13 +1061,13 @@ void getKinBinnedAsym(
 
             // Compute sideband bin results
             asymfit_result_sb = fitAsym(
-                                binoutdir,
+                                sb_scheme_binid,
                                 outroot,
                                 ws_sb,
                                 dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 pol,
                                 helicity,
-                                bin_id,
+                                sb_scheme_binid,
                                 bin_cut,
                                 binvars,
                                 depolvars,
