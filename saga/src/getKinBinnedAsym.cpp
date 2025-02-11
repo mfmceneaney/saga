@@ -8,7 +8,6 @@
 #include <yaml-cpp/yaml.h>
 
 // ROOT Includes
-#include <TFile.h>
 #include <ROOT/RDataFrame.hxx>
 #include <TRandom.h>
 #include <TMath.h>
@@ -21,13 +20,6 @@
 void execute(const YAML::Node& node) {
 
     // Process arguments
-
-    // OUTPATH
-    std::string outpath = "out.root";
-    if (node["outpath"]) {
-        outpath = node["outpath"].as<std::string>();
-    }
-    std::cout << "INFO: outpath: " << outpath << std::endl;
 
     // INPATH
     std::string inpath = "";
@@ -772,9 +764,6 @@ void execute(const YAML::Node& node) {
     std::ofstream outf; outf.open(logpath.c_str());
     std::ostream &out = outf; //std::cout;
 
-    // Create output ROOT file
-    TFile * outroot = TFile::Open(outpath.c_str(),"RECREATE");
-
     // Loop bin schemes
     for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
@@ -800,8 +789,7 @@ void execute(const YAML::Node& node) {
 
         // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
         saga::analysis::getKinBinnedAsym(
-            binscheme_name, //std::string                      outdir,
-            outroot, //TFile                           *outroot,
+            binscheme_name, //std::string                      scheme_name,
             frame, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
             "w", //std::string                      workspace_name,
             "workspace", //std::string                      workspace_title,

@@ -5,7 +5,6 @@
 #include <map>
 
 // ROOT Includes
-#include <TFile.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <TAxis.h>
@@ -461,8 +460,6 @@ void applySPlot(
 * The variable names in the fit formula should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
 *
-* @param outdir Name of output directory
-* @param outroot Name of output ROOT file
 * @param w RooWorkspace in which to work
 * @param dataset_name Dataset name
 * @param pol Luminosity averaged beam polarization
@@ -484,8 +481,6 @@ void applySPlot(
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
 */
 std::vector<double> fitAsym(
-        std::string                      outdir,
-        TFile                           *outroot,
         RooWorkspace                    *w,
         std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
         double                           pol,
@@ -507,10 +502,6 @@ std::vector<double> fitAsym(
 
     // Set method name
     std::string method_name = "fitAsym";
-
-    // Make subdirectory
-    outroot->mkdir(outdir.c_str());
-    outroot->cd(outdir.c_str());
 
     // Switch off histogram stats
     gStyle->SetOptStat(0);
@@ -644,7 +635,7 @@ std::vector<double> fitAsym(
         f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
         // Draw the frame on the canvas
-        std::string c1_x_name = Form("c1_%s__fitvar_%s__%s",outdir.c_str(),fitvars[idx].c_str(),binid.c_str());
+        std::string c1_x_name = Form("c1_%s__fitvar_%s",binid.c_str(),fitvars[idx].c_str());
         TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
         gPad->SetLeftMargin(0.15);
         xframe->GetYaxis()->SetTitleOffset(1.4);
@@ -710,9 +701,6 @@ std::vector<double> fitAsym(
     }
     out << "--------------------------------------------------" << std::endl;
 
-    // Go back to parent directory
-    outroot->cd("..");
-
     // Fill return array
     std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams
     arr.push_back(count);
@@ -740,8 +728,7 @@ std::vector<double> fitAsym(
 * sideband subtraction method or the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
 * Results will be saved in a csv file.
 *
-* @param outdir Name of output directory and basename of output csv file
-* @param outroot Name of output ROOT file
+* @param scheme_name Name bin scheme and basename of output csv file
 * @param frame ROOT RDataframe from which to create RooFit datasets
 * @param workspace_name Name of workspace in which to work
 * @param workspace_title Title of workspace in which to work
@@ -788,8 +775,7 @@ std::vector<double> fitAsym(
 * @param out Output stream
 */
 void getKinBinnedAsym(
-        std::string                      outdir,
-        TFile                           *outroot,
+        std::string                      scheme_name,
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
         std::string                      workspace_name,
         std::string                      workspace_title,
@@ -861,16 +847,12 @@ void getKinBinnedAsym(
     }
     out << " }\n";
 
-    // Make output directory in ROOT file and cd
-    outroot->mkdir(outdir.c_str());
-    outroot->cd(outdir.c_str());
-
     // Filter frames for signal and sideband
     auto frame_sg = frame.Filter(massfit_sgcut.c_str());
     auto frame_sb = frame.Filter(massfit_bgcut.c_str());
 
     // Open output CSV
-    std::string csvpath = Form("%s.csv",outdir.c_str());
+    std::string csvpath = Form("%s.csv",scheme_name.c_str());
     std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
     std::ostream &csvout = csvoutf;
     std::string csv_separator = ",";
@@ -902,7 +884,7 @@ void getKinBinnedAsym(
         std::string bin_cut = it->second;
 
         // Set bin id string
-        std::string scheme_binid = Form("scheme_%s_bin_%d",outdir.c_str(),bin_id);
+        std::string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
 
         // Create workspace
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
@@ -1004,8 +986,6 @@ void getKinBinnedAsym(
 
         // Compute signal region bin results
         std::vector<double> asymfit_result = fitAsym(
-                                scheme_binid,
-                                outroot,
                                 (use_sb_subtraction ? ws_sg : ws),
                                 fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 pol,
@@ -1061,8 +1041,6 @@ void getKinBinnedAsym(
 
             // Compute sideband bin results
             asymfit_result_sb = fitAsym(
-                                sb_scheme_binid,
-                                outroot,
                                 ws_sb,
                                 dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 pol,
@@ -1180,10 +1158,7 @@ void getKinBinnedAsym(
     }
 
     csvoutf.close();
-    out << " Saved asymmetry fit results to " << csvpath.c_str() << ".root\n";
-
-    // Cd out of outdir
-    outroot->cd("..");
+    out << " Saved asymmetry fit results to " << csvpath.c_str() << std::endl;
 
     // Ending message
     out << "------------------- END of getKinBinnedAsym -------------------\n";
