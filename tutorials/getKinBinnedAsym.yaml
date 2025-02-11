@@ -1,0 +1,75 @@
+outpath: "out.root"
+inpath: "file.root"
+tree: "t"
+nthreads: 1
+cuts: "mass_ppim<1.24 && Q2>1 && W>2 && y<0.8 && xF_ppim>0.0 && z_ppim<1.0 && detector_p==6 && detector_pim==6"
+inject_asym: true
+inject_seed: 2
+mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
+sgasyms: [0.0, 0.1, 0.0]
+bgasyms: [0.0, 0.0, 0.0]
+particle_suffixes: ["_p","_pim"]
+mc_sg_match_name: "mc_sg_match"
+mc_sg_match_formula: "(bool)(ppid_p_mc==3122 && pidx_p_mc==pidx_pim_mc && abs(dtheta_p)<6*TMath::Pi()/180.0 && abs(dtheta_p)<6*TMath::Pi()/180.0)" #NOTE: dtheta and dphi variables are automatically defined for the given particle suffixes.
+fsgasyms_xs_name: "fsgasyms_xs"
+fsgasyms_xs_formula: "(float)(0.747*costhetaT*(depol0*sgasyms[0]*TMath::Cos(phi_h_ppim)+depol1*sgasyms[1]+depol1*sgasyms[2]*TMath::Cos(2.0*phi_h_ppim)))" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fbgasyms_xs_name: "fbgasyms_xs"
+fbgasyms_xs_formula: "(float)1.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+randvar_name: "randvar"
+xs_name: "XS"
+outdir: "outdir"
+helicity_name: "heli"
+helicity_formula: "-helicity"
+helicity_states:
+  plus: 1
+  zero: 0
+  minus: -1
+var_formulas: [["depol0","(float)(y*(1.0-0.5*y)/(1.0-y+0.5*y*y))"],
+          ["depol1","(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"],
+          ["depol0_mc","(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"],
+          ["depol1_mc","(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]]
+binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
+  run:
+    run: [1, 100]
+  x:
+    x: [0.0000, 0.1515, 0.2033, 0.2564, 0.3339, 1.0]
+  xF_ppim:
+    xF_ppim: [0.0000, 0.0504, 0.1082, 0.1784, 0.2775, 1.0]
+  z_ppim:
+    z_ppim: [0.0000, 0.5928, 0.6856, 0.7698, 0.8597, 1.0]
+bincuts_yaml: ""
+binvars: ["run","x","xF_ppim","z_ppim"]
+binvar_titles: ["run","x","x_{F p#pi^{-}}","z_{p#pi^{-}}"]
+binvar_lims: [[1,100],[0,1],[0,1],[0,1]]
+binvar_bins: [16,16,16,16]
+depolvars: ["depol0","depol1"]
+depolvar_titles: ["depol0","depol1"]
+depolvar_lims: [[0,1],[0,1]]
+depolvar_bins: [16,16]
+asymfitvars: ["costhetaT","phi_h_ppim"]
+asymfitvar_titles: ["cos(#theta_{T #hat{x} p#pi^{-}})","#phi_{p#pi^{-}}"]
+asymfitvar_lims: [[-1,1],[0,6.28]]
+asymfitvar_bins: [16,16]
+massfitvars: ["mass_ppim"]
+massfitvar_titles: ["M_{p#pi^{-}} (GeV)"]
+massfitvar_lims: [[1.08,1.24]]
+massfitvar_bins: [100]
+pol: 0.8922 #NOTE: Average Polarization for RGA Fall 2018 Outbending data runs >= 5331
+asymfit_formula: "0.747*x[0]*(x[5]*x[2]*cos(x[1])+x[6]*x[3]+x[6]*x[4]*cos(2.0*x[1]))" #NOTE: This asymmetry is converted internally to a RooSimultaneous PDF: 1 + helicity[RooCategory] * pol * A(\vec{x}; \vec{a}; \vec{d}).  Arguments are: x0,x1,x2,...,a0,a1,a2,...,d0,d1,d2,...
+asymfitpar_inits: [0.0,0.1,0.0]
+asymfitpar_initlims: [[-0.5,0.5],[-0.5,0.5],[-0.5,0.5]]
+use_sumw2error: False
+use_average_depol: False
+use_extended_nll: true
+use_binned_fit: false
+massfit_nbins_conv: 1000
+massfit_sig_pdf_name: "cb" #NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss").
+massfit_sg_region_min: 1.11
+massfit_sg_region_max: 1.13
+sgyield_name: "sgyield"
+bgYield_name: "bgyield"
+use_splot: false
+massfit_sgcut: "mass_ppim>1.11 && mass_ppim<1.13"
+massfit_bgcut: "(mass_ppim>1.08 && mass_ppim<1.11) || (mass_ppim>1.15 && mass_ppim<1.18)"
+use_sb_subtraction: true
+logpath: "out.txt"
