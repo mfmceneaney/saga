@@ -8,34 +8,7 @@ import os
 import shutil
 import yaml
 import sys
-
-def get_list(divisions):
-    """
-    Parameters
-    ----------
-    divisions : dictionary, required
-        Map of option names to option values
-
-    Description
-    -----------
-    Get a list of all possible option value combinations from a map of option names to possible values.
-    """
-
-    # Create map of elements of elements of divisions and combine completely into each other for one list
-    data_list = []
-    for i, key in enumerate(divisions):
-        if i==0:
-                for el in divisions[key]:
-                    data_list.append({key: el})
-        else:
-            data_list_new = []
-            for d in data_list:
-                for el in divisions[key]:
-                    data_list_new.append(d.copy())
-                    data_list_new[-1][key] = el
-            data_list = data_list_new
-
-    return data_list
+from .aggregate import get_list
 
 def create_jobs(divisions,base_dir,submit_path,yaml_path):
     """
