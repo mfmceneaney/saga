@@ -309,7 +309,7 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
 *
 * @param node_binschemes YAML node containing bin scheme definitions
 *
-* @return Map of bin scheme names to maps of unique integer bin ids to bin cuts
+* @return Map of bin scheme names to lists of bin variable names used in each scheme
 */
 std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
