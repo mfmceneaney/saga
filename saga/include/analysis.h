@@ -393,6 +393,96 @@ std::vector<double> applyLambdaMassFit(
 }
 
 /**
+* @brief Weight a dataset bin by bin from a map of bin ids to weight vectors.
+*
+* Weight a dataset bin by bin from a map of unique integer bin identifiers to weight vectors.
+* The weights are created first from the RDataFrame since defining a conditional weight variable
+* for a RooDataSet is nigh impossible. Then, they are merged into your dataset and a new
+* weighted dataset is created and uploaded to the workspace.
+*
+* @param w RooWorkspace in which to work
+* @param rds RooDataSet to weight
+* @param frame ROOT RDataframe from which to create weights
+* @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
+* @param bincuts Map of unique bin id ints to bin variable cuts for bin
+* @param sgcut Signal invariant mass region cut
+* @param bgcut Background invariant mass region cut
+* @param weightvar Weight variable name
+* @param weightvar_lims Weight variable limits
+* @param weights_map Map of unique integer bin identifiers to weight vectors
+* @param weights_default Weight variable default value for events outside provided cuts
+* @param use_raw_weights Option to raw signal and background weights instead of interpretting first entry of weight vectors as the background fraction \f$\varepsilon\f$
+*/
+void getMassFitWeightedData(
+    RooWorkspace                                                 *w,
+    RooAbsData                                                   *rds,
+    ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+    std::string                                                   rds_weighted_name,
+    std::map<int,std::string>                                     bincuts,
+    std::string                                                   sgcut,
+    std::string                                                   bgcut,
+    std::string                                                   weightvar,
+    std::vector<double>                                           weightvar_lims,
+    std::map<int,std::vector<double>>                             weights_map,
+    double                                                        weights_default = 0.0,
+    bool                                                          use_raw_weights = false
+    ) {
+
+    // Create the conditional weight variable formula
+    std::string weightvar_formula = "";
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+        // Get bin id and cut
+        int idx = it->first;
+        std::string bincut = it->second;
+
+        // Get signal and background weights directly OR assuming `epss` contains the background fractions eps = N_BG / N_TOT in the massfit signal region
+        double sgweight, bgweight;
+        if (use_raw_weights) {
+            sgweight = weights_map[idx][0];
+            bgweight = weights_map[idx][1];
+        } else {
+            double eps = weights_map[idx][0];
+            sgweight = (eps != 0.0) ? 1.0/(1.0-eps) : 0.0;
+            bgweight = (eps != 0.0) ? -eps/(1.0-eps) : 0.0;
+        }
+        
+        // Add to the weight variable formula
+        if (weightvar_formula.size()==0) {
+            weightvar_formula = Form("if (%s && %s) return %.8f; else if (%s && %s) return %.8f;",bincut.c_str(),sgcut.c_str(),sgweight,bincut.c_str(),bgcut.c_str(),bgweight);
+        } else {
+            std::string bin_condition = Form("else if (%s && %s) return %.8f; else if (%s && %s) return %.8f;",bincut.c_str(),sgcut.c_str(),sgweight,bincut.c_str(),bgcut.c_str(),bgweight);
+            weightvar_formula = Form("%s %s",weightvar_formula.c_str(),bin_condition.c_str());
+        }
+    }
+
+    // Set the default weight condition
+    weightvar_formula = Form("%s else return %.8f;",weightvar_formula.c_str(),weights_default);
+
+    // Define weight in dataframe
+    auto frame_weighted = frame.Define(weightvar.c_str(),weightvar_formula.c_str());
+
+    // Create weights dataset from dataframe
+    if (weightvar_lims.size()!=2) weightvar_lims = {-9999.,9999.};
+    RooRealVar wv(weightvar.c_str(),weightvar.c_str(),weightvar_lims[0],weightvar_lims[1]);
+    ROOT::RDF::RResultPtr<RooDataSet> rds_weights = frame.Book<float>(
+                RooDataSetHelper(Form("%s_weights",rds->GetName()),"Data Set Weights",RooArgSet(wv)),
+                {weightvar.c_str()}
+            );
+
+    // Merge dataset with weights
+    static_cast<RooDataSet&>(*rds).merge(&static_cast<RooDataSet&>(*rds_weights));
+
+    // Create new data set with weights variable
+    auto& data = static_cast<RooDataSet&>(*rds);
+    RooDataSet rds_weighted{rds_weighted_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, weightvar.c_str()};
+
+    // Import weighted dataset into workspace
+    w->import(rds_weighted);
+
+} // void getMassFitWeightedData()
+
+/**
 * @brief Apply the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
 *
 * Apply sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a> given a dataset, yield variables, and a model and 
