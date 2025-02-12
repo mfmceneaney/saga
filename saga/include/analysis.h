@@ -48,6 +48,7 @@
 
 // Local includes
 #include <data.h>
+#include <bins.h>
 
 #pragma once
 
@@ -78,7 +79,7 @@ namespace analysis {
 *
 * @param w RooWorkspace in which to work
 * @param massfitvars Invariant mass fit variable names
-* @param dataset_name Dataset name
+* @param rds RooDataSet to use for fit
 * @param sgYield_name Signal yield variable name
 * @param bgYield_name Background yield variable name
 * @param frame ROOT RDataframe from which to create a histogram of invariant mass
@@ -96,7 +97,7 @@ namespace analysis {
 std::vector<double> applyLambdaMassFit(
     RooWorkspace *w,
     std::vector<std::string> massfitvars,
-    std::string dataset_name,
+    RooAbsData *rds,
     std::string sgYield_name,
     std::string bgYield_name,
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -120,11 +121,8 @@ std::vector<double> applyLambdaMassFit(
     double mass_max = m->getMax();
     int    mass_nbins_hist =  m->getBins();
 
-    // Get dataset from workspace
-    RooAbsData *rooDataSetResult = w->data(dataset_name.c_str());
-
     // Get dataset length
-    int count = (int)rooDataSetResult->numEntries();
+    int count = (int)rds->numEntries();
 
     // Create histogram
     auto h1 = (TH1D) *frame.Histo1D({"h1",massvar.c_str(),mass_nbins_hist,mass_min,mass_max},massvar.c_str());
@@ -211,7 +209,7 @@ std::vector<double> applyLambdaMassFit(
     RooAddPdf model(model_name.c_str(), Form("%s+%s",sig_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str()), RooArgList(*sig,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
 
     // Fit invariant mass spectrum
-    std::unique_ptr<RooFitResult> fit_result_data{model.fitTo(*rooDataSetResult, Save(), PrintLevel(-1))};
+    std::unique_ptr<RooFitResult> fit_result_data{model.fitTo(*rds, Save(), PrintLevel(-1))};
 
     //---------------------------------------- Compute chi2 ----------------------------------------//
     // Import TH1 histogram into RooDataHist
@@ -268,7 +266,7 @@ std::vector<double> applyLambdaMassFit(
 
     // Sum on dataset
     std::string signal_cut = Form("%.8f<%s && %s<%.8f",(double)sg_region_min,m->GetName(),m->GetName(),(double)sg_region_max);
-    double i_ds = rooDataSetResult->sumEntries(signal_cut.c_str());
+    double i_ds = rds->sumEntries(signal_cut.c_str());
     double i_ds_err = TMath::Sqrt(i_ds);
 
     // Compute epsilon in a couple different ways
@@ -288,7 +286,7 @@ std::vector<double> applyLambdaMassFit(
 
     // Plot invariant mass fit from RooFit
     RooPlot *mframe_1d = m->frame(Title("1D pdf fit mass_ppim."));
-    rooDataSetResult->plotOn(mframe_1d);
+    rds->plotOn(mframe_1d);
     model.plotOn(mframe_1d);
     model.plotOn(mframe_1d, Components(*sig), LineStyle(kDashed), LineColor(kRed));
     model.plotOn(mframe_1d, Components(bg), LineStyle(kDashed), LineColor(kBlue));
@@ -394,6 +392,227 @@ std::vector<double> applyLambdaMassFit(
     result.push_back(eps_sg_th1_int_err);
     return result;
 }
+
+/**
+* @brief Weight a dataset bin by bin from a map of bin ids to weight vectors.
+*
+* Weight a dataset bin by bin from a map of unique integer bin identifiers to weight vectors.
+* The weights are created first from the RDataFrame since defining a conditional weight variable
+* for a RooDataSet is nigh impossible. Then, they are merged into your dataset and a new
+* weighted dataset is created and uploaded to the workspace.
+*
+* @param w RooWorkspace in which to work
+* @param rds RooDataSet to weight
+* @param frame ROOT RDataframe from which to create weights
+* @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
+* @param bincuts Map of unique bin id ints to bin variable cuts for bin
+* @param sgcut Signal invariant mass region cut
+* @param bgcut Background invariant mass region cut
+* @param weightvar Weight variable name
+* @param weightvar_lims Weight variable limits
+* @param weights_map Map of unique integer bin identifiers to weight vectors
+* @param weights_default Weight variable default value for events outside provided cuts
+* @param use_raw_weights Option to raw signal and background weights instead of interpretting first entry of weight vectors as the background fraction \f$\varepsilon\f$
+*/
+void getMassFitWeightedData(
+    RooWorkspace                                                 *w,
+    RooAbsData                                                   *rds,
+    ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+    std::string                                                   rds_weighted_name,
+    std::map<int,std::string>                                     bincuts,
+    std::string                                                   sgcut,
+    std::string                                                   bgcut,
+    std::string                                                   weightvar,
+    std::vector<double>                                           weightvar_lims,
+    std::map<int,std::vector<double>>                             weights_map,
+    double                                                        weights_default = 0.0,
+    bool                                                          use_raw_weights = false
+    ) {
+
+    // Create the conditional weight variable formula
+    std::string weightvar_formula = "";
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+        // Get bin id and cut
+        int idx = it->first;
+        std::string bincut = it->second;
+
+        // Get signal and background weights directly OR assuming `epss` contains the background fractions eps = N_BG / N_TOT in the massfit signal region
+        double sgweight, bgweight;
+        if (use_raw_weights) {
+            sgweight = weights_map[idx][0];
+            bgweight = weights_map[idx][1];
+        } else {
+            double eps = weights_map[idx][0];
+            sgweight = (eps != 0.0) ? 1.0/(1.0-eps) : 0.0;
+            bgweight = (eps != 0.0) ? -eps/(1.0-eps) : 0.0;
+        }
+        
+        // Add to the weight variable formula
+        if (weightvar_formula.size()==0) {
+            weightvar_formula = Form("if (%s && %s) return %.8f; else if (%s && %s) return %.8f;",bincut.c_str(),sgcut.c_str(),sgweight,bincut.c_str(),bgcut.c_str(),bgweight);
+        } else {
+            std::string bin_condition = Form("else if (%s && %s) return %.8f; else if (%s && %s) return %.8f;",bincut.c_str(),sgcut.c_str(),sgweight,bincut.c_str(),bgcut.c_str(),bgweight);
+            weightvar_formula = Form("%s %s",weightvar_formula.c_str(),bin_condition.c_str());
+        }
+    }
+
+    // Set the default weight condition
+    weightvar_formula = Form("%s else return %.8f;",weightvar_formula.c_str(),weights_default);
+
+    // Define weight in dataframe
+    auto frame_weighted = frame.Define(weightvar.c_str(),weightvar_formula.c_str());
+
+    // Create weights dataset from dataframe
+    if (weightvar_lims.size()!=2) weightvar_lims = {-9999.,9999.};
+    RooRealVar wv(weightvar.c_str(),weightvar.c_str(),weightvar_lims[0],weightvar_lims[1]);
+    ROOT::RDF::RResultPtr<RooDataSet> rds_weights = frame.Book<float>(
+                RooDataSetHelper(Form("%s_weights",rds->GetName()),"Data Set Weights",RooArgSet(wv)),
+                {weightvar.c_str()}
+            );
+
+    // Merge dataset with weights
+    static_cast<RooDataSet&>(*rds).merge(&static_cast<RooDataSet&>(*rds_weights));
+
+    // Create new data set with weights variable
+    auto& data = static_cast<RooDataSet&>(*rds);
+    RooDataSet rds_weighted{rds_weighted_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, weightvar.c_str()};
+
+    // Import weighted dataset into workspace
+    w->import(rds_weighted);
+
+} // void getMassFitWeightedData()
+
+/**
+* @brief Apply a \f$\Lambda\f$ mass fit and weight a dataset bin by bin.
+*
+* Apply a \f$\Lambda\f$ mass fit in each asymmetry fit variable bin
+* and weight the given dataset in the signal and background regions.
+* Note that all weights are set to zero outside these two regions.
+*
+* @param w RooWorkspace in which to work
+* @param rds RooDataSet to fit and weight
+* @param massfitvars Invariant mass fit variable names
+* @param sgYield_name Signal yield variable name
+* @param bgYield_name Background yield variable name
+* @param frame ROOT RDataframe from which to create a histogram of invariant mass
+* @param massfit_nbins_conv Number of invariant mass bins for convolution of PDFs
+* @param massfit_model_name Full PDF name
+* @param massfit_sig_pdf_name Signal PDF name
+* @param massfit_sg_region_min Invariant mass signal region lower bound
+* @param massfit_sg_region_max Invariant mass signal region upper bound
+* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
+* @param bin_id Unique bin identifier string
+* @param sgcut Signal invariant mass region cut
+* @param bgcut Background invariant mass region cut
+* @param asymfitvars List of asymmetry fit variables names
+* @param bincuts Map of unique bin id ints to bin variable cuts for bin
+* @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
+* @param weightvar Weight variable name
+* @param weightvar_lims Weight variable limits
+* @param weights_default Weight variable default value for events outside provided cuts
+*/
+void setWeightsFromLambdaMassFit(
+    RooWorkspace                                                 *w,
+    RooAbsData                                                   *rds,
+    std::vector<std::string>                                      massfitvars,
+    std::string                                                   sgYield_name,
+    std::string                                                   bgYield_name,
+    ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+    int                                                           massfit_nbins_conv,
+    std::string                                                   massfit_model_name,
+    std::string                                                   massfit_sig_pdf_name,
+    double                                                        massfit_sg_region_min,
+    double                                                        massfit_sg_region_max,
+    int                                                           use_poly4_bg,
+    std::string                                                   bin_id,
+    std::string                                                   sgcut,
+    std::string                                                   bgcut,
+    std::vector<std::string>                                      asymfitvars,
+    std::map<int,std::string>                                     bincuts,
+    std::string                                                   rds_weighted_name,
+    std::string                                                   weightvar,
+    std::vector<double>                                           weightvar_lims,
+    double                                                        weights_default = 0.0
+    ) {
+
+    // Load asymmetry fit variables from workspace
+    RooRealVar *rrvars[asymfitvars.size()];
+    for (int idx=0; idx<asymfitvars.size(); idx++) {
+        rrvars[idx] = w->var(asymfitvars[idx].c_str());
+    }
+
+    // Create binning scheme if not provided
+    if (bincuts.size()==0) {
+
+        // Create binning scheme
+        std::map<std::string,std::vector<double>> binscheme;
+        for (int idx=0; idx<asymfitvars.size(); idx++) {
+            std::string asymfitvar = asymfitvars[idx];
+            std::vector<double> binlims = saga::bins::getBinLims(
+                                                            rrvars[idx]->getBins(),
+                                                            rrvars[idx]->getMin(),
+                                                            rrvars[idx]->getMax()
+                                                        );
+        }
+
+        // Set bin cuts from bin scheme
+        bincuts = saga::bins::getBinCuts(binscheme,0);
+    }
+
+    // Loop bins and apply fits recording background fractions and errors
+    std::map<int,std::vector<double>> massfit_results;
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+        // Get bin id and cut
+        int id = it->first;
+        std::string bincut = it->second;
+
+        // Get bin dataset and frame
+        RooDataSet *bin_ds = (RooDataSet*)rds->reduce(bincut.c_str());
+        auto binframe = frame.Filter(bincut.c_str());
+
+        // Get bin unique id
+        std::string bin_unique_id = Form("%s__asymfitvars_bin_%d",bin_id.c_str(),id);
+
+        // Get Lambda mass fit
+        std::vector<double> massfit_result = applyLambdaMassFit(
+                w,
+                massfitvars,
+                bin_ds,
+                Form("%s_%s",sgYield_name.c_str(),bin_unique_id.c_str()),
+                Form("%s_%s",bgYield_name.c_str(),bin_unique_id.c_str()),
+                binframe,
+                massfit_nbins_conv,
+                massfit_model_name,
+                massfit_sig_pdf_name,
+                massfit_sg_region_min,
+                massfit_sg_region_max,
+                bin_unique_id,
+                use_poly4_bg,
+                bin_unique_id
+        );
+
+        massfit_results[id] = massfit_result;
+    }
+
+    // Set data set weights from the binned mass fits
+    getMassFitWeightedData(
+        w,
+        rds,
+        frame,
+        rds_weighted_name,
+        bincuts,
+        sgcut,
+        bgcut,
+        weightvar,
+        weightvar_lims,
+        massfit_results,
+        weights_default,
+        false
+    );
+
+} // void setWeightsFromLambdaMassFit(
 
 /**
 * @brief Apply the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
@@ -772,6 +991,8 @@ std::vector<double> fitAsym(
 * @param massfit_sgcut Signal region cut for sideband subtraction background correction
 * @param massfit_bgcut Signal region cut for sideband subtraction background correction
 * @param use_sb_subtraction Option to use sideband subtraction for background correction
+* @param use_binned_sb_weights Option to use weights from invariant mass fits binned in the asymmetry fit variable for background correction
+* @param asymfitvar_bincuts Map of unique bin id ints to bin variable cuts for asymmetry fit variable bins
 * @param out Output stream
 */
 void getKinBinnedAsym(
@@ -829,6 +1050,8 @@ void getKinBinnedAsym(
         std::string                      massfit_sgcut,
         std::string                      massfit_bgcut,
         bool                             use_sb_subtraction,
+        bool                             use_binned_sb_weights,
+        std::map<int,std::string>        asymfitvar_bincuts,
 
         // Ouput stream
         std::ostream &out                = std::cout
@@ -922,10 +1145,11 @@ void getKinBinnedAsym(
         );
 
         // Apply Lambda mass fit to FULL bin frame
+        RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
         std::vector<double> epss = applyLambdaMassFit(
                 ws,
                 massfitvars,
-                dataset_name,
+                rooDataSetResult,
                 sgYield_name,
                 bgYield_name,
                 binframe,
@@ -954,6 +1178,35 @@ void getKinBinnedAsym(
                 dataset_bg_name
             );
             fit_dataset_name = dataset_sg_name;
+        }
+
+        // Weight dataset from binned mass fits
+        if (use_binned_sb_weights) {
+            std::string rds_weighted_name = (std::string)Form("%s_binned_sb_ws",dataset_name.c_str());
+            setWeightsFromLambdaMassFit(
+                ws,
+                rooDataSetResult,
+                massfitvars,
+                sgYield_name,
+                bgYield_name,
+                binframe,
+                massfit_nbins_conv,
+                massfit_model_name,
+                massfit_sig_pdf_name,
+                massfit_sg_region_min,
+                massfit_sg_region_max,
+                1, //use_poly4_bg
+                scheme_binid,
+                massfit_sgcut,
+                massfit_bgcut,
+                asymfitvars,
+                asymfitvar_bincuts,
+                rds_weighted_name,
+                "binned_sb_w", //weightvar
+                {-999.,999.}, //weightvar_lims,
+                0.0 //weights_default
+            );
+            fit_dataset_name = rds_weighted_name;
         }
 
         // Create signal region dataset for sideband subtraction
