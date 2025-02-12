@@ -158,8 +158,8 @@ std::vector<double> findBinLims(
 */
 std::vector<double> getBinLims(
         const int nbins,
-        double xmax,
-        double xmin
+        double xmin,
+        double xmax
     ) {
 
     std::vector<double> binlims;
