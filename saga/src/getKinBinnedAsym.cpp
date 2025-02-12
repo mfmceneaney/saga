@@ -625,6 +625,21 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: use_sb_subtraction: " << use_sb_subtraction << std::endl;
 
+    // USE_BINNED_SB_WEIGHTS
+    bool use_binned_sb_weights = false;
+    if (node["use_binned_sb_weights"]) {
+        use_binned_sb_weights = node["use_binned_sb_weights"].as<bool>();
+    }
+    std::cout << "INFO: use_binned_sb_weights: " << use_binned_sb_weights << std::endl;
+
+    // ASYMFITVAR_BINSCHEME
+    std::map<std::string,std::map<int,std::string>> asymfitvar_bincuts_map;
+    if (node["asymfitvar_binschemes"] && node["asymfitvars_binscheme"].IsMap()) {
+
+        // Get bin scheme node and get bin cuts maps
+        asymfitvar_bincuts_map = saga::bins::getBinCutsMap(node["asymfitvars_binscheme"]);
+    }
+
     // END SIDEBAND SUBTRACTION ARGUMENTS
     //----------------------------------------------------------------------//
 
@@ -780,6 +795,12 @@ void execute(const YAML::Node& node) {
         // Get bin scheme bin variables
         std::vector<std::string> scheme_binvars = binschemes_vars[binscheme_name];
 
+        // Get asymmetry fit variables bin scheme
+        std::map<int,std::string> asymfitvar_bincuts;
+        if (use_binned_sb_weights) {
+            asymfitvar_bincuts = asymfitvar_bincuts_map[binscheme_name];
+        }
+
         // Get additional bin variable attributes needed for this binning scheme
         std::vector<std::string> scheme_binvar_titles;
         std::vector<std::vector<double>> scheme_binvar_lims;
@@ -850,6 +871,8 @@ void execute(const YAML::Node& node) {
             massfit_sgcut, //std::string                      massfit_sgcut,
             massfit_bgcut, //std::string                      massfit_bgcut,
             use_sb_subtraction, //bool                             use_sb_subtraction,
+            use_binned_sb_weights, //bool                             use_binned_sb_weights,
+            asymfitvar_bincuts, //std::map<int,std::string>        asymfitvar_bincuts,
 
             // Output stream
             out //std::ostream &out                = std::cout

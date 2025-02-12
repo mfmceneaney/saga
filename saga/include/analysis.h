@@ -991,6 +991,8 @@ std::vector<double> fitAsym(
 * @param massfit_sgcut Signal region cut for sideband subtraction background correction
 * @param massfit_bgcut Signal region cut for sideband subtraction background correction
 * @param use_sb_subtraction Option to use sideband subtraction for background correction
+* @param use_binned_sb_weights Option to use weights from invariant mass fits binned in the asymmetry fit variable for background correction
+* @param asymfitvar_bincuts Map of unique bin id ints to bin variable cuts for asymmetry fit variable bins
 * @param out Output stream
 */
 void getKinBinnedAsym(
@@ -1048,6 +1050,8 @@ void getKinBinnedAsym(
         std::string                      massfit_sgcut,
         std::string                      massfit_bgcut,
         bool                             use_sb_subtraction,
+        bool                             use_binned_sb_weights,
+        std::map<int,std::string>        asymfitvar_bincuts,
 
         // Ouput stream
         std::ostream &out                = std::cout
@@ -1174,6 +1178,35 @@ void getKinBinnedAsym(
                 dataset_bg_name
             );
             fit_dataset_name = dataset_sg_name;
+        }
+
+        // Weight dataset from binned mass fits
+        if (use_binned_sb_weights) {
+            std::string rds_weighted_name = (std::string)Form("%s_binned_sb_ws",dataset_name.c_str());
+            setWeightsFromLambdaMassFit(
+                ws,
+                rooDataSetResult,
+                massfitvars,
+                sgYield_name,
+                bgYield_name,
+                binframe,
+                massfit_nbins_conv,
+                massfit_model_name,
+                massfit_sig_pdf_name,
+                massfit_sg_region_min,
+                massfit_sg_region_max,
+                1, //use_poly4_bg
+                scheme_binid,
+                massfit_sgcut,
+                massfit_bgcut,
+                asymfitvars,
+                asymfitvar_bincuts,
+                rds_weighted_name,
+                "binned_sb_w", //weightvar
+                {-999.,999.}, //weightvar_lims,
+                0.0 //weights_default
+            );
+            fit_dataset_name = rds_weighted_name;
         }
 
         // Create signal region dataset for sideband subtraction
