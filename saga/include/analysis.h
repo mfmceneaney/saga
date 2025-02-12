@@ -78,7 +78,7 @@ namespace analysis {
 *
 * @param w RooWorkspace in which to work
 * @param massfitvars Invariant mass fit variable names
-* @param dataset_name Dataset name
+* @param rds RooDataSet to use for fit
 * @param sgYield_name Signal yield variable name
 * @param bgYield_name Background yield variable name
 * @param frame ROOT RDataframe from which to create a histogram of invariant mass
@@ -96,7 +96,7 @@ namespace analysis {
 std::vector<double> applyLambdaMassFit(
     RooWorkspace *w,
     std::vector<std::string> massfitvars,
-    std::string dataset_name,
+    RooAbsData *rds,
     std::string sgYield_name,
     std::string bgYield_name,
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -120,11 +120,8 @@ std::vector<double> applyLambdaMassFit(
     double mass_max = m->getMax();
     int    mass_nbins_hist =  m->getBins();
 
-    // Get dataset from workspace
-    RooAbsData *rooDataSetResult = w->data(dataset_name.c_str());
-
     // Get dataset length
-    int count = (int)rooDataSetResult->numEntries();
+    int count = (int)rds->numEntries();
 
     // Create histogram
     auto h1 = (TH1D) *frame.Histo1D({"h1",massvar.c_str(),mass_nbins_hist,mass_min,mass_max},massvar.c_str());
@@ -211,7 +208,7 @@ std::vector<double> applyLambdaMassFit(
     RooAddPdf model(model_name.c_str(), Form("%s+%s",sig_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str()), RooArgList(*sig,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
 
     // Fit invariant mass spectrum
-    std::unique_ptr<RooFitResult> fit_result_data{model.fitTo(*rooDataSetResult, Save(), PrintLevel(-1))};
+    std::unique_ptr<RooFitResult> fit_result_data{model.fitTo(*rds, Save(), PrintLevel(-1))};
 
     //---------------------------------------- Compute chi2 ----------------------------------------//
     // Import TH1 histogram into RooDataHist
@@ -268,7 +265,7 @@ std::vector<double> applyLambdaMassFit(
 
     // Sum on dataset
     std::string signal_cut = Form("%.8f<%s && %s<%.8f",(double)sg_region_min,m->GetName(),m->GetName(),(double)sg_region_max);
-    double i_ds = rooDataSetResult->sumEntries(signal_cut.c_str());
+    double i_ds = rds->sumEntries(signal_cut.c_str());
     double i_ds_err = TMath::Sqrt(i_ds);
 
     // Compute epsilon in a couple different ways
@@ -288,7 +285,7 @@ std::vector<double> applyLambdaMassFit(
 
     // Plot invariant mass fit from RooFit
     RooPlot *mframe_1d = m->frame(Title("1D pdf fit mass_ppim."));
-    rooDataSetResult->plotOn(mframe_1d);
+    rds->plotOn(mframe_1d);
     model.plotOn(mframe_1d);
     model.plotOn(mframe_1d, Components(*sig), LineStyle(kDashed), LineColor(kRed));
     model.plotOn(mframe_1d, Components(bg), LineStyle(kDashed), LineColor(kBlue));
@@ -922,10 +919,11 @@ void getKinBinnedAsym(
         );
 
         // Apply Lambda mass fit to FULL bin frame
+        RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
         std::vector<double> epss = applyLambdaMassFit(
                 ws,
                 massfitvars,
-                dataset_name,
+                rooDataSetResult,
                 sgYield_name,
                 bgYield_name,
                 binframe,
