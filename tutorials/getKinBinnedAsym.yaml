@@ -72,4 +72,34 @@ use_splot: false
 massfit_sgcut: "mass_ppim>1.11 && mass_ppim<1.13"
 massfit_bgcut: "(mass_ppim>1.08 && mass_ppim<1.11) || (mass_ppim>1.15 && mass_ppim<1.18)"
 use_sb_subtraction: true
+use_binned_sb_weights: false
+asymfitvar_binschemes: #NOTE: Structure for asymmetry fit variable bin schemes is { binscheme_name: { binvar_name: [binlimits] } }  #NOTE: binscheme_names MUST match those in the binschemes argument!
+  run:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+  x:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+  xF_ppim:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+  z_ppim:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
 logpath: "out.txt"
