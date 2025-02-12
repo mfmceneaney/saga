@@ -491,8 +491,8 @@ void getMassFitWeightedData(
 * Note that all weights are set to zero outside these two regions.
 *
 * @param w RooWorkspace in which to work
+* @param rds RooDataSet to fit and weight
 * @param massfitvars Invariant mass fit variable names
-* @param dataset_name Dataset name
 * @param sgYield_name Signal yield variable name
 * @param bgYield_name Background yield variable name
 * @param frame ROOT RDataframe from which to create a histogram of invariant mass
@@ -501,7 +501,6 @@ void getMassFitWeightedData(
 * @param massfit_sig_pdf_name Signal PDF name
 * @param massfit_sg_region_min Invariant mass signal region lower bound
 * @param massfit_sg_region_max Invariant mass signal region upper bound
-* @param ws_unique_id Identifier string to ensure PDFs uniqueness in workspace
 * @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
 * @param bin_id Unique bin identifier string
 * @param sgcut Signal invariant mass region cut
@@ -511,13 +510,12 @@ void getMassFitWeightedData(
 * @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
 * @param weightvar Weight variable name
 * @param weightvar_lims Weight variable limits
-* @param weights_map Map of unique integer bin identifiers to weight vectors
 * @param weights_default Weight variable default value for events outside provided cuts
 */
 void setWeightsFromLambdaMassFit(
     RooWorkspace                                                 *w,
+    RooAbsData                                                   *rds,
     std::vector<std::string>                                      massfitvars,
-    std::string                                                   dataset_name,
     std::string                                                   sgYield_name,
     std::string                                                   bgYield_name,
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -526,7 +524,6 @@ void setWeightsFromLambdaMassFit(
     std::string                                                   massfit_sig_pdf_name,
     double                                                        massfit_sg_region_min,
     double                                                        massfit_sg_region_max,
-    std::string                                                   ws_unique_id,
     int                                                           use_poly4_bg,
     std::string                                                   bin_id,
     std::string                                                   sgcut,
@@ -536,7 +533,6 @@ void setWeightsFromLambdaMassFit(
     std::string                                                   rds_weighted_name,
     std::string                                                   weightvar,
     std::vector<double>                                           weightvar_lims,
-    std::map<int,std::vector<double>>                             weights_map,
     double                                                        weights_default = 0.0
     ) {
 
@@ -564,9 +560,6 @@ void setWeightsFromLambdaMassFit(
         bincuts = saga::bins::getBinCuts(binscheme,0);
     }
 
-    // Get dataset from workspace
-    RooAbsData *rooDataSetResult = w->data(dataset_name.c_str());
-
     // Loop bins and apply fits recording background fractions and errors
     std::map<int,std::vector<double>> massfit_results;
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
@@ -576,7 +569,7 @@ void setWeightsFromLambdaMassFit(
         std::string bincut = it->second;
 
         // Get bin dataset and frame
-        RooDataSet *bin_ds = (RooDataSet*)rooDataSetResult->reduce(bincut.c_str());
+        RooDataSet *bin_ds = (RooDataSet*)rds->reduce(bincut.c_str());
         auto binframe = frame.Filter(bincut.c_str());
 
         // Get bin unique id
@@ -606,7 +599,7 @@ void setWeightsFromLambdaMassFit(
     // Set data set weights from the binned mass fits
     getMassFitWeightedData(
         w,
-        rooDataSetResult,
+        rds,
         frame,
         rds_weighted_name,
         bincuts,
