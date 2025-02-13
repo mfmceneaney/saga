@@ -634,10 +634,10 @@ void execute(const YAML::Node& node) {
 
     // ASYMFITVAR_BINSCHEME
     std::map<std::string,std::map<int,std::string>> asymfitvar_bincuts_map;
-    if (node["asymfitvar_binschemes"] && node["asymfitvar_binscheme"].IsMap()) {
+    if (node["asymfitvar_binschemes"] && node["asymfitvar_binschemes"].IsMap()) {
 
         // Get bin scheme node and get bin cuts maps
-        asymfitvar_bincuts_map = saga::bins::getBinCutsMap(node["asymfitvar_binscheme"]);
+        asymfitvar_bincuts_map = saga::bins::getBinCutsMap(node["asymfitvar_binschemes"]);
     }
 
     // END SIDEBAND SUBTRACTION ARGUMENTS
