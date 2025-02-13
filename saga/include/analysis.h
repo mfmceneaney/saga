@@ -204,7 +204,7 @@ std::vector<double> applyLambdaMassFit(
     double bgYield_init = (1.0-sgfrac) * count;
     RooRealVar sgYield(Form("%s%s",sgYield_name.c_str(),bin_id.c_str()), "fitted yield for signal", sgYield_init, 0., 2.0*count);
     RooRealVar bgYield(Form("%s%s",bgYield_name.c_str(),bin_id.c_str()), "fitted yield for background", bgYield_init, 0., 2.0*count);
-    RooAddPdf model(model_name.c_str(), Form("%s+%s",sig_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str()), RooArgList(*sig,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
+    RooAddPdf model(Form("%s%s",model_name.c_str(),bin_id.c_str()), Form("%s+%s",sig_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str()), RooArgList(*sig,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
 
     // Fit invariant mass spectrum
     std::unique_ptr<RooFitResult> fit_result_data{model.fitTo(*rds, Save(), PrintLevel(-1))};
