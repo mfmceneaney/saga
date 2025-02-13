@@ -6,3 +6,4 @@ pandas
 matplotlib
 seaborn
 pyyaml
+myst_parser

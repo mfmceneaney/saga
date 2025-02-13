@@ -50,7 +50,8 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    "myst_parser"
     ]
 
 intersphinx_mapping = {
@@ -67,6 +68,12 @@ breathe_projects_source = {
 
 templates_path = ['_templates']
 exclude_patterns = []
+
+# myst-parser configuration
+myst_enable_extensions = [
+    "dollarmath",
+    "amsmath",
+]
 
 
 
