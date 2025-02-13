@@ -15,5 +15,6 @@ Contents
 --------
 
 .. toctree::
+   readme
    cpp
    py
