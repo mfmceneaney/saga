@@ -379,7 +379,6 @@ std::vector<double> applyLambdaMassFit(
     // Add yield variables to workspace
     w->import(sgYield);
     w->import(bgYield);
-    w->import(cbFrac);
 
     // Add model to workspace
     w->import(model);
