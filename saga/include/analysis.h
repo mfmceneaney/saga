@@ -88,7 +88,6 @@ namespace analysis {
 * @param sig_pdf_name Signal PDF name
 * @param sg_region_min Invariant mass signal region lower bound
 * @param sg_region_max Invariant mass signal region upper bound
-* @param ws_unique_id Identifier string to ensure PDFs uniqueness in workspace
 * @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
 * @param bin_id Unique bin identifier string
 *
@@ -106,7 +105,6 @@ std::vector<double> applyLambdaMassFit(
     std::string sig_pdf_name,
     double sg_region_min,
     double sg_region_max,
-    std::string ws_unique_id,
     int use_poly4_bg,
     std::string bin_id
     ) {
@@ -141,12 +139,12 @@ std::vector<double> applyLambdaMassFit(
     // Construct signal gauss(t,mg,sg)
     RooRealVar mg("mg", "mg", 1.1157, mass_min, mass_max);
     RooRealVar sg("sg", "sg", 0.008, 0.0, 0.1);
-    RooGaussian gauss(Form("gauss%s",ws_unique_id.c_str()), "gauss", *m, mg, sg);
+    RooGaussian gauss(Form("gauss%s",bin_id.c_str()), "gauss", *m, mg, sg);
 
     // Construct landau(t,ml,sl) ;
     RooRealVar ml("ml", "mean landau", 1.1157, mass_min, mass_max);
     RooRealVar sl("sl", "sigma landau", 0.005, 0.0, 0.1);
-    RooLandau landau(Form("landau%s",ws_unique_id.c_str()), "landau", *m, ml, sl);
+    RooLandau landau(Form("landau%s",bin_id.c_str()), "landau", *m, ml, sl);
 
     // Construct signal parameters and function
     RooRealVar mu("mu","#mu",1.1157,0.0,2.0);
@@ -155,30 +153,30 @@ std::vector<double> applyLambdaMassFit(
     RooRealVar n_left("n_left","n_left",10.0);
     RooRealVar a("a","#alpha",1.0,0.0,3.0);
     RooRealVar n("n","n",2.0,2.0,10.0);
-    RooCrystalBall cb(Form("cb%s",ws_unique_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
+    RooCrystalBall cb(Form("cb%s",bin_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
 
     // Construct addition component pdfs
     RooRealVar sg_add("sg_add", "sg_add", 0.0001, 0.0, 0.001);
-    RooGaussian gauss_add(Form("gauss_add%s",ws_unique_id.c_str()), "gauss_add", *m, mu, sg_add);
-    RooCrystalBall cb_add(Form("cb_add%s",ws_unique_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
+    RooGaussian gauss_add(Form("gauss_add%s",bin_id.c_str()), "gauss_add", *m, mu, sg_add);
+    RooCrystalBall cb_add(Form("cb_add%s",bin_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
     double cbFrac_init = 0.1;
-    RooRealVar cbFrac(Form("cbFrac%s",ws_unique_id.c_str()), "fitted yield for signal", cbFrac_init, 0., 1.0);
-    RooAddPdf cb_gauss(Form("cb_gauss%s",ws_unique_id.c_str()), Form("cb_add%s+gauss_add%s",ws_unique_id.c_str(),ws_unique_id.c_str()), RooArgList(cb_add,gauss_add), RooArgList(cbFrac)); //NOTE: N-1 Coefficients! 
+    RooRealVar cbFrac(Form("cbFrac%s",bin_id.c_str()), "fitted yield for signal", cbFrac_init, 0., 1.0);
+    RooAddPdf cb_gauss(Form("cb_gauss%s",bin_id.c_str()), Form("cb_add%s+gauss_add%s",bin_id.c_str(),bin_id.c_str()), RooArgList(cb_add,gauss_add), RooArgList(cbFrac)); //NOTE: N-1 Coefficients! 
 
     // Construct convolution component pdfs
     RooRealVar mg_conv("mg_conv", "mg_conv", 0.0);
     RooRealVar sg_conv("sg_conv", "sg_conv", 0.008, 0.0, 0.1);
-    RooGaussian gauss_landau_conv(Form("gauss_landau_conv%s",ws_unique_id.c_str()), "gauss_landau_conv", *m, mg_conv, sg_conv);
-    RooGaussian gauss_cb_conv(Form("gauss_cb_conv%s",ws_unique_id.c_str()), "gauss_cb_conv", *m, mg_conv, sg_conv);
-    RooLandau landau_conv(Form("landau_conv%s",ws_unique_id.c_str()), "landau_conv", *m, ml, sl);
-    RooCrystalBall cb_conv(Form("cb_conv%s",ws_unique_id.c_str()), "crystal_ball_conv", *m, mu, s, a_left, n_left, a, n);
+    RooGaussian gauss_landau_conv(Form("gauss_landau_conv%s",bin_id.c_str()), "gauss_landau_conv", *m, mg_conv, sg_conv);
+    RooGaussian gauss_cb_conv(Form("gauss_cb_conv%s",bin_id.c_str()), "gauss_cb_conv", *m, mg_conv, sg_conv);
+    RooLandau landau_conv(Form("landau_conv%s",bin_id.c_str()), "landau_conv", *m, ml, sl);
+    RooCrystalBall cb_conv(Form("cb_conv%s",bin_id.c_str()), "crystal_ball_conv", *m, mu, s, a_left, n_left, a, n);
     
     // Set #bins to be used for FFT sampling to 10000
     m->setBins(mass_nbins_conv, "cache");
     
     // Construct Convolution PDFs
-    RooFFTConvPdf landau_X_gauss(Form("landau_X_gauss%s",ws_unique_id.c_str()), "CB (X) gauss_conv", *m, landau_conv, gauss_landau_conv);
-    RooFFTConvPdf cb_X_gauss(Form("cb_X_gauss%s",ws_unique_id.c_str()), "CB (X) gauss_conv", *m, cb_conv, gauss_cb_conv);
+    RooFFTConvPdf landau_X_gauss(Form("landau_X_gauss%s",bin_id.c_str()), "CB (X) gauss_conv", *m, landau_conv, gauss_landau_conv);
+    RooFFTConvPdf cb_X_gauss(Form("cb_X_gauss%s",bin_id.c_str()), "CB (X) gauss_conv", *m, cb_conv, gauss_cb_conv);
 
     // Import signal functions to workspace
     w->import(gauss);
@@ -189,7 +187,7 @@ std::vector<double> applyLambdaMassFit(
     w->import(cb_gauss);
 
     // Pick out signal function based on preference
-    std::string sig_pdf_name_unique = Form("%s%s",sig_pdf_name.c_str(),ws_unique_id.c_str());
+    std::string sig_pdf_name_unique = Form("%s%s",sig_pdf_name.c_str(),bin_id.c_str());
     RooAbsPdf *sig = w->pdf(sig_pdf_name_unique.c_str());
 
     // Consruct background parameters and function
@@ -197,15 +195,15 @@ std::vector<double> applyLambdaMassFit(
     RooRealVar b2("b2","b_{2}", -0.17,-10.0,10.0);
     RooRealVar b3("b3","b_{3}",  0.05,-10.0,10.0);
     RooRealVar b4("b4","b_{4}", -0.01,-10.0,10.0);
-    std::string bg_pdf_name_unique = Form("bg%s",ws_unique_id.c_str());
+    std::string bg_pdf_name_unique = Form("bg%s",bin_id.c_str());
     RooChebychev bg(bg_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str(),*m,(use_poly4_bg==1 ? RooArgList(b1,b2,b3,b4) : RooArgList(b1,b2)));
     
     // Combine signal and background functions
     double sgfrac = 0.1;
     double sgYield_init = sgfrac * count;
     double bgYield_init = (1.0-sgfrac) * count;
-    RooRealVar sgYield(Form("%s%s",sgYield_name.c_str(),ws_unique_id.c_str()), "fitted yield for signal", sgYield_init, 0., 2.0*count);
-    RooRealVar bgYield(Form("%s%s",bgYield_name.c_str(),ws_unique_id.c_str()), "fitted yield for background", bgYield_init, 0., 2.0*count);
+    RooRealVar sgYield(Form("%s%s",sgYield_name.c_str(),bin_id.c_str()), "fitted yield for signal", sgYield_init, 0., 2.0*count);
+    RooRealVar bgYield(Form("%s%s",bgYield_name.c_str(),bin_id.c_str()), "fitted yield for background", bgYield_init, 0., 2.0*count);
     RooAddPdf model(model_name.c_str(), Form("%s+%s",sig_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str()), RooArgList(*sig,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
 
     // Fit invariant mass spectrum
@@ -376,12 +374,11 @@ std::vector<double> applyLambdaMassFit(
     legend->Draw();
 
     // Save Canvas
-    c_massfit->SaveAs(Form("%s_%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),ws_unique_id.c_str(),bin_id.c_str()));
+    c_massfit->SaveAs(Form("%s_%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),bin_id.c_str(),bin_id.c_str()));
 
     // Add yield variables to workspace
     w->import(sgYield);
     w->import(bgYield);
-    w->import(cbFrac);
 
     // Add model to workspace
     w->import(model);
@@ -588,7 +585,6 @@ void setWeightsFromLambdaMassFit(
                 massfit_sig_pdf_name,
                 massfit_sg_region_min,
                 massfit_sg_region_max,
-                bin_unique_id,
                 use_poly4_bg,
                 bin_unique_id
         );
@@ -1158,7 +1154,6 @@ void getKinBinnedAsym(
                 massfit_sig_pdf_name,
                 massfit_sg_region_min,
                 massfit_sg_region_max,
-                "",//ws_unique_id->This changes pdf,yieldvar names, but NOT (bin,depol,mass,fit)vars,pdf parameters which are saved internally.
                 1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
                 scheme_binid
             );
@@ -1171,9 +1166,9 @@ void getKinBinnedAsym(
             applySPlot(
                 ws,
                 dataset_name,
-                sgYield_name,
-                bgYield_name,
-                massfit_model_name,
+                Form("%s%s",sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: applyLambdaMassFit renames these variables to ensure workspace uniqueness
+                Form("%s%s",bgYield_name.c_str(),scheme_binid.c_str()),
+                Form("%s%s",massfit_model_name.c_str(),scheme_binid.c_str()),
                 dataset_sg_name,
                 dataset_bg_name
             );
