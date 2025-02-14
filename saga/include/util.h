@@ -60,9 +60,11 @@ void replaceAll(
 * Add additional variable limit cuts to an existing cut string.
 * Note that this is an in place operation.
 *
-* @param cuts Substring to insert
-* @param vars String to search
-* @param varlims Substring to find and replace
+* @param cuts Base cut string
+* @param vars Variables for which to add limits cuts
+* @param varlims Limits of provided variables
+*
+* @return Updated cut string
 */
 std::string addLimitCuts(
         std::string                      cuts,
