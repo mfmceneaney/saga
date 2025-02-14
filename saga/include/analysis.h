@@ -463,7 +463,7 @@ void getMassFitWeightedData(
     // Create weights dataset from dataframe
     if (weightvar_lims.size()!=2) weightvar_lims = {-9999.,9999.};
     RooRealVar wv(weightvar.c_str(),weightvar.c_str(),weightvar_lims[0],weightvar_lims[1]);
-    ROOT::RDF::RResultPtr<RooDataSet> rds_weights = frame.Book<float>(
+    ROOT::RDF::RResultPtr<RooDataSet> rds_weights = frame_weighted.Book<double>(
                 RooDataSetHelper(Form("%s_weights",rds->GetName()),"Data Set Weights",RooArgSet(wv)),
                 {weightvar.c_str()}
             );

@@ -58,18 +58,20 @@ void replaceAll(
 * @brief Add additional variable limit cuts to an existing cut string.
 *
 * Add additional variable limit cuts to an existing cut string.
-* Note that this is an in place operation.
 *
-* @param cuts Substring to insert
-* @param vars String to search
-* @param varlims Substring to find and replace
+* @param cuts Base cut string
+* @param vars Variables for which to add limits cuts
+* @param varlims Limits of provided variables
+*
+* @return Updated cut string
 */
-void addLimitCuts(
+std::string addLimitCuts(
         std::string                      cuts,
         std::vector<std::string>         vars,
         std::vector<std::vector<double>> varlims
     ) {
     
+    std::string newcuts = cuts;
     for (int idx=0; idx<vars.size(); idx++) {
 
         // Get variable name and limits
@@ -78,13 +80,15 @@ void addLimitCuts(
         double varmax   = varlims[idx][1];
 
         // Add variable limit cuts to overall cuts
-        if (cuts.size()>0) {
-            cuts = Form("%s && %s>=%.8f && %s<%.8f",cuts.c_str(),var.c_str(),varmin,var.c_str(),varmax);
+        if (newcuts.size()>0) {
+            newcuts = Form("%s && %s>=%.8f && %s<%.8f",newcuts.c_str(),var.c_str(),varmin,var.c_str(),varmax);
         } else {
-            cuts = Form("%s>=%.8f && %s<%.8f",var.c_str(),varmin,var.c_str(),varmax);
+            newcuts = Form("%s>=%.8f && %s<%.8f",var.c_str(),varmin,var.c_str(),varmax);
         }
 
     } // for (int idx=0; idx<vars.size(); idx++) {
+
+    return newcuts;
 }
 
 } // using namespace util;

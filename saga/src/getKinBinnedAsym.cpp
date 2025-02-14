@@ -661,10 +661,10 @@ void execute(const YAML::Node& node) {
     TRandom *gRandom = new TRandom(seed); //NOTE: IMPORTANT: Need `new` here to get a pointer.
 
     // Add all absolute variable limits to overall cuts
-    saga::util::addLimitCuts(cuts,binvars,binvar_lims);
-    saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
-    saga::util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
-    saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
+    cuts = saga::util::addLimitCuts(cuts,binvars,binvar_lims);
+    cuts = saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
+    cuts = saga::util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
+    cuts = saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
     std::cout << "INFO: cuts: "<<cuts.c_str() << std::endl;
 
     // Create RDataFrame
