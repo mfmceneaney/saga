@@ -58,7 +58,6 @@ void replaceAll(
 * @brief Add additional variable limit cuts to an existing cut string.
 *
 * Add additional variable limit cuts to an existing cut string.
-* Note that this is an in place operation.
 *
 * @param cuts Base cut string
 * @param vars Variables for which to add limits cuts
