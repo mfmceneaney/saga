@@ -40,7 +40,7 @@ def get_config_str(
 
     return (sep+sep).join([sep.join([key,sep.join([str(ele) for ele in config[key]]) if type(config[key])==list else str(config[key]) ]) for key in sorted(config)])
 
-def get_outpath(
+def get_out_path(
         base_dir,
         aggregate_keys,
         result_name,
@@ -214,29 +214,29 @@ def get_out_dirs_list(
 
     return out_dirs_list
 
-def load_TH2(
+def load_th1(
         path,
-        name = "h2"
+        name = "h1"
     ):
     """
     Parameters
     ----------
     path : required, string
-        Path to ROOT file containing TH2D
+        Path to ROOT file containing histogram
     name : optional, string
-        Name of TH2D object with ROOT file
+        Name of `TH1` object within the ROOT file
 
     Returns
     -------
     np.array
-        Histogram data as a 2D numpy array or empty list if file is not found
+        Histogram data as a numpy array or empty list if file is not found
 
     Description
     -----------
-    Read TH2D data from a ROOT file.
+    Read `TH1` histogram data from a ROOT file.  Note that this will work for any histogram: (`TH1`, `TH2`, `TH3`).
     """
 
-    # Get TH2D from ROOT file
+    # Get TH1 from ROOT file
     try:
         f = ur.open(path)
         g = f[name].values()
@@ -483,8 +483,8 @@ def get_graph_data(
 
     Returns
     -------
-    dictionary
-        Dictionary containing graph data
+    np.array
+        Numpy array containing graph data with dimensions `(2*(1+N_XVAR_KEYS),*SHAPE(BIN_IDS))`
 
     Description
     -----------
@@ -492,108 +492,100 @@ def get_graph_data(
     """
 
     # Initialize arrays
-    x    = {}
     y    = []
-    xerr = {}
     yerr = []
+    x    = []
+    xerr = []
+
+    # Check if bin_ids is multi-dimensional
+    bin_ids_shape = np.shape(bin_ids)
+    if len(bin_ids_shape)>1:
+        bin_ids = np.flatten(bin_ids)
 
     # Loop bins
-    for bin_id in bin_ids:
+    for bin_raw_idx, bin_id in enumerate(bin_ids):
 
         # Get bin data
         bin_data = df.loc[df[id_key]==bin_id]
 
+        # Get bin asymmetry value and error
+        y.append(bin_data[asym_key])
+        yerr.append(bin_data[asym_key+err_ext])
+
         # Loop bin variables
-        for xvar in xvar_keys:
+        for xvar_idx, xvar in enumerate(xvar_keys):
 
             # Get bin variable data
             bin_x = bin_data[xvar_key]
             bin_x_err = bin_data[xvar_key+err_ext]
 
-            # Add bin variable mean
-            if xvar in x.keys():
-                x[xvar].append(bin_x)
+            # Add bin variable mean and error
+            if bin_raw_idx==0:
+                x.append([bin_x])
+                xerr.append([bin_x_err])
             else:
-                x[xvar] = [bin_x]
+                x[xvar_idx].append(bin_x)
+                xerr[xvar_idx].append(bin_x_err)
 
-            # Add bin variable error
-            if xvar in x_err.keys():
-                x_err[xvar].append(bin_x_err)
-            else:
-                x_err[xvar] = [bin_x_err]
+    # Reshape data
+    if len(bin_ids_shape)>1:
 
-        # Get bin asymmetry value and error
-        bin_y     = bin_data[asym_key]
-        bin_y_err = bin_data[asym_key+err_ext]
+        # Reshape bin asymmetry value and error
+        y    = np.reshape(y,bin_ids_shape)
+        yerr = np.reshape(yerr,bin_ids_shape)
 
-    return {
-        'x':x,
-        'y':y,
-        'xerr':xerr,
-        'yerr':yerr,
-    }
+        # Reshape bin variable statistics
+        for xvar_idx, xvar in enumerate(xvar_keys):
+            x[xvar_idx]    = np.reshape(x[xvar_idx],bin_ids_shape)
+            xerr[xvar_idx] = np.reshape(xerr[xvar_idx],bin_ids_shape)
 
-#TODO: Make this expect the output format from get_graph_data...
-def get_aggregate_arrs(
+    return np.array([
+        y,
+        yerr,
+        *x,
+        *xerr
+    ])
+
+def get_aggregate_graph(
         graph_list,
         xvar_keys=['x'],
-        asym_key='a1',
-        err_ext='_err',
         sgasym=0.0,
     ):
     """
     Parameters
     ----------
     graph_list : required, list
-        List of graphs
+        List of graphs with dimension `(N_GRAPHS, 2*(1+N_XVAR_KEYS), N_BIN_IDS)`
     xvar_keys : list, optional
         List of binning variables for which to return mean values
         Default : ['x']
-    asym_key : string, optional
-        Asymmetry variables for which to return mean value
-        Default : 'a1'
-    err_ext : string, optional
-        Extension for forming error column names
-        Default : '_err'
     sgasym : optional, float
         Injected signal asymmetry for computing difference of measured and injected values
 
     Returns
     -------
     Dictionary
-        Dictionary of mean bin variables and asymmetry means and errors and other statistics names to a list of their values in each kinematic bin
+        Dictionary of mean asymmetry means and errors and other statistics names as well as bin variable means and errors to an array of their values in each kinematic bin
 
     Description
     -----------
     Compute the mean bin variables and asymmetry means and errors and other statistical information across a list of graphs' data from `get_graph_data()`.
-    The keys of the returned map are as follows:
-    `x_mean`,
-    `y_mean`,
-    `xerr_mean`,
-    `yerr_mean`,
-    `y_min`,
-    `y_max`,
-    `y_std`,
-    `ydiff_mean`,
-    `ydiff_std`,
-    `ydiff_mins`,
-    `ydiff_maxs`.
-    Note that xvariables will be returned in array format nested in the same order as the variables in `xvar_keys`.
+    Note that in the case of that the graph dimension is greater than 1, the bin variable statistics will be returned as a list of arrays in the same order as `xvar_keys`.
     """
 
     # Setup return dictionary
     graph = {
-            'x_mean':[],
             'y_mean':[],
-            'xerr_mean':[],
             'yerr_mean':[],
+            'y_std':[],
             'y_min':[],
             'y_max':[],
-            'y_std':[],
             'ydiff_mean':[],
             'ydiff_std':[],
-            'ydiff_mins':[],
-            'ydiff_maxs':[],
+            'ydiff_min':[],
+            'ydiff_max':[],
+            'x_mean':[],
+            'xerr_mean':[]
             }
 
     # Check if graph list is empty
@@ -601,20 +593,41 @@ def get_aggregate_arrs(
         print("WARNING: len(graph_list)==0.  Returning empty graph.")
         return graph
 
-    #TODO: Think more about this, as is is not correct...
+    # Format graph list
+    graph_list  = np.array(graph_list)
+    graph_list  = np.swapaxes(graph_list,0,1) #NOTE: INCOMING LIST SHOULD GO FROM DIMENSION (N_GRAPHS, 2*(1+N_XVAR_KEYS), N_BIN_IDS) -> (2*(1+N_XVAR_KEYS), N_GRAPHS, N_BIN_IDS)
 
-    # Get arrays
-    graph['x_mean']     = np.mean(graph_list[x_idx],axis=0) #NOTE: Get mean across different graphs (axis=0) but not across bins (axis>0)
+    # Extract aggregate asymmetry statistics
+    y_idx    = 0
+    yerr_idx = 1
     graph['y_mean']     = np.mean(graph_list[y_idx],axis=0)
-    graph['xerr_mean']  = np.sqrt(np.mean(np.square(graph_list[xerr_idx]),axis=0))
     graph['yerr_mean']  = np.sqrt(np.mean(np.square(graph_list[yerr_idx]),axis=0))
+    graph['y_std']      = np.std(graph_list[y_idx],axis=0)
     graph['y_min']      = np.min(graph_list[y_idx],axis=0)
     graph['y_max']      = np.max(graph_list[y_idx],axis=0)
-    graph['y_std']      = np.std(graph_list[y_idx],axis=0)
     graph['ydiff_mean'] = np.mean(graph_list[y_idx]-sgasym,axis=0)
     graph['ydiff_std']  = np.std(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_mins'] = np.min(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_maxs'] = np.max(graph_list[y_idx]-sgasym,axis=0)
+    graph['ydiff_min'] = np.min(graph_list[y_idx]-sgasym,axis=0)
+    graph['ydiff_max'] = np.max(graph_list[y_idx]-sgasym,axis=0)
+
+    # Extract aggregate projection variable statistics
+    x_idx_start    = 2
+    xerr_idx_start = x_idx_start+len(xvar_keys)
+    if len(xvar_keys)==1:
+
+        # Set projection variable arrays in the case of a 1D binning
+        x_idx = x_idx_start
+        xerr_idx = xerr_idx_start
+        graph['x_mean']     = np.mean(graph_list[x_idx],axis=0) #NOTE: Get mean across different graphs (axis=0) but not across bins (axis>0)
+        graph['xerr_mean']  = np.sqrt(np.mean(np.square(graph_list[xerr_idx]),axis=0))
+    else:
+
+        # Loop projection variable keys and aggregate across each variable for a >1D binning
+        for xvar_idx, xvar in enumerate(xvar_keys):
+            x_idx = x_idx_start + xvar_idx
+            xerr_idx = xerr_idx_start + xvar_idx
+            graph['x_mean'].append(np.mean(graph_list[x_idx],axis=0))
+            graph['xerr_mean'].append(np.sqrt(np.mean(np.square(graph_list[xerr_idx]),axis=0)))
 
     return graph
 
@@ -831,7 +844,7 @@ def save_graph_systematics_to_csv(
 
 def save_bin_migration_matrix_to_csv(
         bin_migration_mat,
-        base_dir='systematics/bin_migration/',
+        base_dir='./',
         binvar='x',
         delimiter=",",
         header=None,
@@ -844,7 +857,7 @@ def save_bin_migration_matrix_to_csv(
     bin_migration_mat : required, np.array
         2D bin migration matrix with (i,j) `->` (generated,reconstructed)
     base_dir : string, required
-        Path to directory in matrix will be saved
+        Path to directory in which matrix will be saved
         Default : 'systematics/bin_migration/'
     binvar : optional, string
         Name of reconstructed bin variable
@@ -862,13 +875,19 @@ def save_bin_migration_matrix_to_csv(
         CSV comments
         Default : ""
 
+    Raises
+    ------
+    TypeError
+        Raise an error if the bin migration matrix is not square
+
     Description
     -----------
     Save a 2D bin migration matrix mapping generated bins to reconstructed bins to a CSV file
     with an added initial row and column for the bin indices.  Note that files will be saved
-    with name `bin_migration_mat_<binvar>.csv`.
+    to `<base_dir>/bin_migration_mat_<binvar>.csv`.
     """
 
+    # Check bin migration matrix shape
     if np.shape(bin_migration_mat)[0]!=np.shape(bin_migration_mat)[1] or len(np.shape(bin_migration_mat))!=2:
         raise TypeError("Bin migration matrix must be square but has shape "+str(np.shape(bin_migration_mat)))
 
@@ -939,12 +958,125 @@ def compute_systematics(
 
     return systematics
 
+def set_default_plt_settings():
+    """
+    Description
+    -----------
+    Set plt.rc parameters for font sizes and family and tick font size and tick length and direction
+    in a nice format.
+    """
+
+    # Set font sizes
+    plt.rc('font', size=25) #controls default text size
+    plt.rc('axes', titlesize=50) #fontsize of the title
+    plt.rc('axes', labelsize=50) #fontsize of the x and y labels
+    plt.rc('xtick', labelsize=25) #fontsize of the x tick labels
+    plt.rc('ytick', labelsize=25) #fontsize of the y tick labels
+    plt.rc('legend', fontsize=20) #fontsize of the legend
+
+    # Get some nicer plot settings
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['figure.autolayout'] = True
+
+    # Set tick parameters
+    plt.tick_params(direction='out',bottom=True,top=True,left=True,right=True,length=10,width=1)
+
+def plot_injected_asyms(
+        ax1,
+        asyms,
+        ytitles,
+        colors,
+        sgasym_idx = 0,
+        ylims = [-1.0,1.0],
+        label_base='Injected Signal ',
+        linestyle='--',
+        axlinewidth=1,
+    ):
+
+    """
+    Parameters
+    ----------
+    ax1 : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot figure axis
+    asyms : list, required
+        List of injected asymmetries 
+    ytitles : list, required
+        List of y axis titles
+    colors : list, required
+        List of colors for each injected asymmetries
+    sgasym_idx : int, optional
+        Injected signal asymmetry index
+        Default : 0
+    ylims : tuple, optional
+        y limits for plotting
+        Default : (-1.0,1.0)
+    label_base : string, optional
+        Base label to prepend to ytitles for injected asymmetries
+        Default : 'Injected Signal '
+    linestyle : string, optional
+        Line style
+        Default : '--'
+    linewidth : int, optional
+        Line width
+        Default : 1
+
+    Description
+    -----------
+    Plot the injected asymmetries for each bin in a 1D binning scheme offsetting repeat values
+    by a small amount.  Note that injected asymmetries should have shape `(N_ASYMS)` if plotting
+    constant asymmetries or `(N_ASYMS,2)` if you would like to plot function data `(x,y)`.
+    """
+
+    # Loop asymmetries and plot using a small offset for asymmetries
+    plotted_values = {} #NOTE: Keep track of how many times you've plotted each asymmetry value
+    for idx in range(len(asyms)):
+
+        # Set the offset
+        offset = 0.0
+        if asyms[idx] in asyms[:idx]:
+            if asyms[idx] in plotted_values.keys():
+                offset = plotted_values[asyms[idx]] * 0.0025 * (ylims[1] - ylims[0])
+                plotted_values[asyms[idx]] += 1
+        else:
+            plotted_values[asyms[idx]] = 1
+        
+        # Flip offset if the asymmetry is negative
+        if asyms[idx]<0.0: offset *= -1.0
+
+        # Plot injected asymmetries as (x,y) data OR axis lines
+        if len(np.shape(asyms))>1:
+            ax1.plot(asyms[idx][0], asyms[idx][1]+offset, color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
+        else:
+            ax1.axhline(asyms[idx]+offset, color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
+
+def plot_watermark(
+        ax1,
+        watermark='CLAS12 Preliminary'
+    ):
+    """
+    Parameters
+    ----------
+    ax1 : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot figure axis
+    watermark : string, optional
+        Watermark text
+        Default : 'CLAS12 Preliminary'
+
+    Description
+    -----------
+    Plot a watermark.
+    """
+    plt.text(0.5, 0.5, watermark_text,
+                size=50, rotation=25., color='gray', alpha=0.25,
+                horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
+
 def plot_systematics(
         x_means,
         yerr_syst,
         palette = 'Dark2',
         stacked = False,
-        label   = None,
+        syst_names = None,
+        syst_labels = None,
         xlims   = (0.0,1.0),
         ylims   = (-1.0,1.0),
         xvar    = 'x',
@@ -952,8 +1084,22 @@ def plot_systematics(
         xtitle  = '$Q^{2} (GeV^{2})$',
         ytitle  = '$\Delta \mathcal{A}$',
         outpath = 'systematics.pdf',
-        add_clas12_watermark = True
+        watermark = 'CLAS12 Preliminary',
+        use_default_plt_settings = True,
+        legend_loc = 'best',
+        ecolor = 'black',
+        elinewidth = 2.0,
+        capsize = 18,
+        capthick = 2.0,
+        marker = 'o',
+        markersize = 20,
+        linestyle = None,
+        linewidth = 0.0,
+        gridlinewidth = 0.5,
+        axlinewidth = 1.0,
+        figsize = (16,10),
     ):
+
     """
     Parameters
     ----------
@@ -967,7 +1113,10 @@ def plot_systematics(
     stacked : Boolean, optional
         Whether to stack histograms from different sources of systematic error
         Default : False
-    label : List, optional
+    syst_names : List, optional
+        List of column names for each source of systematic error
+        Default : None
+    syst_labels : List, optional
         List of labels for each source of systematic error
         Default : None
     xlims : tuple, optional
@@ -991,44 +1140,62 @@ def plot_systematics(
     outpath : string, optional
         Name of output pdf
         Default : 'systematics.pdf'
-    add_clas12_watermark : Boolean, optional
-        Option to add CLAS12 watermark on produced plot
+    watermark : String, optional
+        Optional watermark to put on top of plot
+        Default : 'CLAS12 Preliminary'
+    use_default_plt_settings : Boolean, optional
+        Option to use default font and tick parameter style settings
         Default : True
+    legend_loc : string, optional
+        Matplotlib.pyplot legend location string, will not be plotted if set to None
+        Default : 'best'
+    ecolor : string, optional
+        Error line color
+        Default : 'black'
+    ecolor : float, optional
+        Error line width
+        Default : 2.0
+    capsize : int, optional
+        Error cap size
+        Default : 18
+    capthick : float, optional
+        Error cap thickness
+        Default : 2.0
+    marker : string, optional
+        Marker type
+        Default : 'o'
+    markersize : int, optional
+        Marker size
+        Default : 20
+    linestyle : string, optional
+        Line style
+        Default : None
+    linewidth : float, optional
+        Line width
+        Default : 0.0
+    gridlinewidth : float, optional
+        Grid line width
+        Default : 0.5
+    axlinewidth : float, optional
+        Axis line and injected asymmetries line width
+        Default : 1.0
+    figsize : tuple, optional
+        Figure size
+        Default : (16,10)
 
     Description
     -----------
     Plot the systematic error for each bin in a 1D binning scheme broken down by sources of systematic error.
+    Save systematics breakdowns to CSV in `<outpath>.csv`.
     """
 
     # Set color palette
     sbn.set_palette(palette)
 
-    # Set font sizes
-    plt.rc('font', size=25) #controls default text size
-    plt.rc('axes', titlesize=50) #fontsize of the title
-    plt.rc('axes', labelsize=50) #fontsize of the x and y labels
-    plt.rc('xtick', labelsize=25) #fontsize of the x tick labels
-    plt.rc('ytick', labelsize=25) #fontsize of the y tick labels
-    plt.rc('legend', fontsize=20) #fontsize of the legend
-
-    # Get some nicer plot settings
-    plt.rcParams['font.family'] = 'serif'
-    plt.rcParams['figure.autolayout'] = True
-
-    # Set plotting parameters
-    ecolor='black'
-    elinewidth=2.0
-    capsize=18
-    capthick=2.0
-    marker='o'
-    linestyle=None
-    linewidth=0.0
-    markersize=20
-    gridlinewidth=0.5
-    axlinewidth=1
+    # Use default plotting settings
+    if use_default_plt_settings: set_default_plt_settings()
 
     # Set up plot
-    figsize = (16,10)
     f1, ax1 = plt.subplots(figsize=figsize)
     plt.xlim(*xlims)
     plt.ylim(*ylims)
@@ -1039,15 +1206,38 @@ def plot_systematics(
     # Plot systematics by source for each x point
     nbins = len(x_means)
     xbins = np.moveaxis(np.array([x_means for el in range(np.shape(yerr_syst)[1])]),(0,1),(1,0))
-    s1 = plt.hist(xbins, weights=yerr_syst, bins=nbins, alpha=0.5, label=label, stacked=stacked)
-    plt.tick_params(direction='out',bottom=True,top=True,left=True,right=True,length=10,width=1)
+    s1 = plt.hist(xbins, weights=yerr_syst, bins=nbins, alpha=0.5, label=syst_labels, stacked=stacked)
+
+    # Plot zero line
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
-    if add_clas12_watermark:
-        plt.text(0.5, 0.5, 'CLAS12 Preliminary',
-                size=50, rotation=25., color='gray', alpha=0.25,
-                horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
-    plt.legend(loc='best')
+
+    # Add water mark
+    if watermark is not None and watermark!='': plot_watermark(ax1,watermark=watermark)
+
+    # Plot legend
+    if legend_loc is not None and legend_loc!='': plt.legend(loc=legend_loc)
+
+    # Save figure
     f1.savefig(outpath)
+
+    # Save plot data to csv
+    delimiter = ","
+    if syst_names is None: syst_names = ["syst"+str(idx) for idx in range(nbins)]
+    header    = delimiter.join(["bin",*syst_names]) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
+    syst_fmts = ["%.3g" for idx in range(nbins)]
+    fmt       = ["%d",*syst_fmts]
+    comments  = ""
+
+    # Save to CSV
+    save_graph_systematics_to_csv(
+        outpath+'.csv',
+        x_means,
+        yerrs_syst=yerr_syst,
+        delimiter=delimiter,
+        header=header,
+        fmt=fmt,
+        comments=comments
+    )
 
 def plot_results(
         x_mean = None,
@@ -1061,21 +1251,36 @@ def plot_results(
         y_std  = None,
         ydiff_mean = None,
         ydiff_std = None,
-        ydiff_mins = None,
-        ydiff_maxs = None,
+        ydiff_min = None,
+        ydiff_max = None,
         xlims = [0.0,1.0],
         ylims = [0.0,1.0],
         title = 'Asymmetry Results',
         xvar  = 'x',
         xtitle = '$x$',
-        ytitle = '$\mathcal{A}$',
-        sgasym = 0.10,
-        bgasym = 0.00,
-        color  = 'blue', #NOTE: COLOR OF DATA POINTS
-        bcolor = 'gray', #NOTE:
+        ytitles = ['$\mathcal{A}$'],
+        sgasym_idx = 0,
+        sgasyms = [0.10],
+        bgasyms = [0.00],
+        sg_colors  = ['blue'],
+        bg_colors  = ['red'],
+        fill_color = 'gray',
         outpath = 'out.pdf',
-        add_clas12_watermark = True,
+        watermark = 'CLAS12 Preliminary',
         show_injected_asymmetries = False,
+        use_default_plt_settings = True,
+        legend_loc = 'best',
+        ecolor = 'black',
+        elinewidth = 2.0,
+        capsize = 18,
+        capthick = 2.0,
+        marker = 'o',
+        markersize = 20,
+        linestyle = None,
+        linewidth = 0.0,
+        gridlinewidth = 0.5,
+        axlinewidth = 1.0,
+        figsize = (16,10),
     ):
     """
     Parameters
@@ -1113,10 +1318,10 @@ def plot_results(
     ydiff_std : list, optional
         y difference from injected signal asymmetry standard deviation values for each bin
         Default : None
-    ydiff_mins : list, optional
+    ydiff_min : list, optional
         y difference from injected signal asymmetry minimum values for each bin
         Default : None
-    ydiff_maxs : list, optional
+    ydiff_max : list, optional
         y difference from injected signal asymmetry maximum values for each bin
         Default : None
     xlims : tuple, optional
@@ -1134,63 +1339,87 @@ def plot_results(
     xtitle : string, optional
         x axis title
         Default : '$x$'
-    ytitle : string, optional
-        y axis title
-        Default : '$\Delta \mathcal{A}$'
-    sgasym : float, optional
-        Injected signal asymmetry
-        Default : 0.10
-    bgasym : float, optional
-        Injected background asymmetry
-        Default : 0.00
-    color : string, optional
-        Color of data point markers
-        Default : 'blue'
-    bcolor : string, optional
-        Color of standard or min max band
+    ytitles : list, optional
+        List of y axis titles
+        Default : ['$\Delta \mathcal{A}$']
+    sgasyms_idx : int, optional
+        Index of injected signal asymmetry
+        Default : 0
+    sgasyms : list, optional
+        List of injected signal asymmetries
+        Default : [0.10]
+    bgasyms : list, optional
+        List of injected background asymmetries
+        Default : [0.00]
+    sg_colors : list, optional
+        List of signal asymmetry plotting colors
+        Default : ['blue']
+    bg_colors : list, optional
+        List of background asymmetry plotting colors
+        Default : ['red']
+    fill_color : string, optional
+        Color of 1 sigma band or systematic uncertainties
         Default : 'gray'
     outpath : string, optional
         Name of output pdf
         Default : 'systematics.pdf'
-    add_clas12_watermark : Boolean, optional
-        Option to add CLAS12 watermark on produced plot
-        Default : True
+    watermark : String, optional
+        Optional watermark to put on top of plot
+        Default : 'CLAS12 Preliminary'
     show_injected_asymmetries : Boolean, optional
         Option to show injected signal and background asymmetries
         Default : False
+    use_default_plt_settings : Boolean, optional
+        Option to use default font and tick parameter style settings
+        Default : True
+    legend_loc : string, optional
+        Matplotlib.pyplot legend location string, will not be plotted if set to None
+        Default : 'best'
+    ecolor : string, optional
+        Error line color
+        Default : 'black'
+    ecolor : float, optional
+        Error line width
+        Default : 2.0
+    capsize : int, optional
+        Error cap size
+        Default : 18
+    capthick : float, optional
+        Error cap thickness
+        Default : 2.0
+    marker : string, optional
+        Marker type
+        Default : 'o'
+    markersize : int, optional
+        Marker size
+        Default : 20
+    linestyle : string, optional
+        Line style
+        Default : None
+    linewidth : float, optional
+        Line width
+        Default : 0.0
+    gridlinewidth : float, optional
+        Grid line width
+        Default : 0.5
+    axlinewidth : float, optional
+        Axis line and injected asymmetries line width
+        Default : 1.0
+    figsize : tuple, optional
+        Figure size
+        Default : (16,10)
 
     Description
     -----------
     Plot the results for each bin in a 1D binning scheme showing systematic errors
     and a standard deviation band and injected asymmetries if desired.  Save results
-    and systematics to CSV.
+    and differences from the injected signal to CSV in `<outpath>.csv` and `<outpath>_ydiff.csv`.
     """
 
-    # Set font sizes
-    plt.rc('font', size=25) #controls default text size
-    plt.rc('axes', titlesize=50) #fontsize of the title
-    plt.rc('axes', labelsize=50) #fontsize of the x and y labels
-    plt.rc('xtick', labelsize=25) #fontsize of the x tick labels
-    plt.rc('ytick', labelsize=25) #fontsize of the y tick labels
-    plt.rc('legend', fontsize=20) #fontsize of the legend
-
-    # Get some nicer plot settings
-    plt.rcParams['font.family'] = 'serif'
-    plt.rcParams['figure.autolayout'] = True
-
-    ecolor='black'
-    elinewidth=2.0
-    capsize=18
-    capthick=2.0
-    marker='o'
-    linestyle=None
-    linewidth=0.0
-    markersize=20
-    gridlinewidth=0.5
-    axlinewidth=1
+    # Use default plotting settings
+    if use_default_plt_settings: set_default_plt_settings()
 
     # Set up plot
-    figsize = (16,10)
     f1, ax1 = plt.subplots(figsize=figsize)
     plt.xlim(*xlims)
     plt.ylim(*ylims)
@@ -1198,16 +1427,16 @@ def plot_results(
     plt.xlabel(xtitle,usetex=True)
     plt.ylabel(ytitle,usetex=True)
 
-    # Plot systematics OR std deviation of aggregated injected values THEN data with errors
+    # Plot systematic errors
     if yerr_syst is not None:
         g1 = plt.errorbar(x_mean,y_mean,xerr=None,yerr=yerr_syst,
-                    ecolor='gray', elinewidth=elinewidth*20, capsize=0,
+                    ecolor=fill_color, elinewidth=elinewidth*20, capsize=0,
                     color=color, marker='o', linestyle=linestyle, alpha=0.5,
                     linewidth=0, markersize=0,label='Systematic error')
 
-    # Plot standard deviation of repetitions in each bin
+    # Plot standard deviation of aggregated injected values
     if y_std is not None:
-        fb = plt.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=bcolor)
+        fb = plt.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=fill_color)
 
     # Plot results
     g2 = plt.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
@@ -1215,22 +1444,43 @@ def plot_results(
                         color=color, marker='o', linestyle=linestyle,
                         linewidth=linewidth, markersize=markersize,label=label)
 
-    # Set tick marks and zero line
-    plt.tick_params(direction='out',bottom=True,top=True,left=True,right=True,length=10,width=1)
+    # Add zero line
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
 
     # Draw injected asymmetries
     if show_injected_asymmetries:
-        if sgasym!=0: ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
-        ax1.axhline(sgasym, color='red',linestyle='--',linewidth=axlinewidth, label='Injected Signal Asymmetry')
-        if bgasym!=0: ax1.axhline(bgasym, color='blue',linestyle='--',linewidth=axlinewidth, label='Injected Background Asymmetry')
 
-    # Add water mark and legend
-    if add_clas12_watermark:
-        plt.text(0.5, 0.5, 'CLAS12 Preliminary',
-                size=50, rotation=25., color='gray', alpha=0.25,
-                horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
-    plt.legend(loc='best')
+        # Plot injected signal asymmetries
+        plot_injected_asyms(
+            ax1,
+            sgasyms,
+            ytitles,
+            sg_colors,
+            sgasym_idx = sgasym_idx,
+            ylims = yliims,
+            label_base='Injected Signal ',
+            linestyle='--',
+            linewidth=axlinewidth,
+        )
+
+        # Plot injected background asymmetries
+        plot_injected_asyms(
+            ax1,
+            sgasyms,
+            ytitles,
+            sg_colors,
+            sgasym_idx = sgasym_idx,
+            ylims = yliims,
+            label_base='Injected Background ',
+            linestyle='--',
+            linewidth=axlinewidth,
+        )
+
+    # Add water mark
+    if watermark is not None and watermark!='': plot_watermark(ax1,watermark=watermark)
+
+    # Plot legend
+    if legend_loc is not None and legend_loc!='': plt.legend(loc=legend_loc)
 
     # Save figure
     f1.savefig(outpath)
@@ -1243,31 +1493,38 @@ def plot_results(
 
     # Save plot data
     save_graph_to_csv(
-        outpath+'.csv',
-        x_mean,
-        y_mean,
-        xerr=xerr_mean,
-        yerr=yerr_mean,
-        xerr_syst=xerr_syst,
-        yerr_syst=yerr_syst,
-        delimiter=delimiter,
-        header=header,
-        fmt=fmt,
-        comments=comments
-        )
-
-    # Save ydiffs for MC asym injection systematics
-    if ydiff_mean is not None:
-        convert_graph_to_csv(
-            outpath+'_ydiff.csv',
+            outpath+'.csv',
             x_mean,
-            ydiff_mean,
+            y_mean,
             xerr=xerr_mean,
-            yerr=ydiff_std,
-            mins=ydiff_mins,
-            maxs=ydiff_maxs,
+            yerr=yerr_mean,
+            xerr_syst=xerr_syst,
+            yerr_syst=yerr_syst,
             delimiter=delimiter,
             header=header,
             fmt=fmt,
             comments=comments
         )
+
+    # Save ydiffs for MC asym injection systematics
+    if ydiff_mean is not None:
+        save_graph_to_csv(
+            outpath+'_ydiff.csv',
+            x_mean,
+            ydiff_mean,
+            xerr=xerr_mean,
+            yerr=ydiff_std,
+            delimiter=delimiter,
+            header=header,
+            fmt=fmt,
+            comments=comments
+        )
+
+#DONE: MAKE PLOTTING OPTIONS FONTS SIZES COLORS ETC. INTO A FUNCTION...
+#TODO: ADD PROJECTION PANELS OPTION
+#TODO: ADD 2D RESULTS OPTION
+#TODO: ADD OPTION TO LOAD AND PLOT 1D HISTOGRAM DISTRIBUTIONS IN BACKGROUND
+#DONE: Implement this code BELOW or check if already commiitted something...
+
+
+
