@@ -1070,6 +1070,150 @@ def plot_watermark(
                 size=50, rotation=25., color='gray', alpha=0.25,
                 horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
 
+def plot_vlines(
+        hist,
+        binlims = [],
+        linestyle = 'dotted',
+    ):
+
+    """
+    Parameters
+    ----------
+    hist : tuple, required
+        Matplotlib.pyplot histogram of y and x values (np.ndarray, np.ndarray, ...)
+    binlims : list, required
+        List of bin limits in a 1D binning scheme
+    linestyle : string, optional
+        Line style
+        Default : 'dotted'
+
+    Description
+    -----------
+    Draw vertical bin limit lines on a histogram
+    """
+
+    # Loop middle bin limits
+    for xval in binlims[1:-1]:
+        
+        # Loop histogram x values
+        for idx in range(len(hist[1])-1):
+
+            # Check if bin limit is in bin
+            binx_low, binx_high = hist[1][idx], hist[1][idx+1]
+            if xval>= binx_low and xval<binx_high:
+
+                # Plot lower bin limit
+                ymax = hist[0][idx]
+                plt.vlines(xval, 0.0, ymax, linestyle=linestyle)
+
+def plot_hists(
+        ax1,
+        hist_paths = [],
+        hist_keys = [],
+        clone_axis = True,
+        ylabel = 'Density',
+        ylims = (0.0,0.05),
+        histtype = 'step',
+        hist_colors = None,
+        alpha=0.5,
+        linewidth=2,
+        hist_labels = None,
+        binlims = [],
+        vlinestyle = 'dotted',
+        vline_hist_idx = -1,
+    ):
+
+    """
+    Parameters
+    ----------
+    ax1 : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot figure axis
+    clone_axis : Boolean, optional
+        Option to create a twin y axis sharing the x axis of the given axis
+        Default : True
+    ylabel : string, optional
+        Y axis label for twin axis
+        Default : 'Density'
+    ylims : tuple, optional
+        Y axis limits for twin axis
+        Default : (0.0,0.05)
+    histtype : string, optional
+        Matplotlib.pyplot histogram type
+        Default : 'step'
+    hist_colors : list, optional
+        List of histogram colors
+        Default : None
+    alpha : float, optional
+        Alpha plotting paramater for histograms
+        Default : 0.5
+    linewidth : int, optional
+        Line width for plotting histograms
+        Default : 2
+    hist_labels : list, optional
+        List of histogram labels
+        Default : None
+    binlims : list, optional
+        List of bin limits in a 1D binning scheme
+        Default : []
+    vlinestyle : string, optional
+        Vertical line style for drawing bin limits on histogram
+        Default : 'dotted'
+    vline_hist_idx : int, optional
+        Index of histogram for which to draw vertical lines for bin limits
+        Default : -1
+
+    Description
+    -----------
+    Draw a set of histograms on a matplotlib.pyplot axis, optionally cloning the given axis
+    and optionally drawing vertical bin limits on a single histogram.
+    """
+
+    # Clone y axis and set labels
+    ax2 = ax1.twinx() if clone_axis else ax1  # instantiate a second y-axis that shares the same x-axis
+    if clone_axis:
+        ax2.set_ylabel(ylabel)
+        ax2.set_ylim(*ylims)
+
+    # Set colors to just be taken from the current color palette if not provided
+    if hist_colors is None:
+        hist_colors = [None for i in range(len(hist_paths))]
+
+    # Set histogram labels to just be taken from the current color palette if not provided
+    if hist_labels is None:
+        hist_labels = ["h"+str(i) for i in range(len(hist_paths))]
+
+    # Loop histograms and draw
+    for idx, hist_path in enumerate(hist_paths):
+
+        # Load histogram and convert to numpy
+        th1 = load_th1(hist_path,hist_keys[idx])
+        if len(th1)==0: continue
+        h_y, h_bins = th1.to_numpy()
+
+        # Get mean x bin values
+        h_x = [(h_bins[i]+h_bins[i+1])/2 for i in range(len(h_bins)-1)]
+
+        # Plot histogram
+        h = ax2.hist(
+            h_x,
+            bins=h_bins,
+            weights=h_y/np.sum(h_y),
+            histtype=histtype,
+            color=hist_colors[idx],
+            alpha=alpha,
+            linewidth=linewidth,
+            label=hist_labels[idx],
+            density=False
+        )
+
+        # Plot bin limits if supplied and we are on the last histogram
+        if idx==(vline_hist_idx if vline_hist_idx>=0 else len(hist_paths)-1) and len(binlims)>0:
+            plot_vlines(
+                h,
+                binlims,
+                linestyle = vlinestyle,
+            )
+
 def plot_systematics(
         x_means,
         yerr_syst,
