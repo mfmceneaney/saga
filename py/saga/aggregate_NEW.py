@@ -987,7 +987,7 @@ def plot_injected_asyms(
         ytitles,
         colors,
         sgasym_idx = 0,
-        ylims = [-1.0,1.0],
+        ylims = (-1.0,1.0),
         label_base='Injected Signal ',
         linestyle='--',
         axlinewidth=1,
@@ -1024,29 +1024,29 @@ def plot_injected_asyms(
     -----------
     Plot the injected asymmetries for each bin in a 1D binning scheme offsetting repeat values
     by a small amount.  Note that injected asymmetries should have shape `(N_ASYMS)` if plotting
-    constant asymmetries or `(N_ASYMS,2)` if you would like to plot function data `(x,y)`.
+    constant asymmetries or `(N_ASYMS,2,N_POINTS)` if you would like to plot function data `(x,y)`.
     """
 
-    # Loop asymmetries and plot using a small offset for asymmetries
-    plotted_values = {} #NOTE: Keep track of how many times you've plotted each asymmetry value
+    # Loop asymmetries and plot using a small offset for constant asymmetries
+    plotted_values = {} #NOTE: Keep track of how many times you've plotted each constant asymmetry value
     for idx in range(len(asyms)):
-
-        # Set the offset
-        offset = 0.0
-        if asyms[idx] in asyms[:idx]:
-            if asyms[idx] in plotted_values.keys():
-                offset = plotted_values[asyms[idx]] * 0.0025 * (ylims[1] - ylims[0])
-                plotted_values[asyms[idx]] += 1
-        else:
-            plotted_values[asyms[idx]] = 1
-        
-        # Flip offset if the asymmetry is negative
-        if asyms[idx]<0.0: offset *= -1.0
 
         # Plot injected asymmetries as (x,y) data OR axis lines
         if len(np.shape(asyms))>1:
-            ax1.plot(asyms[idx][0], asyms[idx][1]+offset, color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
+            ax1.plot(asyms[idx][0], asyms[idx][1], color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
         else:
+            # Set the offset
+            offset = 0.0
+            if asyms[idx] in plotted_values.keys():
+                offset = plotted_values[asyms[idx]] * 0.0025 * (ylims[1] - ylims[0])
+                plotted_values[asyms[idx]] += 1
+            else:
+                plotted_values[asyms[idx]] = 1
+            
+            # Flip offset if the asymmetry is negative
+            if asyms[idx]<0.0: offset *= -1.0
+
+            # Plot the constant asymmetry
             ax1.axhline(asyms[idx]+offset, color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
 
 def plot_watermark(
@@ -1066,7 +1066,7 @@ def plot_watermark(
     -----------
     Plot a watermark.
     """
-    plt.text(0.5, 0.5, watermark_text,
+    plt.text(0.5, 0.5, watermark,
                 size=50, rotation=25., color='gray', alpha=0.25,
                 horizontalalignment='center',verticalalignment='center',transform=ax1.transAxes)
 
@@ -1384,6 +1384,7 @@ def plot_systematics(
     )
 
 def plot_results(
+        ax1,
         x_mean = None,
         y_mean = None,
         xerr_mean = None,
@@ -1424,11 +1425,25 @@ def plot_results(
         linewidth = 0.0,
         gridlinewidth = 0.5,
         axlinewidth = 1.0,
-        figsize = (16,10),
+        hist_paths = [],
+        hist_keys = [],
+        hist_clone_axis = True,
+        hist_ylabel = 'Density',
+        hist_ylims = (0.0,0.05),
+        histtype = 'step',
+        hist_colors = None,
+        hist_alpha=0.5,
+        hist_linewidth=2,
+        hist_labels = None,
+        binlims = [],
+        vlinestyle = 'dotted',
+        vline_hist_idx = -1,
     ):
     """
     Parameters
     ----------
+    ax1 : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot figure axis
     x_mean : list, optional
         x mean values for each bin
         Default : None
@@ -1549,14 +1564,44 @@ def plot_results(
     axlinewidth : float, optional
         Axis line and injected asymmetries line width
         Default : 1.0
-    figsize : tuple, optional
-        Figure size
-        Default : (16,10)
+    hist_clone_axis : Boolean, optional
+        Option to create a twin y axis sharing the x axis of the given axis
+        Default : True
+    hist_ylabel : string, optional
+        Y axis label for twin axis
+        Default : 'Density'
+    hist_ylims : tuple, optional
+        Y axis limits for twin axis
+        Default : (0.0,0.05)
+    histtype : string, optional
+        Matplotlib.pyplot histogram type
+        Default : 'step'
+    hist_colors : list, optional
+        List of histogram colors
+        Default : None
+    hist_alpha : float, optional
+        Alpha plotting paramater for histograms
+        Default : 0.5
+    hist_linewidth : int, optional
+        Line width for plotting histograms
+        Default : 2
+    hist_labels : list, optional
+        List of histogram labels
+        Default : None
+    binlims : list, optional
+        List of bin limits in a 1D binning scheme
+        Default : []
+    vlinestyle : string, optional
+        Vertical line style for drawing bin limits on histogram
+        Default : 'dotted'
+    vline_hist_idx : int, optional
+        Index of histogram for which to draw vertical lines for bin limits
+        Default : -1
 
     Description
     -----------
-    Plot the results for each bin in a 1D binning scheme showing systematic errors
-    and a standard deviation band and injected asymmetries if desired.  Save results
+    Plot asymmetry results for each bin in a 1D binning scheme showing projection variable histograms, bin limits, systematic errors,
+    a standard deviation band for aggregate graphs, injected asymmetries, watermark, and legend if desired.  Save results
     and differences from the injected signal to CSV in `<outpath>.csv` and `<outpath>_ydiff.csv`.
     """
 
@@ -1564,26 +1609,43 @@ def plot_results(
     if use_default_plt_settings: set_default_plt_settings()
 
     # Set up plot
-    f1, ax1 = plt.subplots(figsize=figsize)
-    plt.xlim(*xlims)
-    plt.ylim(*ylims)
-    plt.title(title,usetex=True)
-    plt.xlabel(xtitle,usetex=True)
-    plt.ylabel(ytitle,usetex=True)
+    ax1.set_xlim(*xlims)
+    ax1.set_ylim(*ylims)
+    ax1.set_title(title,usetex=True)
+    ax1.set_xlabel(xtitle,usetex=True)
+    ax1.set_ylabel(ytitle,usetex=True)
+
+    # Plot projection variable distribution histograms
+    plot_hists(
+        ax1,
+        hist_paths = hist_paths,
+        hist_keys = hist_keys,
+        clone_axis = hist_clone_axis,
+        ylabel = hist_ylabel,
+        ylims = hist_ylims,
+        histtype = histtype,
+        hist_colors = hist_colors,
+        alpha=hist_alpha,
+        linewidth=hist_linewidth,
+        hist_labels = hist_labels,
+        binlims = binlims,
+        vlinestyle = vlinestyle,
+        vline_hist_idx = vline_hist_idx,
+    )
 
     # Plot systematic errors
     if yerr_syst is not None:
-        g1 = plt.errorbar(x_mean,y_mean,xerr=None,yerr=yerr_syst,
+        g1 = ax1.errorbar(x_mean,y_mean,xerr=None,yerr=yerr_syst,
                     ecolor=fill_color, elinewidth=elinewidth*20, capsize=0,
                     color=color, marker='o', linestyle=linestyle, alpha=0.5,
                     linewidth=0, markersize=0,label='Systematic error')
 
     # Plot standard deviation of aggregated injected values
     if y_std is not None:
-        fb = plt.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=fill_color)
+        fb = ax1.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=fill_color)
 
     # Plot results
-    g2 = plt.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
+    g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
                         ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
                         color=color, marker='o', linestyle=linestyle,
                         linewidth=linewidth, markersize=markersize,label=label)
@@ -1610,11 +1672,11 @@ def plot_results(
         # Plot injected background asymmetries
         plot_injected_asyms(
             ax1,
-            sgasyms,
+            bgasyms,
             ytitles,
-            sg_colors,
+            bg_colors,
             sgasym_idx = sgasym_idx,
-            ylims = yliims,
+            ylims = ylims,
             label_base='Injected Background ',
             linestyle='--',
             linewidth=axlinewidth,
@@ -1625,9 +1687,6 @@ def plot_results(
 
     # Plot legend
     if legend_loc is not None and legend_loc!='': plt.legend(loc=legend_loc)
-
-    # Save figure
-    f1.savefig(outpath)
 
     # Save plot data to csv
     delimiter = ","
@@ -1664,11 +1723,58 @@ def plot_results(
             comments=comments
         )
 
+def plot_projections(
+        graph_matrix,
+        plot_results_kwargs,
+        figsize = (16,10),
+        outpath = 'plot_projections.pdf',
+    ):
+
+    """
+    Parameters
+    ----------
+    graph_matrix : list, required
+        List array of graph dictionaries from `get_aggregate_graph()` with the desired shape
+    plot_results_kwargs : list, required
+        List of `plot_results()` parameters for each graph
+    figsize : tuple, optional
+        Figure size
+        Default : (16,10)
+    outpath : string, optional
+        Output graphic path
+        Default : 'plot_projections.pdf'
+
+    Description
+    -----------
+    Plot asymmetry results in a grid array using the `plot_results()` method.
+    Note that `plot_projection_kwargs` should have the same shape as `graph_matrix`.
+    """
+
+    # Get and check graph matrix shape
+    shape = np.shape(graph_matrix)
+    if len(shape) not in (1,2): raise TypeError('`plot_projections()` : `graph_matrix` shape must have shape with len(shape) in (1,2) but shape = ',shape)
+
+    # Create figure and axes
+    f, ax = plt.subplots(*shape,figsize=figsize)
+
+    # Loop axes and plot results for 1D and 2D cases
+    if len(shape)==1:
+        for i in range(shape[0]):
+                plot_results(ax[i],**graph_matrix[i],**plot_results_kwargs[i])
+    else:
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                plot_results(ax[i,j],**graph_matrix[i][j],**plot_results_kwargs[i][j])
+
+    # Save figure
+    f.savefig(outpath)
+
+
 #DONE: MAKE PLOTTING OPTIONS FONTS SIZES COLORS ETC. INTO A FUNCTION...
-#TODO: ADD PROJECTION PANELS OPTION
-#TODO: ADD 2D RESULTS OPTION
-#TODO: ADD OPTION TO LOAD AND PLOT 1D HISTOGRAM DISTRIBUTIONS IN BACKGROUND
-#DONE: Implement this code BELOW or check if already commiitted something...
+#DONE: ADD PROJECTION PANELS OPTION
+#TODO: ADD 2D RESULTS OPTION...
+#DONE: ADD OPTION TO LOAD AND PLOT 1D HISTOGRAM DISTRIBUTIONS IN BACKGROUND
+#DONE: Implement this code BELOW or check if already committed something...
 
 
 
