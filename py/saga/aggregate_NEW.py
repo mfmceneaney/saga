@@ -153,7 +153,6 @@ def get_out_dirs_list(
         base_dir,
         aggregate_keys=[]
     ):
-
     """
     Parameters
     ----------
@@ -739,7 +738,6 @@ def save_graph_to_csv(
         fmt=None,
         comments='',
     ):
-
     """
     Parameters
     ----------
@@ -801,7 +799,6 @@ def save_graph_systematics_to_csv(
         fmt=None,
         comments=''
     ):
-
     """
     Parameters
     ----------
@@ -992,7 +989,6 @@ def plot_injected_asyms(
         linestyle='--',
         axlinewidth=1,
     ):
-
     """
     Parameters
     ----------
@@ -1075,7 +1071,6 @@ def plot_vlines(
         binlims = [],
         linestyle = 'dotted',
     ):
-
     """
     Parameters
     ----------
@@ -1122,7 +1117,6 @@ def plot_hists(
         vlinestyle = 'dotted',
         vline_hist_idx = -1,
     ):
-
     """
     Parameters
     ----------
@@ -1243,7 +1237,6 @@ def plot_systematics(
         axlinewidth = 1.0,
         figsize = (16,10),
     ):
-
     """
     Parameters
     ----------
@@ -1729,7 +1722,6 @@ def plot_projections(
         figsize = (16,10),
         outpath = 'plot_projections.pdf',
     ):
-
     """
     Parameters
     ----------
@@ -1768,13 +1760,3 @@ def plot_projections(
 
     # Save figure
     f.savefig(outpath)
-
-
-#DONE: MAKE PLOTTING OPTIONS FONTS SIZES COLORS ETC. INTO A FUNCTION...
-#DONE: ADD PROJECTION PANELS OPTION
-#TODO: ADD 2D RESULTS OPTION...
-#DONE: ADD OPTION TO LOAD AND PLOT 1D HISTOGRAM DISTRIBUTIONS IN BACKGROUND
-#DONE: Implement this code BELOW or check if already committed something...
-
-
-
