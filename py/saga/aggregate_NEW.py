@@ -239,6 +239,8 @@ def load_th1(
     try:
         f = ur.open(path)
         g = f[name].to_numpy() #.values()
+        print("DEBUGGING: f[",name,"].to_numpy() = ",f[name].to_numpy())
+        print("DEBUGGING: f[",name,"].values() = ",f[name].values())
         return g
 
     except FileNotFoundError as e:
@@ -1116,6 +1118,7 @@ def plot_hists(
         binlims = [],
         vlinestyle = 'dotted',
         vline_hist_idx = -1,
+        legend_loc = 'upper right',
     ):
     """
     Parameters
@@ -1155,6 +1158,9 @@ def plot_hists(
     vline_hist_idx : int, optional
         Index of histogram for which to draw vertical lines for bin limits
         Default : -1
+    legend_loc : string, optional
+        Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
+        Default : 'upper right'
 
     Description
     -----------
@@ -1181,7 +1187,6 @@ def plot_hists(
 
         # Load histogram and convert to numpy
         h_y, h_bins = load_th1(hist_path,hist_keys[idx])
-        print("DEBUGGING: h_y, h_bins = ",h_y,h_bins)
 
         # Get mean x bin values
         h_x = [(h_bins[i]+h_bins[i+1])/2 for i in range(len(h_bins)-1)]
@@ -1207,6 +1212,9 @@ def plot_hists(
                 linestyle = vlinestyle,
             )
 
+    # Plot legend if you cloned axis
+    if clone_axis and legend_loc is not None and legend_loc!='': ax2.legend(loc=legend_loc)
+
 def plot_systematics(
         x_means,
         yerr_syst,
@@ -1223,7 +1231,7 @@ def plot_systematics(
         outpath = 'systematics.pdf',
         watermark = 'CLAS12 Preliminary',
         use_default_plt_settings = True,
-        legend_loc = 'best',
+        legend_loc = 'upper left',
         ecolor = 'black',
         elinewidth = 2.0,
         capsize = 18,
@@ -1283,8 +1291,8 @@ def plot_systematics(
         Option to use default font and tick parameter style settings
         Default : True
     legend_loc : string, optional
-        Matplotlib.pyplot legend location string, will not be plotted if set to None
-        Default : 'best'
+        Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
+        Default : 'upper left'
     ecolor : string, optional
         Error line color
         Default : 'black'
@@ -1351,7 +1359,7 @@ def plot_systematics(
     if watermark is not None and watermark!='': plot_watermark(ax1,watermark=watermark)
 
     # Plot legend
-    if legend_loc is not None and legend_loc!='': plt.legend(loc=legend_loc)
+    if legend_loc is not None and legend_loc!='': ax1.legend(loc=legend_loc)
 
     # Save figure
     f1.savefig(outpath)
@@ -1407,7 +1415,7 @@ def plot_results(
         outpath = 'out.pdf',
         watermark = 'CLAS12 Preliminary',
         show_injected_asymmetries = False,
-        legend_loc = 'best',
+        legend_loc = 'upper left',
         ecolor = 'black',
         elinewidth = 2.0,
         capsize = 18,
@@ -1431,6 +1439,7 @@ def plot_results(
         binlims = [],
         vlinestyle = 'dotted',
         vline_hist_idx = -1,
+        hist_legend_loc = 'upper right',
     ):
     """
     Parameters
@@ -1528,8 +1537,8 @@ def plot_results(
         Option to show injected signal and background asymmetries
         Default : False
     legend_loc : string, optional
-        Matplotlib.pyplot legend location string, will not be plotted if set to None
-        Default : 'best'
+        Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
+        Default : 'upper left'
     ecolor : string, optional
         Error line color
         Default : 'black'
@@ -1593,6 +1602,9 @@ def plot_results(
     vline_hist_idx : int, optional
         Index of histogram for which to draw vertical lines for bin limits
         Default : -1
+    hist_legend_loc : string, optional
+        Matplotlib.pyplot legend location string for histograms, will not be plotted if set to None or ''
+        Default : 'upper right'
 
     Description
     -----------
@@ -1625,6 +1637,7 @@ def plot_results(
             binlims = binlims,
             vlinestyle = vlinestyle,
             vline_hist_idx = vline_hist_idx,
+            legend_loc = hist_legend_loc,
         )
 
     # Plot systematic errors
