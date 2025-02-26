@@ -238,7 +238,7 @@ def load_th1(
     # Get TH1 from ROOT file
     try:
         f = ur.open(path)
-        g = f[name].values()
+        g = f[name].to_numpy() #.values()
         return g
 
     except FileNotFoundError as e:
@@ -1180,9 +1180,8 @@ def plot_hists(
     for idx, hist_path in enumerate(hist_paths):
 
         # Load histogram and convert to numpy
-        th1 = load_th1(hist_path,hist_keys[idx])
-        if len(th1)==0: continue
-        h_y, h_bins = th1.to_numpy()
+        h_y, h_bins = load_th1(hist_path,hist_keys[idx])
+        print("DEBUGGING: h_y, h_bins = ",h_y,h_bins)
 
         # Get mean x bin values
         h_x = [(h_bins[i]+h_bins[i+1])/2 for i in range(len(h_bins)-1)]
@@ -1395,8 +1394,10 @@ def plot_results(
         ylims = [0.0,1.0],
         title = 'Asymmetry Results',
         xvar  = 'x',
-        xtitle = '$x$',
-        ytitles = ['$\mathcal{A}$'],
+        xlabel = '$x$',
+        ylabel = '$\mathcal{A}$',
+        sgasym_labels = ['$\mathcal{A}$'],
+        bgasym_labels = ['$\mathcal{A}$'],
         sgasym_idx = 0,
         sgasyms = [0.10],
         bgasyms = [0.00],
@@ -1406,7 +1407,6 @@ def plot_results(
         outpath = 'out.pdf',
         watermark = 'CLAS12 Preliminary',
         show_injected_asymmetries = False,
-        use_default_plt_settings = True,
         legend_loc = 'best',
         ecolor = 'black',
         elinewidth = 2.0,
@@ -1488,13 +1488,19 @@ def plot_results(
     xvar : string, optional
         Bin variable name
         Default : 'x'
-    xtitle : string, optional
-        x axis title
+    xlabel : string, optional
+        x axis label
         Default : '$x$'
-    ytitles : list, optional
-        List of y axis titles
-        Default : ['$\Delta \mathcal{A}$']
-    sgasyms_idx : int, optional
+    ylabel : string, optional
+        y axis label
+        Default : '$\mathcal{A}$'
+    sgasym_labels : list, optional
+        List of signal asymmetry labels
+        Default : ['$\mathcal{A}$']
+    bgasym_labels : list, optional
+        List of background asymmetry labels
+        Default : ['$\mathcal{A}$']
+    sgasym_idx : int, optional
         Index of injected signal asymmetry
         Default : 0
     sgasyms : list, optional
@@ -1521,9 +1527,6 @@ def plot_results(
     show_injected_asymmetries : Boolean, optional
         Option to show injected signal and background asymmetries
         Default : False
-    use_default_plt_settings : Boolean, optional
-        Option to use default font and tick parameter style settings
-        Default : True
     legend_loc : string, optional
         Matplotlib.pyplot legend location string, will not be plotted if set to None
         Default : 'best'
@@ -1598,39 +1601,37 @@ def plot_results(
     and differences from the injected signal to CSV in `<outpath>.csv` and `<outpath>_ydiff.csv`.
     """
 
-    # Use default plotting settings
-    if use_default_plt_settings: set_default_plt_settings()
-
     # Set up plot
     ax1.set_xlim(*xlims)
     ax1.set_ylim(*ylims)
     ax1.set_title(title,usetex=True)
-    ax1.set_xlabel(xtitle,usetex=True)
-    ax1.set_ylabel(ytitle,usetex=True)
+    ax1.set_xlabel(xlabel,usetex=True)
+    ax1.set_ylabel(ylabel,usetex=True)
 
     # Plot projection variable distribution histograms
-    plot_hists(
-        ax1,
-        hist_paths = hist_paths,
-        hist_keys = hist_keys,
-        clone_axis = hist_clone_axis,
-        ylabel = hist_ylabel,
-        ylims = hist_ylims,
-        histtype = histtype,
-        hist_colors = hist_colors,
-        alpha=hist_alpha,
-        linewidth=hist_linewidth,
-        hist_labels = hist_labels,
-        binlims = binlims,
-        vlinestyle = vlinestyle,
-        vline_hist_idx = vline_hist_idx,
-    )
+    if len(hist_paths)>0:
+        plot_hists(
+            ax1,
+            hist_paths = hist_paths,
+            hist_keys = hist_keys,
+            clone_axis = hist_clone_axis,
+            ylabel = hist_ylabel,
+            ylims = hist_ylims,
+            histtype = histtype,
+            hist_colors = hist_colors,
+            alpha=hist_alpha,
+            linewidth=hist_linewidth,
+            hist_labels = hist_labels,
+            binlims = binlims,
+            vlinestyle = vlinestyle,
+            vline_hist_idx = vline_hist_idx,
+        )
 
     # Plot systematic errors
     if yerr_syst is not None:
         g1 = ax1.errorbar(x_mean,y_mean,xerr=None,yerr=yerr_syst,
                     ecolor=fill_color, elinewidth=elinewidth*20, capsize=0,
-                    color=color, marker='o', linestyle=linestyle, alpha=0.5,
+                    color=fill_color, marker='o', linestyle=linestyle, alpha=0.5,
                     linewidth=0, markersize=0,label='Systematic error')
 
     # Plot standard deviation of aggregated injected values
@@ -1640,8 +1641,8 @@ def plot_results(
     # Plot results
     g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
                         ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
-                        color=color, marker='o', linestyle=linestyle,
-                        linewidth=linewidth, markersize=markersize,label=label)
+                        color=sg_colors[sgasym_idx], marker='o', linestyle=linestyle,
+                        linewidth=linewidth, markersize=markersize,label=sgasym_labels[sgasym_idx])
 
     # Add zero line
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
@@ -1653,7 +1654,7 @@ def plot_results(
         plot_injected_asyms(
             ax1,
             sgasyms,
-            ytitles,
+            sgasym_labels,
             sg_colors,
             sgasym_idx = sgasym_idx,
             ylims = yliims,
@@ -1666,9 +1667,9 @@ def plot_results(
         plot_injected_asyms(
             ax1,
             bgasyms,
-            ytitles,
+            bgasym_labels,
             bg_colors,
-            sgasym_idx = sgasym_idx,
+            sgasym_idx = -1,#NOTE: Don't emphasize any background asymmetries for now.
             ylims = ylims,
             label_base='Injected Background ',
             linestyle='--',
@@ -1679,7 +1680,7 @@ def plot_results(
     if watermark is not None and watermark!='': plot_watermark(ax1,watermark=watermark)
 
     # Plot legend
-    if legend_loc is not None and legend_loc!='': plt.legend(loc=legend_loc)
+    if legend_loc is not None and legend_loc!='': ax1.legend(loc=legend_loc)
 
     # Save plot data to csv
     delimiter = ","
@@ -1716,35 +1717,50 @@ def plot_results(
             comments=comments
         )
 
-def plot_projections(
-        graph_matrix,
-        plot_results_kwargs,
+def plot_results_array(
+        graph_array,
+        plot_results_kwargs_array,
+        plot_results_kwargs_base = {},
         figsize = (16,10),
         outpath = 'plot_projections.pdf',
+        use_default_plt_settings = True,
     ):
     """
     Parameters
     ----------
-    graph_matrix : list, required
+    graph_array : list, required
         List array of graph dictionaries from `get_aggregate_graph()` with the desired shape
-    plot_results_kwargs : list, required
-        List of `plot_results()` parameters for each graph
+    plot_results_kwargs_array : list, required
+        List array of `plot_results()` key word arguments for each graph
+    plot_results_kwargs_base : dict, optiional
+        Dictionary of base `plot_results()` key word arguments to apply to every graph
+        Default : {}
     figsize : tuple, optional
         Figure size
         Default : (16,10)
     outpath : string, optional
         Output graphic path
         Default : 'plot_projections.pdf'
+    use_default_plt_settings : Boolean, optional
+        Option to use default font and tick parameter style settings
+        Default : True
 
     Description
     -----------
-    Plot asymmetry results in a grid array using the `plot_results()` method.
-    Note that `plot_projection_kwargs` should have the same shape as `graph_matrix`.
+    Plot an array of asymmetry graph results using the `plot_results()` method.
+    Note that `plot_projection_kwargs` should have the same shape as `graph_array`
+    and that plot and axis titles will not be set unless they are on the outside
+    edge of the plot grid.  Also, note that changing the figure size to allow for 
+    a (16,10) space for each figure will be ideal when using the `use_default_plt_settings`
+    option.
     """
 
+    # Use default plotting settings
+    if use_default_plt_settings: set_default_plt_settings()
+
     # Get and check graph matrix shape
-    shape = np.shape(graph_matrix)
-    if len(shape) not in (1,2): raise TypeError('`plot_projections()` : `graph_matrix` shape must have shape with len(shape) in (1,2) but shape = ',shape)
+    shape = np.shape(graph_array)
+    if len(shape) not in (1,2): raise TypeError('`plot_projections()` : `graph_array` shape must have shape with len(shape) in (1,2) but shape = ',shape)
 
     # Create figure and axes
     f, ax = plt.subplots(*shape,figsize=figsize)
@@ -1752,11 +1768,27 @@ def plot_projections(
     # Loop axes and plot results for 1D and 2D cases
     if len(shape)==1:
         for i in range(shape[0]):
-                plot_results(ax[i],**graph_matrix[i],**plot_results_kwargs[i])
+
+                # Format graph titles and axes depending on location in grid array
+                if i!=0: plot_results_kwargs_array[i]['title'] = ''
+                if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
+
+                # Plot results
+                plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i])
+                plot_results(ax[i],**graph_array[i],**plot_results_kwargs)
     else:
         for i in range(shape[0]):
             for j in range(shape[1]):
-                plot_results(ax[i,j],**graph_matrix[i][j],**plot_results_kwargs[i][j])
+
+                # Format graph titles and axes depending on location in grid array
+                if j!=0: plot_results_kwargs_array[i][j]['ylabel'] = ''
+                if i!=0: plot_results_kwargs_array[i][j]['title'] = ''
+                if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
+                if j!=shape[1]-1: plot_results_kwargs_array[i][j]['hist_ylabel'] = ''
+
+                # Plot results
+                plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i][j])
+                plot_results(ax[i,j],**graph_array[i][j],**plot_results_kwargs)
 
     # Save figure
     f.savefig(outpath)
