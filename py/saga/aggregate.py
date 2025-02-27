@@ -515,7 +515,7 @@ def get_graph_data(
     # Check if bin_ids is multi-dimensional
     bin_ids_shape = np.shape(bin_ids)
     if len(bin_ids_shape)>1:
-        bin_ids = np.flatten(bin_ids)
+        bin_ids = np.array(bin_ids).flatten()
 
     # Loop bins
     for bin_raw_idx, bin_id in enumerate(bin_ids):
@@ -698,8 +698,8 @@ def get_graph_array(
     # Get grid shape from projection ids array
     shape = np.shape(proj_ids)
 
-    # Create a graph array in the 1D grid case
-    if len(shape)==1:
+    # Create a graph array in the 2D grid case
+    if len(shape)==3:
         return [[
             get_aggregate_graph(
                 [
@@ -717,7 +717,7 @@ def get_graph_array(
             ) for j in range(shape[1])] for i in range(shape[0])
         ]
 
-    # Create a graph array in the 2D grid case
+    # Create a graph array in the 1D grid case
     elif len(shape)==2:
         return [
             get_aggregate_graph(
@@ -738,7 +738,7 @@ def get_graph_array(
 
     # Raise an error if another shape length is encountered
     else:
-        raise TypeError('`get_graph_array` : `proj_ids` must have len(shape) in (1,2) but shape = ',shape)
+        raise TypeError('`get_graph_array` : `proj_ids` must have len(shape) in (2,3) but shape = ',shape)
 
 def get_subset(
         df,
@@ -1139,7 +1139,7 @@ def plot_injected_asyms(
 
         # Plot injected asymmetries as (x,y) data OR axis lines
         if len(np.shape(asyms))>1:
-            ax1.plot(asyms[idx][0], asyms[idx][1], color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
+            ax1.plot(asyms[idx][0], asyms[idx][1], color=colors[idx] if idx<len(colors) else None, linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx] if idx<len(ytitles) else None)
         else:
             # Set the offset
             offset = 0.0
@@ -1153,7 +1153,7 @@ def plot_injected_asyms(
             if asyms[idx]<0.0: offset *= -1.0
 
             # Plot the constant asymmetry
-            ax1.axhline(asyms[idx]+offset, color=colors[idx], linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx])
+            ax1.axhline(asyms[idx]+offset, color=colors[idx] if idx<len(colors) else None, linestyle=linestyle, linewidth=linewidth, alpha=0.5 if idx!=sgasym_idx else 1.0, label=label_base+ytitles[idx] if idx<len(ytitles) else None)
 
 def plot_watermark(
         ax1,
