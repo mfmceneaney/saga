@@ -33,7 +33,7 @@ def write_file_from_config(outdir):
     # Get the name of the CSV file for the binning scheme you are interested in
     out_file_name = get_out_file_name(
             base_dir=outdir, #NOTE APPEND SYSTEM SEPARATOR TO OUTDIR HERE TODO: MAYBE JUST CHANGE THIS TO AN OUTPUT DIRECTORY...
-            base_outpath='',
+            base_name='',
             binscheme_name=binscheme_name,
             ext='.csv'
         )
@@ -46,7 +46,7 @@ def write_file_from_config(outdir):
     err_ext = "err"
     binvar_cols = [delimiter.join([binvar,binvar+err_ext]) for binvar in binscheme.keys()]
     depolvar_cols = [delimiter.join([depolvar,depolvar+err_ext]) for depolvar in ["depol"]]
-    asymfitvar_cols = [delimiter.join([asymfitvar,asymfitvar+err_ext]) for asymfitvar in ["a1"]]
+    asymfitvar_cols = [delimiter.join([asymfitvar,asymfitvar+err_ext]) for asymfitvar in ["a0"]]
     cols = ["bin_id","count",*binvar_cols,*depolvar_cols,*asymfitvar_cols]
     header = delimiter.join(cols)
 

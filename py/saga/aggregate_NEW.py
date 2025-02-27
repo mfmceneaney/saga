@@ -78,7 +78,7 @@ def get_config_out_path(
 
     job_config_name  = 'aggregate'+sep+sep+sep+(sep+sep).join([str(key) for key in sorted(aggregate_keys)])+(sep+sep+sep)
     job_config_name += get_config_str(config,sep=sep)
-    job_config_name += result_name+ext
+    job_config_name += (sep+sep+sep)+result_name+ext
     outpath = os.path.abspath(os.path.join(base_dir,job_config_name))
 
     return outpath
@@ -115,7 +115,7 @@ def get_out_file_name(
     Get output file name for a generic kinematic binning scheme passed to an executable constructed as `<baseoutpath><binscheme_name><ext>`.
     """
     out_file_name = ''.join([base_name,binscheme_name,ext])
-    return file_name if base_dir is None else os.path.join(base_dir,file_name)
+    return out_file_name if base_dir is None else os.path.join(base_dir,out_file_name)
 
 def get_config_list(
         configs,
@@ -195,8 +195,8 @@ def get_out_dirs_list(
         if len(aggregate_keys)==0:
 
             # Get job directory
-            job_dir = get_config_str(config_list_i)
-            job_dir = os.path.abspath(job_dir)
+            config_str = get_config_str(config_list_i)
+            job_dir = os.path.abspath(os.path.join(base_dir,config_str))
             output_dirs.append(job_dir)
             
         # Loop aggregate keys and build file list for current binning
@@ -208,8 +208,8 @@ def get_out_dirs_list(
                 config_list_i_val[key] = value
 
                 # Get job directory
-                job_dir = get_config_str(config_list_i_val)
-                job_dir = os.path.abspath(job_dir)
+                config_str = get_config_str(config_list_i_val)
+                job_dir = os.path.abspath(os.path.join(base_dir,config_str))
                 output_dirs.append(job_dir)
 
         # Now add the list of output directories to the overall list
@@ -463,7 +463,7 @@ def get_graph_data(
                     id_key,
                     xvar_keys=['x'],
                     asym_key='a1',
-                    err_ext='_err'
+                    err_ext='err'
     ):
     """
     Parameters
@@ -482,7 +482,7 @@ def get_graph_data(
         Default : 'a1'
     err_ext : string, optional
         Extension for forming error column names
-        Default : '_err'
+        Default : 'err'
 
     Returns
     -------
@@ -516,7 +516,7 @@ def get_graph_data(
         yerr.append(bin_data[asym_key+err_ext])
 
         # Loop bin variables
-        for xvar_idx, xvar in enumerate(xvar_keys):
+        for xvar_idx, xvar_key in enumerate(xvar_keys):
 
             # Get bin variable data
             bin_x = bin_data[xvar_key]
@@ -538,7 +538,7 @@ def get_graph_data(
         yerr = np.reshape(yerr,bin_ids_shape)
 
         # Reshape bin variable statistics
-        for xvar_idx, xvar in enumerate(xvar_keys):
+        for xvar_idx, xvar_key in enumerate(xvar_keys):
             x[xvar_idx]    = np.reshape(x[xvar_idx],bin_ids_shape)
             xerr[xvar_idx] = np.reshape(xerr[xvar_idx],bin_ids_shape)
 
@@ -715,19 +715,19 @@ def save_txt(
 
     # Save to CSV
     if header is None: header = ' '+delimiter+delimiter.join([str(i+1) for i in range(len(data))])#NOTE: ASSUME DATA HAS DIMENSION: [NCOL,NROWS]
-    header = "REPLACEMENT_HEADER"+header
+    # header = "REPLACEMENT_HEADER"+header
     np.savetxt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
 
-    # Read in the file
-    with open(filename, 'r') as file:
-        filedata = file.read()
+    # # Read in the file
+    # with open(filename, 'r') as file:
+    #     filedata = file.read()
 
-    # Replace the target string
-    filedata = filedata.replace('# REPLACEMENT_HEADER', '')
+    # # Replace the target string
+    # filedata = filedata.replace('# REPLACEMENT_HEADER', '')
 
-    # Write the file out again
-    with open(filename, 'w') as file:
-        file.write(filedata)
+    # # Write the file out again
+    # with open(filename, 'w') as file:
+    #     file.write(filedata)
 
 def save_graph_to_csv(
         filename,
