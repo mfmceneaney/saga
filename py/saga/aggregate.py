@@ -821,19 +821,7 @@ def save_txt(
 
     # Save to CSV
     if header is None: header = ' '+delimiter+delimiter.join([str(i+1) for i in range(len(data))])#NOTE: ASSUME DATA HAS DIMENSION: [NCOL,NROWS]
-    # header = "REPLACEMENT_HEADER"+header
     np.savetxt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
-
-    # # Read in the file
-    # with open(filename, 'r') as file:
-    #     filedata = file.read()
-
-    # # Replace the target string
-    # filedata = filedata.replace('# REPLACEMENT_HEADER', '')
-
-    # # Write the file out again
-    # with open(filename, 'w') as file:
-    #     file.write(filedata)
 
 def save_graph_to_csv(
         filename,
