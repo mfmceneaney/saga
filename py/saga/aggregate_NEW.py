@@ -376,8 +376,9 @@ def get_binscheme_cuts_and_ids(
 def get_projection_ids(
         df,
         proj_vars,
+        arr_vars = [],
         id_key='bin_id',
-        other_var_bins={}
+        arr_var_bins={}
     ):
     """
     Parameters
@@ -386,29 +387,34 @@ def get_projection_ids(
         Pandas dataframe with bin ids under `id_key` and the projection bin ids under the respective variable names
     proj_vars : required, list
         Projection variables
+    arr_vars : optional, list
+        Variables in which to construct a grid of results
+        Default : []
     id_key : optional, string
         Column name for bin unique integer ids
         Default : 'bin_id'
-    other_var_bins : optional, dict
-        Dictionary of other binning scheme variable names to the specific projection bin ids to look for in those variables
+    arr_var_bins : optional, dict
+        Dictionary of array binning scheme variable names to the specific projection bin ids to look for in those variables
         Default : {}
 
     Returns
     -------
-    (list, other_vars, all_proj_other_var_ids)
-        A list of each projection's unique bin ids, a list of the other binning variables encountered,
-        and a list of the other binning variable's projection bin ids for each projection in the requested
-        projection variables.
+    (all_proj_ids, arr_vars, all_proj_arr_var_ids)
+        An array of each projection's unique bin ids, a list of the array binning variables encountered,
+        and an of the array variables' bin ids for each projection.  Note the array shapes should be `(*N_BINS_PROJ_VARS,*N_BINS_ARR_VARS)`.
+        If `N_BINS_PROJ_VARS=[5]` and `N_BINS_ARR_VARS=[3,8]` then the shape of `all_proj_ids` and `all_proj_arr_var_ids`
+        will  be `(3,8,5)`.
 
     Raises
     ------
     TypeError
-        Raise an error if other binning variables found in keys of `other_var_bins` are also
+        Raise an error if array binning variables found in keys of `arr_var_bins` are also
         found in `proj_vars` since should not simultaneously project and select a single bin.
 
     Description
     -----------
-    Create a list of unique bin ids projected over a subset of binning variables from a binning scheme.
+    Create an array of unique bin ids projected over a subset of binning variables from a binning scheme
+    and organized in array-like structure over another subset of binning variables.
     """
 
     # Check projection variables
@@ -416,46 +422,51 @@ def get_projection_ids(
         print('WARNING: `get_projection_ids` : Are you sure you want more than 2 projection variables?')
 
     # Get list of grouping variables
-    other_vars = []
     for key in df.keys():
-        if (key!=id_key and key not in proj_vars and key not in other_var_bins.keys()): other_vars.append(key)
+        if (key!=id_key and key not in proj_vars and key not in arr_var_bins.keys()) and len(arr_vars)==0: arr_vars.append(key)
 
-    # Check grouping variables
-    if len(other_vars)==0:
-        return [df.sort_values(proj_vars)[id_key].values.tolist()], othervars, []
+    # Check array variable bins argument
+    if np.any([el in proj_vars for el in arr_vars]):
+        raise TypeError('`proj_vars` entries are not allowed in `arr_vars`.')
 
-    # Check other variable bins argument
-    if np.any([el in other_var_bins for el in other_var_bins]):
-        raise TypeError('`proj_vars` entries are not allowed in `other_var_bins`.')
+    # Check array variable bins argument
+    if np.any([el in proj_vars for el in arr_var_bins]):
+        raise TypeError('`proj_vars` entries are not allowed in `arr_var_bins`.')
 
-    # Get cut for other variable bins
-    other_var_bins_cut = ' and '.join([f'{key}=={other_var_bins[key]}' for key in other_var_bins])
+    # Get cut for array variable bins
+    arr_var_bins_cut = ' and '.join([f'{key}=={arr_var_bins[key]}' for key in arr_var_bins])
 
     # Get unique projection bin ids for each projection variable
     unique_bin_ids = [df[var].unique() for var in proj_vars]
     nbins = [len(el) for el in unique_bin_ids]
+    unique_arr_bin_ids = [df[var].unique() for var in arr_vars]
+    nbins_arr = [len(el) for el in unique_arr_bin_ids]
+    grid_shape = [*nbins_arr,*nbins]
 
     # Get map of starting bins and bin and projection indices
     query = ' and '.join([f'{proj_var}=={0}' for proj_var in proj_vars])
-    if other_var_bins_cut!='': query = ' and '.join([query,other_var_bins_cut])
+    if arr_var_bins_cut!='': query = ' and '.join([query,arr_var_bins_cut])
     start_bins_slice = df.query(query)
 
     # Loop starting bins and create projection lists
     all_proj_ids = []
-    all_proj_other_var_ids = []
+    all_proj_arr_var_ids = []
     for proj_idx in range(len(start_bins_slice)):
 
-        # Find bins that match starting bin in other bin variable indices
-        other_var_ids = [start_bins_slice[other_var].iloc[proj_idx] for other_var in other_vars]
-        query = ' and '.join([f'{other_vars[idx]}=={other_var_ids[idx]}' for idx in range(len(other_var_ids))])
-        if other_var_bins_cut!='': query = ' and '.join([query,other_var_bins_cut])
+        # Find bins that match starting bin in array bin variable indices
+        arr_var_ids = [start_bins_slice[arr_var].iloc[proj_idx] for arr_var in arr_vars]
+        query = ' and '.join([f'{arr_vars[idx]}=={arr_var_ids[idx]}' for idx in range(len(arr_var_ids))])
+        if arr_var_bins_cut!='': query = ' and '.join([query,arr_var_bins_cut])
         proj_ids = df.query(query)
         proj_ids = proj_ids.sort_values(proj_vars)[id_key].values #NOTE: SORT BY PROJECTION VARIABLE BINS
         proj_ids = proj_ids.reshape(nbins) #NOTE: RESIZE BY APPROPRIATE NUMBER OF BINS IF REQUESTED.
         all_proj_ids.append(proj_ids.tolist())
-        all_proj_other_var_ids.append(other_var_ids)
+        all_proj_arr_var_ids.append(arr_var_ids)
 
-    return all_proj_ids, other_vars, all_proj_other_var_ids
+    all_proj_ids = np.reshape(all_proj_ids,grid_shape)
+    all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,grid_shape)
+
+    return all_proj_ids, arr_vars, all_proj_arr_var_ids
 
 def get_graph_data(
                     df,
@@ -512,15 +523,15 @@ def get_graph_data(
         bin_data = df.loc[df[id_key]==bin_id]
 
         # Get bin asymmetry value and error
-        y.append(bin_data[asym_key])
-        yerr.append(bin_data[asym_key+err_ext])
+        y.append(bin_data[asym_key].item())
+        yerr.append(bin_data[asym_key+err_ext].item())
 
         # Loop bin variables
         for xvar_idx, xvar_key in enumerate(xvar_keys):
 
             # Get bin variable data
-            bin_x = bin_data[xvar_key]
-            bin_x_err = bin_data[xvar_key+err_ext]
+            bin_x = bin_data[xvar_key].item()
+            bin_x_err = bin_data[xvar_key+err_ext].item()#NOTE< MAAYBE USSE .LOC HERE???!?!?!?
 
             # Add bin variable mean and error
             if bin_raw_idx==0:
