@@ -9,7 +9,7 @@ import shutil
 import yaml
 import sys
 import numpy as np
-from .aggregate_NEW import get_config_list, get_config_str, get_binscheme_cuts_and_ids, save_txt, load_yaml, get_out_file_name #TODO: USE THIS FUNCTION
+from .aggregate import get_config_list, get_config_str, get_binscheme_cuts_and_ids, save_txt, load_yaml, get_out_file_name
 
 def write_file_from_config(outdir):
     """
