@@ -1896,6 +1896,11 @@ def plot_results_array(
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i])
+                outpath_i = outpath.split('.')
+                ext = outpath_i.pop(-1)
+                outpath_i = '.'.join(outpath_i)
+                outpath_i = ''.join([outpath_i,f'___arrloc_{i}.',ext])
+                plot_results_kwargs['outpath'] = outpath_i
                 plot_results(ax[i],**graph_array[i],**plot_results_kwargs)
     else:
         for i in range(shape[0]):
@@ -1909,6 +1914,11 @@ def plot_results_array(
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i][j])
+                outpath_i = outpath.split('.')
+                ext = outpath_i.pop(-1)
+                outpath_i = '.'.join(outpath_i)
+                outpath_i = ''.join([outpath_i,f'___arrloc_{i}_{j}.',ext])
+                plot_results_kwargs['outpath'] = outpath_i
                 plot_results(ax[i,j],**graph_array[i][j],**plot_results_kwargs)
 
     # Save figure
