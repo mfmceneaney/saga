@@ -40,7 +40,7 @@ def get_config_str(
 
     return (sep+sep).join([sep.join([key,sep.join([str(ele) for ele in config[key]]) if type(config[key])==list else str(config[key]) ]) for key in sorted(config)])
 
-def get_out_path(
+def get_config_out_path(
         base_dir,
         aggregate_keys,
         result_name,
@@ -84,15 +84,19 @@ def get_out_path(
     return outpath
 
 def get_out_file_name(
-        baseoutpath='',
+        base_dir = None,
+        base_name='',
         binscheme_name='x',
         ext='.csv'
     ):
     """
     Parameters
     ----------
-    baseoutpath : string, optional
-        Base path used to construct file name
+    base_dir : string, optional
+        Base directory for file path
+        Default : None
+    base_name : string, optional
+        Base name used to construct file name
         Default : ''
     binscheme_name : string, optional
         Name of binning scheme
@@ -110,8 +114,8 @@ def get_out_file_name(
     -----------
     Get output file name for a generic kinematic binning scheme passed to an executable constructed as `<baseoutpath><binscheme_name><ext>`.
     """
-     
-    return ''.join(baseoutpath,binscheme_name,ext)
+    out_file_name = ''.join([base_name,binscheme_name,ext])
+    return file_name if base_dir is None else os.path.join(base_dir,file_name)
 
 def get_config_list(
         configs,
@@ -238,9 +242,7 @@ def load_th1(
     # Get TH1 from ROOT file
     try:
         f = ur.open(path)
-        g = f[name].to_numpy() #.values()
-        print("DEBUGGING: f[",name,"].to_numpy() = ",f[name].to_numpy())
-        print("DEBUGGING: f[",name,"].values() = ",f[name].values())
+        g = f[name].to_numpy()
         return g
 
     except FileNotFoundError as e:
@@ -275,7 +277,7 @@ def load_yaml(
 def load_csv(
         path,
         results_dir='results/',
-        base_dir='systematics/'
+        base_dir=None
     ):
     """
     Parameters
@@ -286,8 +288,8 @@ def load_csv(
         Directory name to replace
         Default : 'results/'
     base_dir : optional, string
-        Directory name to insert
-        Default : 'systematics/'
+        Directory name to insert if not None
+        Default : None
 
     Returns
     -------
@@ -299,7 +301,7 @@ def load_csv(
     Read table stored in CSV format into a pandas DataFrame optionally replacing
     part of the path, for example, a directory name, with another value.
     """
-    inpath = path.replace(results_dir,base_dir) if len(base_dir)>0 else path
+    inpath = path.replace(results_dir,base_dir) if base_dir is not None else path
     return pd.read_csv(inpath)
 
 def get_binscheme_cuts_and_ids(
@@ -345,7 +347,7 @@ def get_binscheme_cuts_and_ids(
             lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
         varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
         varids  = [i for i in range(nbins)]
-        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
+        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)] #TODO: FIGURE OUT HOW TO SET THESE IN LATEX FORMAT WITH VARIABLE TITLES AND GET INDIVIDUAL CUT LISTS...
 
         # Expand bin cuts and projection ids maps
         cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
