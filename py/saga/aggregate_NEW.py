@@ -471,9 +471,9 @@ def get_projection_ids(
 def get_graph_data(
                     df,
                     bin_ids,
-                    id_key,
+                    id_key='bin_id',
                     xvar_keys=['x'],
-                    asym_key='a1',
+                    asym_key='a0',
                     err_ext='err'
     ):
     """
@@ -483,14 +483,15 @@ def get_graph_data(
         Pandas dataframe containing bin ids and data
     bin_ids : required, list
         List of unique integer bin ids
-    id_key : required, string
+    id_key : optional, string
         String identifier for bin id column
+        Default : 'bin_id'
     xvar_keys : list, optional
         List of binning variables for which to return mean values
         Default : ['x']
     asym_key : string, optional
         Asymmetry variables for which to return mean value
-        Default : 'a1'
+        Default : 'a0'
     err_ext : string, optional
         Extension for forming error column names
         Default : 'err'
@@ -575,6 +576,7 @@ def get_aggregate_graph(
         Default : ['x']
     sgasym : optional, float
         Injected signal asymmetry for computing difference of measured and injected values
+        Default : 0.0
 
     Returns
     -------
@@ -644,6 +646,99 @@ def get_aggregate_graph(
             graph['xerr_mean'].append(np.sqrt(np.mean(np.square(graph_list[xerr_idx]),axis=0)))
 
     return graph
+
+def get_graph_array(
+        dfs,
+        proj_ids,
+        id_key='bin_id',
+        xvar_keys=['x'],
+        asym_key='a0',
+        err_ext='err',
+        sgasym=0.0,
+    ):
+    """
+    Parameters
+    ----------
+    dfs : required, list
+        Array of pandas dataframes containing bin ids and data
+    proj_ids : required, list
+        Array of unique integer bin ids
+    id_key : optional, string
+        String identifier for bin id column
+        Default : 'bin_id'
+    xvar_keys : list, optional
+        List of binning variables for which to return mean values
+        Default : ['x']
+    asym_key : string, optional
+        Asymmetry variables for which to return mean value
+        Default : 'a0'
+    err_ext : string, optional
+        Extension for forming error column names
+        Default : 'err'
+    sgasym : float or list, optional
+        Injected signal asymmetry for computing difference of measured and injected values
+        Default : 0.0
+
+    Returns
+    -------
+    list
+        An array of aggregated graph data dictionaries obtained with the same grid structure as `proj_ids`.
+
+    Raises
+    ------
+    TypeError
+        Raise an error the shape of the array of bin indices is not in (1,2).
+
+    Description
+    -----------
+    Aggregate a set of graphs given the array of dataframes and a grid array of projection bin indices.
+    Note that the returned array will have the same shape as the given `proj_ids`.
+    """
+
+    # Get grid shape from projection ids array
+    shape = np.shape(proj_ids)
+
+    # Create a graph array in the 1D grid case
+    if len(shape)==1:
+        return [[
+            get_aggregate_graph(
+                [
+                    get_graph_data(
+                                df,
+                                proj_ids[i][j],
+                                id_key,#TODO: Make this an optional argument too
+                                xvar_keys=xvar_keys,
+                                asym_key=asym_key,
+                                err_ext=err_ext
+                    ) for df in dfs
+                ],
+                xvar_keys=xvar_keys,
+                sgasym=sgasyms[i][j] if type(sgasym) is not float else sgasym
+            ) for j in range(shape[1])] for i in range(shape[0])
+        ]
+
+    # Create a graph array in the 2D grid case
+    elif len(shape)==2:
+        return [
+            get_aggregate_graph(
+                [
+                    get_graph_data(
+                                df,
+                                proj_ids[i],
+                                id_key,#TODO: Make this an optional argument too
+                                xvar_keys=xvar_keys,
+                                asym_key=asym_key,
+                                err_ext=err_ext
+                    ) for df in dfs
+                ],
+                xvar_keys=xvar_keys,
+                sgasym=sgasym[i] if type(sgasym) is not float else sgasym
+            ) for i in range(shape[0])
+        ]
+
+    # Raise an error if another shape length is encountered
+    else:
+        raise TypeError('`get_graph_array` : `proj_ids` must have len(shape) in (1,2) but shape = ',shape)
 
 def get_subset(
         df,
