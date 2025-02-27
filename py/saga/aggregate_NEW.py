@@ -464,7 +464,7 @@ def get_projection_ids(
         all_proj_arr_var_ids.append(arr_var_ids)
 
     all_proj_ids = np.reshape(all_proj_ids,grid_shape)
-    all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,grid_shape)
+    all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,(*nbins_arr,len(arr_vars)))
 
     return all_proj_ids, arr_vars, all_proj_arr_var_ids
 
@@ -1002,7 +1002,7 @@ def plot_injected_asyms(
         ylims = (-1.0,1.0),
         label_base='Injected Signal ',
         linestyle='--',
-        axlinewidth=1,
+        linewidth=1,
     ):
     """
     Parameters
@@ -1683,7 +1683,7 @@ def plot_results(
             sgasym_labels,
             sg_colors,
             sgasym_idx = sgasym_idx,
-            ylims = yliims,
+            ylims = ylims,
             label_base='Injected Signal ',
             linestyle='--',
             linewidth=axlinewidth,
