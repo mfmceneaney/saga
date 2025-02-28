@@ -307,7 +307,8 @@ def load_csv(
 def get_binscheme_cuts_and_ids(
         binscheme,
         start_idx=0,
-        id_key='bin_id'
+        id_key='bin_id',
+        binvar_titles = [],
     ):
     """
     Parameters
@@ -320,26 +321,37 @@ def get_binscheme_cuts_and_ids(
     id_key : optional, string
         Column name for bin unique integer ids
         Default : 'bin_id'
+    binvar_titles : optional, list
+        List of latex format titles for bin variables for forming cut titles
+        Default : []
 
     Returns
     -------
-    (dict, pandas.DataFrame)
-        Dictionary of bin ids to cuts and a pandas dataframe with bin ids under `id_key` and
-        the projection bin ids under the respective variable names.
+    (dict, dict, pandas.DataFrame)
+        Dictionary of bin ids to cuts, dictionary of bin ids to bin cut
+        title dictionaries, and a pandas dataframe with bin ids under
+        `id_key` and the projection bin ids under the respective variable names.
 
     Description
     -----------
-    Create a map of bin ids to bin cuts and a data frame mapping bin ids to projection bin ids.
+    Create a maps of bin ids to bin cuts and titles and a data frame mapping bin ids to projection bin ids.
     """
 
     # Initialize arrays
     cuts = []
+    cut_titles = []
     ids  = []
 
-    # Loop bin variables
-    for var in binscheme:
+    # Set titles using raw bin variable names if no titles are provided
+    if binvar_titles is None or len(binvar_titles)!=len(binscheme): binvar_titles = [var for var in binscheme]
 
-        # Get bin variable limits, projection ids, and cuts
+    # Loop bin variables
+    for var_idx, var in enumerate(binscheme):
+
+        # Set the variable title
+        var_title  = binvar_titles[var_idx]
+
+        # Get bin variable limits, projection ids, cuts and cut titles
         nbins = len(binscheme[var])-1
         lims = binscheme[var]
         if type(binscheme[var])==dict and 'nbins' in binscheme[var].keys() and 'lims' in binscheme[var].keys():
@@ -347,14 +359,17 @@ def get_binscheme_cuts_and_ids(
             lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
         varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
         varids  = [i for i in range(nbins)]
-        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)] #TODO: FIGURE OUT HOW TO SET THESE IN LATEX FORMAT WITH VARIABLE TITLES AND GET INDIVIDUAL CUT LISTS...
+        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
+        varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
 
-        # Expand bin cuts and projection ids maps
+        # Expand bin cuts and cut titles and projection ids maps
         cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
+        cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in cut_titles] if len(cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
         ids  = [dict({var:varid},**id_map) for varid in varids for id_map in ids] if len(ids)>0 else [{var:el} for el in varids]
 
-    # Turn cuts into a map of bin ids to cuts
+    # Turn cuts and cuts_titles into maps
     cuts = {start_idx+idx: cuts[idx] for idx in range(len(cuts))}
+    cut_titles = {start_idx+idx: {el.split(" : ")[0]:el.split(" : ")[1] for el in cut_titles[idx].split(" && ")} for idx in range(len(cut_titles))}
 
     # Set up data frame
     df = {id_key:[]}
@@ -371,7 +386,7 @@ def get_binscheme_cuts_and_ids(
     #  Create pandas data frame
     df = pd.DataFrame(df)
 
-    return cuts, df
+    return cuts, cut_titles, df
 
 def get_projection_ids(
         df,
@@ -739,6 +754,116 @@ def get_graph_array(
     # Raise an error if another shape length is encountered
     else:
         raise TypeError('`get_graph_array` : `proj_ids` must have len(shape) in (2,3) but shape = ',shape)
+
+def get_cut_array(
+        cut_titles,
+        proj_ids,
+        arr_vars,
+    ):
+    """
+    Parameters
+    ----------
+    cuts : required, dict
+        Dictionary of bin ids to list of bin cuts by variable
+    proj_ids : required, list
+        Array of unique integer bin ids
+    arr_vars : required, list
+        Variables in which to construct a grid of cuts
+
+    Returns
+    -------
+    list
+        An array of bin cut dictionaries with the same grid structure as `proj_ids`.
+
+    Raises
+    ------
+    TypeError
+        Raise an error the shape of the array of bin indices is not in (1,2).
+
+    Description
+    -----------
+    Create a grid of dictionaries of array variables to bin cut titles given a
+    dictionary of bin ids to cut title lists and a grid array of projection bin indices.
+    Note that the returned array will have the same shape as the given `proj_ids`.
+    """
+
+    # Get grid shape from projection ids array
+    shape = np.shape(proj_ids)
+
+    # Create a graph array in the 2D grid case
+    if len(shape)==3:
+        return [[
+            cut_titles[proj_ids[i][j][0]] #NOTE: All BINS IN A 1D BINNING PROJECTION SHOULD HAVE THE SAME BIN CUTS FOR THE ARRAY VARIABLES.
+            for j in range(shape[1])] for i in range(shape[0])
+        ]
+
+    # Create a graph array in the 1D grid case
+    elif len(shape)==2:
+        return [
+            cut_titles[proj_ids[i][0]] #NOTE: All BINS IN A 1D BINNING PROJECTION SHOULD HAVE THE SAME BIN CUTS FOR THE ARRAY VARIABLES.
+            for i in range(shape[0])
+        ]
+
+    # Raise an error if another shape length is encountered
+    else:
+        raise TypeError('`get_cut_array` : `proj_ids` must have len(shape) in (2,3) but shape = ',shape)
+
+
+def add_cut_array(
+        args_array,
+        cut_array,
+        arr_vars,
+    ):
+    """
+    Parameters
+    ----------
+    args_array : required, list
+        Array of argument dictionaries
+    cut_array : required, List
+        List array of dictionaries of array variables to bin cut titles
+    proj_ids : required, list
+        Array of unique integer bin ids
+    arr_vars : required, list
+        Variables in which to construct a grid of cuts
+
+    Returns
+    -------
+    list
+        An array of bin cut dictionaries with the same grid structure as `proj_ids`.
+
+    Raises
+    ------
+    TypeError
+        Raise an error the shape of the arrays do not match or the length of the shapes is not in (1,2).
+
+    Description
+    -----------
+    Add bin cut 'title' and 'ylabel' arguments to each argument dictionary in a grid array
+    from a cut array produced from `get_cut_array`.
+    Note that the returned array will have the same shape as the given `args_array`.
+    """
+
+    # Get grid shape from projection ids array
+    shape = np.shape(args_array)
+
+    # Check shapes match
+    if shape!=np.shape(cut_array): raise TypeError('`add_cut_array` : `args_array` must have same shape as `cut_array` but shapes = ',shape,np.shape(cut_array))
+
+    # Create a graph array in the 2D grid case
+    if len(shape)==2: #NOTE: Since this is a 2D grid of dictionaries the numpy shape will only have length 2
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    args_array[i][j]['title'] = cut_array[i][j][arr_vars[0]]
+                    args_array[i][j]['ylabel'] = cut_array[i][j][arr_vars[1]]
+
+    # Create a graph array in the 1D grid case
+    elif len(shape)==1:
+        for i in range(shape[0]):
+            args_array[i]['title'] = cut_array[i][arr_vars[0]]
+
+    # Raise an error if another shape length is encountered
+    else:
+        raise TypeError('`add_cut_array` : `args_array` must have len(shape) in (2,3) but shape = ',shape)
 
 def get_subset(
         df,
