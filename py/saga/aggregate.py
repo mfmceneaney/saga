@@ -1110,8 +1110,8 @@ def save_graph_systematics_to_csv(
     # Save data to file
     save_txt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
 
-def save_bin_migration_matrix_to_csv(
-        bin_migration_mat,
+def save_bin_mig_mat_to_csv(
+        bin_mig_mat,
         base_dir='./',
         basename='',
         delimiter=",",
@@ -1122,7 +1122,7 @@ def save_bin_migration_matrix_to_csv(
     """
     Parameters
     ----------
-    bin_migration_mat : required, np.array
+    bin_mig_mat : required, np.array
         2D bin migration matrix with (i,j) `->` (generated,reconstructed)
     base_dir : string, required
         Path to directory in which matrix will be saved
@@ -1137,7 +1137,7 @@ def save_bin_migration_matrix_to_csv(
         CSV header
         Default : None
     fmt : optional, string
-        CSV column formats
+        CSV column formats, automatically set if not specified
         Default : None
     comments : optional, string
         CSV comments
@@ -1152,24 +1152,29 @@ def save_bin_migration_matrix_to_csv(
     -----------
     Save a 2D bin migration matrix mapping generated bins to reconstructed bins to a CSV file
     with an added initial row and column for the bin indices.  Note that files will be saved
-    to `<base_dir>/bin_migration_mat_<basename>.csv`.
+    to `<base_dir>/bin_mig_mat_<basename>.csv`.
     """
 
     # Check bin migration matrix shape
-    if np.shape(bin_migration_mat)[0]!=np.shape(bin_migration_mat)[1] or len(np.shape(bin_migration_mat))!=2:
-        raise TypeError("Bin migration matrix must be square but has shape "+str(np.shape(bin_migration_mat)))
+    if np.shape(bin_mig_mat)[0]!=np.shape(bin_mig_mat)[1] or len(np.shape(bin_mig_mat))!=2:
+        raise TypeError("Bin migration matrix must be square but has shape "+str(np.shape(bin_mig_mat)))
 
     # Set output filename
-    filename = 'bin_migration_mat_'+basename+'.csv'
+    filename = 'bin_mig_mat_'+basename+'.csv'
     filename = os.path.join(base_dir,filename)
 
     # Create new table with int bin labels
-    nbins = np.shape(bin_migration_mat)[0]
-    new_shape = list(np.shape(bin_migration_mat)) #NOTE: List is important here!
+    nbins = np.shape(bin_mig_mat)[0]
+    new_shape = list(np.shape(bin_mig_mat)) #NOTE: List is important here!
     new_shape[1] += 1 #NOTE: Increase the number of columns to accomodate bin numbers in the initial column
     data = np.zeros(new_shape)
     data[:,0] = [i for i in range(1,nbins+1)]
-    data[0:,1:] = bin_migration_mat
+    data[0:,1:] = bin_mig_mat
+
+    # Set column formats if not given
+    if fmt is None:
+        fmt = ["%.3g" for i in range(np.shape(bin_mig_mat)[0])]
+        fmt = ["%d",*fmt]
 
     save_txt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
 
