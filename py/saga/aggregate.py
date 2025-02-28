@@ -487,6 +487,7 @@ def get_graph_data(
                     df,
                     bin_ids,
                     id_key='bin_id',
+                    count_key='count',
                     xvar_keys=['x'],
                     asym_key='a0',
                     err_ext='err'
@@ -501,6 +502,9 @@ def get_graph_data(
     id_key : optional, string
         String identifier for bin id column
         Default : 'bin_id'
+    count_key : optional, string
+        String identifier for bin count column
+        Default : 'count'
     xvar_keys : list, optional
         List of binning variables for which to return mean values
         Default : ['x']
@@ -514,14 +518,15 @@ def get_graph_data(
     Returns
     -------
     np.array
-        Numpy array containing graph data with dimensions `(2*(1+N_XVAR_KEYS),*SHAPE(BIN_IDS))`
+        Numpy array containing graph data with dimensions `(1+2*(1+N_XVAR_KEYS),*SHAPE(BIN_IDS))`
 
     Description
     -----------
-    Read graph data for a projection plot from a pandas dataframe.
+    Read graph data (`count`,`y`,`yerr`,`x0`,`x0err`,`x1`,`x1_err`,...) for a projection plot from a pandas dataframe.
     """
 
     # Initialize arrays
+    cts  = []
     y    = []
     yerr = []
     x    = []
@@ -537,6 +542,9 @@ def get_graph_data(
 
         # Get bin data
         bin_data = df.loc[df[id_key]==bin_id]
+
+        # Get bin count
+        cts.append(bin_data[count_key].item())
 
         # Get bin asymmetry value and error
         y.append(bin_data[asym_key].item())
@@ -560,6 +568,9 @@ def get_graph_data(
     # Reshape data
     if len(bin_ids_shape)>1:
 
+        # Reshape bin counts
+        cts   = np.reshape(cts,bin_ids_shape)
+
         # Reshape bin asymmetry value and error
         y    = np.reshape(y,bin_ids_shape)
         yerr = np.reshape(yerr,bin_ids_shape)
@@ -570,6 +581,7 @@ def get_graph_data(
             xerr[xvar_idx] = np.reshape(xerr[xvar_idx],bin_ids_shape)
 
     return np.array([
+        cts,
         y,
         yerr,
         *x,
@@ -606,6 +618,7 @@ def get_aggregate_graph(
 
     # Setup return dictionary
     graph = {
+            'ct_mean':[],
             'y_mean':[],
             'yerr_mean':[],
             'y_std':[],
@@ -629,8 +642,10 @@ def get_aggregate_graph(
     graph_list  = np.swapaxes(graph_list,0,1) #NOTE: INCOMING LIST SHOULD GO FROM DIMENSION (N_GRAPHS, 2*(1+N_XVAR_KEYS), N_BIN_IDS) -> (2*(1+N_XVAR_KEYS), N_GRAPHS, N_BIN_IDS)
 
     # Extract aggregate asymmetry statistics
-    y_idx    = 0
-    yerr_idx = 1
+    ct_idx   = 0
+    y_idx    = 1
+    yerr_idx = 2
+    graph['ct_mean']      = np.mean(graph_list[ct_idx],axis=0)
     graph['y_mean']     = np.mean(graph_list[y_idx],axis=0)
     graph['yerr_mean']  = np.sqrt(np.mean(np.square(graph_list[yerr_idx]),axis=0))
     graph['y_std']      = np.std(graph_list[y_idx],axis=0)
@@ -638,11 +653,11 @@ def get_aggregate_graph(
     graph['y_max']      = np.max(graph_list[y_idx],axis=0)
     graph['ydiff_mean'] = np.mean(graph_list[y_idx]-sgasym,axis=0)
     graph['ydiff_std']  = np.std(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_min'] = np.min(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_max'] = np.max(graph_list[y_idx]-sgasym,axis=0)
+    graph['ydiff_min']  = np.min(graph_list[y_idx]-sgasym,axis=0)
+    graph['ydiff_max']  = np.max(graph_list[y_idx]-sgasym,axis=0)
 
     # Extract aggregate projection variable statistics
-    x_idx_start    = 2
+    x_idx_start    = 3
     xerr_idx_start = x_idx_start+len(xvar_keys)
     if len(xvar_keys)==1:
 
@@ -666,6 +681,7 @@ def get_graph_array(
         dfs,
         proj_ids,
         id_key='bin_id',
+        count_key='count',
         xvar_keys=['x'],
         asym_key='a0',
         err_ext='err',
@@ -681,6 +697,9 @@ def get_graph_array(
     id_key : optional, string
         String identifier for bin id column
         Default : 'bin_id'
+    count_key : optional, string
+        String identifier for bin count column
+        Default : 'count'
     xvar_keys : list, optional
         List of binning variables for which to return mean values
         Default : ['x']
@@ -721,7 +740,7 @@ def get_graph_array(
                     get_graph_data(
                                 df,
                                 proj_ids[i][j],
-                                id_key,#TODO: Make this an optional argument too
+                                count_key=count_key,
                                 xvar_keys=xvar_keys,
                                 asym_key=asym_key,
                                 err_ext=err_ext
@@ -740,7 +759,8 @@ def get_graph_array(
                     get_graph_data(
                                 df,
                                 proj_ids[i],
-                                id_key,#TODO: Make this an optional argument too
+                                id_key=id_key,
+                                count_key=count_key,
                                 xvar_keys=xvar_keys,
                                 asym_key=asym_key,
                                 err_ext=err_ext
@@ -998,6 +1018,7 @@ def save_txt(
 
 def save_graph_to_csv(
         filename,
+        ct,
         x,
         y,
         xerr=None,
@@ -1014,6 +1035,8 @@ def save_graph_to_csv(
     ----------
     filename : required, string
         Output file name
+    ct : required, list
+        Graph count values
     x : required, list
         Graph x values
     y : required, list
@@ -1050,12 +1073,13 @@ def save_graph_to_csv(
 
     # Create data array
     data = []
+    if ct is None or len(ct)==0: ct = [0.0 for el in x]
     if xerr is None or len(xerr)==0: xerr = [0.0 for el in x]
     if yerr is None or len(yerr)==0: yerr = [0.0 for el in x]
     if xerr_syst is None or len(xerr_syst)==0: xerr_syst = [0.0 for el in x]
     if yerr_syst is None or len(yerr_syst)==0: yerr_syst = [0.0 for el in x]
     for i, el in enumerate(x):
-        data.append([i, x[i], y[i], xerr[i], yerr[i], xerr_syst[i], yerr_syst[i]])
+        data.append([i, ct[i], x[i], y[i], xerr[i], yerr[i], xerr_syst[i], yerr_syst[i]])
     data = np.array(data)
 
     # Save data to file
@@ -1684,6 +1708,7 @@ def plot_systematics(
 
 def plot_results(
         ax1,
+        ct_mean = None,
         x_mean = None,
         y_mean = None,
         xerr_mean = None,
@@ -1745,6 +1770,9 @@ def plot_results(
     ----------
     ax1 : matplotlib.axes._axes.Axes, required
         Matplotlib.pyplot figure axis
+    ct_mean : list, optional
+        Count mean values for each bin
+        Default : None
     x_mean : list, optional
         x mean values for each bin
         Default : None
@@ -1996,13 +2024,16 @@ def plot_results(
 
     # Save plot data to csv
     delimiter = ","
-    header    = delimiter.join(["bin","x","y","xerr","yerr","xerrsyst","yerrsyst"]) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
-    fmt       = ["%d","%.3g","%.3g","%.3g","%.3g","%.3g","%.3g"]
+    cols      = ["bin","count","x","y","xerr","yerr","xerrsyst","yerrsyst"]
+    header    = delimiter.join(cols) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
+    fmt       = ["%.3g" for i in range(len(cols)-2)]
+    fmt       = ["%d","%d",*fmt]
     comments  = ""
 
     # Save plot data
     save_graph_to_csv(
             outpath+'.csv',
+            ct_mean,
             x_mean,
             y_mean,
             xerr=xerr_mean,
@@ -2019,6 +2050,7 @@ def plot_results(
     if ydiff_mean is not None:
         save_graph_to_csv(
             outpath+'_ydiff.csv',
+            ct_mean,
             x_mean,
             ydiff_mean,
             xerr=xerr_mean,
