@@ -81,6 +81,7 @@ arr_vars = ['y','z']
 arr_var_bins={} #NOTE: Only set this if you want to restrict yourself to specific bins in `arr_vars`, but you will need to correctly reset the `grid_shape` below.
 
 # Arguments for sagas.get_graph_data()
+count_key  = 'count'
 asym_key   = result_name #NOTE: This is set from above
 err_ext    = 'err'
 xvar_keys  = proj_vars
@@ -184,6 +185,7 @@ for config_idx in range(len(config_list)):
                             dfs[0],
                             all_proj_ids[0][0],
                             id_key=id_key,
+                            count_key=count_key,
                             xvar_keys=xvar_keys,
                             asym_key=asym_key,
                             err_ext=err_ext
@@ -194,6 +196,7 @@ for config_idx in range(len(config_list)):
             dfs,
             all_proj_ids,
             id_key=id_key,
+            count_key=count_key,
             xvar_keys=xvar_keys,
             asym_key=asym_key,
             err_ext=err_ext,
