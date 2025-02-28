@@ -276,18 +276,18 @@ def load_yaml(
 
 def load_csv(
         path,
-        results_dir='results/',
-        base_dir=None
+        old_path=None,
+        new_path=None
     ):
     """
     Parameters
     ----------
     path : required, string
         Path to CSV file containing table
-    results_dir : optional, string
+    old_path : optional, string
         Directory name to replace
-        Default : 'results/'
-    base_dir : optional, string
+        Default : None'
+    new_path : optional, string
         Directory name to insert if not None
         Default : None
 
@@ -301,7 +301,7 @@ def load_csv(
     Read table stored in CSV format into a pandas DataFrame optionally replacing
     part of the path, for example, a directory name, with another value.
     """
-    inpath = path.replace(results_dir,base_dir) if base_dir is not None else path
+    inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
     return pd.read_csv(inpath)
 
 def get_binscheme_cuts_and_ids(
@@ -774,6 +774,107 @@ def get_graph_array(
     # Raise an error if another shape length is encountered
     else:
         raise TypeError('`get_graph_array` : `proj_ids` must have len(shape) in (2,3) but shape = ',shape)
+
+def rescale_graph_data(
+        ct_mean,
+        x_mean,
+        y_mean,
+        xerr_mean,
+        yerr_mean,
+        path,
+        old_dat_path = 'old_dat_path.csv',
+        new_sim_path = 'new_sim_path.csv',
+        old_sim_path = 'old_sim_path.csv',
+        count_key = 'count',
+        yerr_key = '',
+        lumi_ratio = 1.0,
+        xvar_keys = ['x'],
+        sgasym = 0.0,
+    ):
+    """
+    Parameters
+    ----------
+    ct_mean : list, required
+        Count mean values for each bin
+        Default : None
+    x_mean : list, required
+        x mean values for each bin
+        Default : None
+    y_mean : list, required
+        y mean values for each bin
+        Default : None
+    xerr_mean : list, required
+        x error alues for each bin
+        Default : None
+    yerr_mean : list, required
+        y error values for each bin
+        Default : None
+    path : required, string
+        Path where the given graph data will be stored
+    old_dat_path : optional string
+        Part of `path` to replace
+        Default : 'old_dat_path.csv'
+    new_sim_path : optional, string
+        Path with which to replace `old_dat_path` to find new simulation graph CSVs
+        Default : 'new_sim_path.csv'
+    old_sim_path : optional, string
+        Path with which to replace `old_dat_path` to find new simulation graph CSVs
+        Default : 'old_sim_path.csv'
+    count_key : optional, string
+        CSV column key for graph bin counts
+        Default : 'count'
+    yerr_key : optional, string
+        CSV column key for graph bin y errors
+        Default : ''
+    lumi_ratio : optional, string
+        Luminosity ratio for scaling
+        Default : 1.0
+    xvar_keys : list, optional
+        List of binning variables for which to return mean values
+        Default : ['x']
+    sgasym : float or list, optional
+        Injected signal asymmetry for computing difference of measured and injected values
+        Default : 0.0
+
+    Returns
+    -------
+    dict
+        A dictionary of graph data produced by `get_aggregate_graph()`
+
+    Description
+    -----------
+    Rescale a graph loading new and old simulation graphs from file to compute the bin dependent
+    acceptance ratio and then multiplying by the luminosity ratio.
+    """
+
+    # Load other graphs from csv
+    new_sim_graph = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)
+    old_sim_graph = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
+
+    # Get counts OR y errors from csv
+    new_sim_graph_count = new_sim_graph[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_graph[yerr_key])
+    old_sim_graph_count = old_sim_graph[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_graph[yerr_key])
+
+    # Compute scaled quantities
+    acceptanceratio  = np.divide(new_sim_graph_count,old_sim_graph_count)
+    scaling          = acceptanceratio * lumi_ratio
+    scaled_y_mean    = np.multiply(scaling,y_mean)
+    scaled_yerr_mean = np.multiply(scaling,yerr_mean)
+
+    # Create a length 1 list of graph data with scaled graph results
+    graph_list = np.array([[ct_mean,scaled_y_mean,scaled_yerr_mean,x_mean,xerr_mean]])
+
+    graph = get_aggregate_graph(
+            graph_list,
+            xvar_keys=xvar_keys,
+            sgasym=sgasym
+        )
+
+    # Set systematic errors to scaling fractions
+    graph['scaling'] = scaling
+    graph['acceptanceratio'] = acceptanceratio
+
+    return graph
 
 def get_cut_array(
         cut_titles,
@@ -1764,6 +1865,12 @@ def plot_results(
         vlinestyle = 'dotted',
         vline_hist_idx = -1,
         hist_legend_loc = 'upper right',
+        old_dat_path = 'old_dat_path.csv',
+        new_sim_path = 'new_sim_path.csv',
+        old_sim_path = 'old_sim_path.csv',
+        count_key = 'count',
+        yerr_key = '',
+        lumi_ratio = 1.0,
     ):
     """
     Parameters
@@ -1932,13 +2039,71 @@ def plot_results(
     hist_legend_loc : string, optional
         Matplotlib.pyplot legend location string for histograms, will not be plotted if set to None or ''
         Default : 'upper right'
+    old_dat_path : optional string
+        Part of `path` to replace
+        Default : 'old_dat_path.csv'
+    new_sim_path : optional, string
+        Path with which to replace `old_dat_path` to find new simulation graph CSVs
+        Default : 'new_sim_path.csv'
+    old_sim_path : optional, string
+        Path with which to replace `old_dat_path` to find new simulation graph CSVs
+        Default : 'old_sim_path.csv'
+    count_key : optional, string
+        CSV column key for graph bin counts
+        Default : 'count'
+    yerr_key : optional, string
+        CSV column key for graph bin y errors
+        Default : ''
+    lumi_ratio : optional, string
+        Luminosity ratio for scaling
+        Default : 1.0
 
     Description
     -----------
     Plot asymmetry results for each bin in a 1D binning scheme showing projection variable histograms, bin limits, systematic errors,
     a standard deviation band for aggregate graphs, injected asymmetries, watermark, and legend if desired.  Save results
     and differences from the injected signal to CSV in `<outpath>.csv` and `<outpath>_ydiff.csv`.
+    Optionally, rescale the input graph using `rescale_graph_data`.
     """
+
+    # Rescale graph
+    scaling, acceptanceratio = None, None
+    rescale = lumi_ratio>0.0
+    if rescale:
+
+        # Get rescaled graph data
+        rescaled_graph = rescale_graph_data(
+            ct_mean,
+            x_mean,
+            y_mean,
+            xerr_mean,
+            yerr_mean,
+            outpath+'.csv',
+            old_dat_path = old_dat_path,
+            new_sim_path = new_sim_path,
+            old_sim_path = old_sim_path,
+            count_key = count_key,
+            yerr_key = yerr_key,
+            lumi_ratio = lumi_ratio,
+            xvar_keys = [xvar],
+            sgasym = sgasyms[sgasym_idx],
+        )
+
+        # Reset graph data
+        ct_mean = rescaled_graph['ct_mean']
+        x_mean = rescaled_graph['x_mean']
+        y_mean = rescaled_graph['y_mean']
+        xerr_mean = rescaled_graph['xerr_mean']
+        yerr_mean = rescaled_graph['yerr_mean']
+        y_min = rescaled_graph['y_min']
+        y_max = rescaled_graph['y_max']
+        y_std = rescaled_graph['y_std']
+        ydiff_mean = rescaled_graph['ydiff_mean']
+        ydiff_std = rescaled_graph['ydiff_std']
+        ydiff_min = rescaled_graph['ydiff_min']
+        ydiff_max = rescaled_graph['ydiff_max']
+        scaling = rescaled_graph['scaling']
+        acceptanceratio = rescaled_graph['acceptanceratio']
 
     # Set up plot
     ax1.set_xlim(*xlims)
@@ -2024,7 +2189,7 @@ def plot_results(
 
     # Save plot data to csv
     delimiter = ","
-    cols      = ["bin","count","x","y","xerr","yerr","xerrsyst","yerrsyst"]
+    cols      = ["bin","count","x","y","xerr","yerr","xerrsyst","yerrsyst"] if rescale else ["bin","count","x","y","xerr","yerr","acceptanceratio","scaling"]
     header    = delimiter.join(cols) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
     fmt       = ["%.3g" for i in range(len(cols)-2)]
     fmt       = ["%d","%d",*fmt]
@@ -2038,8 +2203,8 @@ def plot_results(
             y_mean,
             xerr=xerr_mean,
             yerr=yerr_mean,
-            xerr_syst=xerr_syst,
-            yerr_syst=yerr_syst,
+            xerr_syst=xerr_syst if rescale else acceptanceratio,
+            yerr_syst=yerr_syst if rescale else scaling,
             delimiter=delimiter,
             header=header,
             fmt=fmt,
