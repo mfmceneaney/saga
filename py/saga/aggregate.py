@@ -808,7 +808,6 @@ def get_cut_array(
     else:
         raise TypeError('`get_cut_array` : `proj_ids` must have len(shape) in (2,3) but shape = ',shape)
 
-
 def add_cut_array(
         args_array,
         cut_array,
@@ -864,6 +863,55 @@ def add_cut_array(
     # Raise an error if another shape length is encountered
     else:
         raise TypeError('`add_cut_array` : `args_array` must have len(shape) in (2,3) but shape = ',shape)
+
+def get_bin_mig_mat(
+        df,
+        id_gen_key='binid_gen',
+        id_rec_key='binid_rec',
+        mig_key='mig',
+    ):
+    """
+    Parameters
+    ----------
+    df : required, pandas.DataFrame
+        Pandas dataframe of bin migration matrix
+    id_gen_key : optional, string
+        Key for generated bin indices
+        Default : 'binid_gen'
+    id_rec_key : optional, string
+        Key for reconstructed bin indices
+        Default : 'binid_rec'
+    mig_key : optional, string
+        Key for bin migration fractions
+        Default : 'mig'
+
+    Returns
+    -------
+    np.array
+        Bin migration matrix whose indices map generated to reconstructed bins.
+
+    Raises
+    ------
+    TypeError
+        Raise an error if the generated and reconstructed unique bin ids do not have the same members.
+
+    Description
+    -----------
+    Create a 2D bin migration matrix from a dataframe of generated and reconstructed bin indices
+    and the bin migration fractions.
+    """
+
+    # Get unique bin ids and check they match between generated and reconstructed
+    unique_binids_gen = sorted(df[id_gen_key].unique().tolist())
+    unique_binids_rec = sorted(df[id_rec_key].unique().tolist())
+    if np.any([el not in unique_binids_gen for el in unique_binids_rec]) or np.any([el not in unique_binids_rec for el in unique_binids_gen]):
+        raise TypeError(f"`get_bin_migration_matrix` : Generated and reconstructed unique bin ids must have same members but found: unique_binids_gen={unique_binids_gen}, unique_binids_rec={unique_binids_rec}")
+
+    # Now reshape your bin migration matrix
+    shape = [len(unique_binids_gen) for i in range(2)] #NOTE: THIS MUST BE A SQUARE MATRIX
+    mig_array = np.reshape(df[mig_key].tolist(),shape)
+
+    return mig_array
 
 def get_subset(
         df,
@@ -1065,7 +1113,7 @@ def save_graph_systematics_to_csv(
 def save_bin_migration_matrix_to_csv(
         bin_migration_mat,
         base_dir='./',
-        binvar='x',
+        basename='',
         delimiter=",",
         header=None,
         fmt=None,
@@ -1079,7 +1127,7 @@ def save_bin_migration_matrix_to_csv(
     base_dir : string, required
         Path to directory in which matrix will be saved
         Default : 'systematics/bin_migration/'
-    binvar : optional, string
+    basename : optional, string
         Name of reconstructed bin variable
         Default : 'x'
     delimiter : optional, string
@@ -1104,7 +1152,7 @@ def save_bin_migration_matrix_to_csv(
     -----------
     Save a 2D bin migration matrix mapping generated bins to reconstructed bins to a CSV file
     with an added initial row and column for the bin indices.  Note that files will be saved
-    to `<base_dir>/bin_migration_mat_<binvar>.csv`.
+    to `<base_dir>/bin_migration_mat_<basename>.csv`.
     """
 
     # Check bin migration matrix shape
@@ -1112,7 +1160,7 @@ def save_bin_migration_matrix_to_csv(
         raise TypeError("Bin migration matrix must be square but has shape "+str(np.shape(bin_migration_mat)))
 
     # Set output filename
-    filename = 'bin_migration_mat_'+binvar+'.csv'
+    filename = 'bin_migration_mat_'+basename+'.csv'
     filename = os.path.join(base_dir,filename)
 
     # Create new table with int bin labels
@@ -1124,6 +1172,31 @@ def save_bin_migration_matrix_to_csv(
     data[0:,1:] = bin_migration_mat
 
     save_txt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
+
+def apply_bin_mig(
+        df,
+        inv_bin_mig_mat,
+        results_keys = ['a0'],
+    ):
+    """
+    Parameters
+    ----------
+    df : required, pandas.DataFrame
+        Pandas dataframe of asymmetry results
+    inv_bin_mig_mat : required, np.array
+        Inverse of bin migration matrix mapping generated bins to reconstructed bins
+    results_keys : optional, list
+        List of keys to results entries to which to apply bin migration corrections
+        Default : 'a0'
+
+    Description
+    -----------
+    Apply a bin migration correction to a set of results contained within a pandas dataframe.
+    """
+
+    # Then multiply results and inverse bin migration and reset the original dataframe
+    for result_key in results_keys:
+        df[result_key] = np.matmul(inv_bin_mig_mat,df[result_key])
 
 def compute_systematics(
         results,
