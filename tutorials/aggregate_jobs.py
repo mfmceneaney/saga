@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import sys
 
@@ -16,10 +17,11 @@ configs = dict(
 )
 
 # Setup input paths
-base_dir    = os.path.abspath("results/")
-submit_path = os.path.join(base_dir,"submit.sh")
-yaml_path   = os.path.join(base_dir,"args.yaml")
-out_path    = os.path.join(base_dir,"jobs.txt")
+base_dir     = os.path.abspath("results/")
+submit_path  = os.path.join(base_dir,"submit.sh")
+yaml_path    = os.path.join(base_dir,"args.yaml")
+out_path     = os.path.join(base_dir,"jobs.txt")
+bin_mig_path = os.path.join(base_dir,"bin_mig_mat.csv")
 
 # Set aggregate keys
 aggregate_keys = ["inject_seed"]
@@ -30,6 +32,22 @@ binscheme_name = 'binscheme'
 yaml_args = sagas.load_yaml(yaml_path)
 binscheme = yaml_args[binschemes_name][binscheme_name]
 
+# Load bin migration matrix and invert
+use_bin_mig = True
+id_gen_key='binid_gen'
+id_rec_key='binid_rec'
+mig_key='mig'
+bin_mig_df, bin_mig_mat, inv_bin_mig_mat = None, None, None
+if use_bin_mig:
+    bin_mig_df = sagas.load_csv(bin_mig_path)
+    bin_mig_mat = sagas.get_bin_mig_mat(
+        bin_mig_df,
+        id_gen_key='binid_gen',
+        id_rec_key='binid_rec',
+        mig_key='mig',
+    )
+    inv_bin_mig_mat = np.linalg.inv(bin_mig_mat)
+
 # Arguments for sagas.get_config_list()
 result_name = "a0" #NOTE: This also gets recycled as the asymmetry name
 
@@ -39,6 +57,9 @@ ext='.pdf'
 
 # Arguments for sagas.get_out_file_name()
 out_file_name_ext = '.csv'
+
+# Arguments for sagas.apply_bin_mig()
+results_keys = [result_name] #NOTE: You can apply bin migration to multiple dataframe entries in one go.
 
 # Arguments for sagas.get_binscheme_cuts_and_ids()
 id_key = 'bin_id'
@@ -126,6 +147,11 @@ for config_idx in range(len(config_list)):
 
     # Load pandas dataframes from the files
     dfs = [sagas.load_csv(out_file_name) for out_file_name in out_file_names]
+
+    # Apply bin migration correction
+    if use_bin_mig:
+        for df in dfs:
+            sagas.apply_bin_mig(df,inv_bin_mig_mat,results_keys=results_keys) #NOTE: THIS MODIFIES THE DATAFRAMES IN PLACE
 
     # Get bin scheme cuts and ids
     binscheme_cuts, binscheme_cut_titles, binscheme_ids = sagas.get_binscheme_cuts_and_ids(
