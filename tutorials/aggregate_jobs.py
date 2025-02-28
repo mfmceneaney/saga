@@ -43,6 +43,7 @@ out_file_name_ext = '.csv'
 # Arguments for sagas.get_binscheme_cuts_and_ids()
 id_key = 'bin_id'
 start_idx = 0
+binvar_titles = ['x','y','z']
 
 # Arguments for sagas.get_projection_ids()
 proj_vars = ['x']
@@ -58,8 +59,8 @@ xvar_keys  = proj_vars
 sgasym = 0.1
 
 # Arguments for sagas.plot_results_array()
-proj_vars_shape = [len(binscheme[proj_var]) for proj_var in proj_vars]
-arr_vars_shape = [len(binscheme[arr_var]) for arr_var in arr_vars]
+proj_vars_shape = [len(binscheme[proj_var])-1 for proj_var in proj_vars]
+arr_vars_shape = [len(binscheme[arr_var])-1 for arr_var in arr_vars]
 grid_shape = [*arr_vars_shape,*proj_vars_shape]
 plot_results_kwargs_array = [[
     {
@@ -127,10 +128,11 @@ for config_idx in range(len(config_list)):
     dfs = [sagas.load_csv(out_file_name) for out_file_name in out_file_names]
 
     # Get bin scheme cuts and ids
-    binscheme_cuts, binscheme_ids = sagas.get_binscheme_cuts_and_ids(
+    binscheme_cuts, binscheme_cut_titles, binscheme_ids = sagas.get_binscheme_cuts_and_ids(
                                                         binscheme,
                                                         start_idx=start_idx,
-                                                        id_key=id_key
+                                                        id_key=id_key,
+                                                        binvar_titles=binvar_titles,
                                                     )
 
     # Get projection bin ids
@@ -162,6 +164,20 @@ for config_idx in range(len(config_list)):
             err_ext=err_ext,
             sgasym=sgasym,
         )
+
+    # Get array of bin cut titles
+    cut_array = sagas.get_cut_array(
+        binscheme_cut_titles,
+        all_proj_ids,
+        arr_vars,
+    )
+
+    # Modify `plot_results_kwargs_array` setting bin cuts as titles
+    sagas.add_cut_array(
+        plot_results_kwargs_array,
+        cut_array,
+        arr_vars,
+    )
 
     # Plot an array of graphs
     sagas.plot_results_array(
