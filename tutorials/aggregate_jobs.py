@@ -46,6 +46,15 @@ if use_bin_mig:
         id_rec_key='binid_rec',
         mig_key='mig',
     )
+    sagas.save_bin_mig_mat_to_csv(
+        bin_mig_mat,
+        base_dir='./',
+        basename=binscheme_name,
+        delimiter=",",
+        header=None,
+        fmt=None,
+        comments='',
+    )
     inv_bin_mig_mat = np.linalg.inv(bin_mig_mat)
 
 # Arguments for sagas.get_config_list()
