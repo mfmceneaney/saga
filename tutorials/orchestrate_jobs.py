@@ -14,10 +14,10 @@ base_dir    = "results/"
 submit_path = base_dir+"submit.sh"
 yaml_path   = base_dir+"args.yaml"
 out_path    = base_dir+"jobs.txt"
-divisions = dict(
+configs = dict(
     methods,
     **fitvars,
     **seeds
 )
-create_jobs(divisions,base_dir,submit_path,yaml_path)
-submit_jobs(divisions,base_dir,submit_path,out_path,dry_run=True,generate_dummy_data=True)
+create_jobs(configs,base_dir,submit_path,yaml_path)
+submit_jobs(configs,base_dir,submit_path,out_path,dry_run=True,generate_dummy_data=True)
