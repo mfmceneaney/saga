@@ -119,6 +119,21 @@ figsize = (16*grid_shape[0],10*grid_shape[1])
 #NOTE: Set outpath within the loop for unique naming
 use_default_plt_settings = True
 
+# If you want to rescale your results using results from other base directories set the following arguments
+rescale = False
+if rescale:
+    plot_results_kwargs_base = dict(
+        plot_results_kwargs_base,
+        **{
+            'old_dat_path':'results/',
+            'new_sim_path':'results/',
+            'old_sim_path':'results/',
+            'count_key':'count',
+            'yerr_key':'',
+            'lumi_ratio':1.0,
+        },
+    )
+
 #---------- Set configurations and loop ----------#
 
 # Get list of configurations
