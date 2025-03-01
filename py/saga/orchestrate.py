@@ -8,14 +8,92 @@ import os
 import shutil
 import yaml
 import sys
-from .aggregate import get_list
+import numpy as np
+from .aggregate import get_config_list, get_config_str, get_binscheme_cuts_and_ids, save_txt, load_yaml, get_out_file_name
 
-def create_jobs(divisions,base_dir,submit_path,yaml_path):
+def write_file_from_config(outdir):
+    """
+    WRITE DUMMY DATA FOR A CONFIGURATION ASSUMING THE `args.yaml` FILE EXISTS
+    AND CONTAINS A BIN SCHEME NAMED `binscheme.
+    """
+
+    binscheme_name = "binscheme" #NOTE: MAKE SURE THIS MATCHES THE DUMMY BIN SCHEME NAME IN ARGS.YAML
+
+    yaml_path = os.path.join(outdir,"args.yaml")
+    yaml_args = load_yaml(yaml_path)
+    binscheme = yaml_args["binschemes"][binscheme_name]
+
+    # Get the list of bin ids
+    binscheme_cuts, binscheme_cut_titles, binscheme_ids = get_binscheme_cuts_and_ids(
+        binscheme,
+        start_idx=0,
+        id_key='bin_id'
+    )
+
+    # Get the name of the CSV file for the binning scheme you are interested in
+    out_file_name = get_out_file_name(
+            base_dir=outdir, #NOTE APPEND SYSTEM SEPARATOR TO OUTDIR HERE TODO: MAYBE JUST CHANGE THIS TO AN OUTPUT DIRECTORY...
+            base_name='',
+            binscheme_name=binscheme_name,
+            ext='.csv'
+        )
+
+    # Convert to getKinBinnedAsym() output CSV format
+    # COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr}
+
+    # Set column header
+    delimiter=","
+    err_ext = "err"
+    binvar_cols = [delimiter.join([binvar,binvar+err_ext]) for binvar in binscheme.keys()]
+    depolvar_cols = [delimiter.join([depolvar,depolvar+err_ext]) for depolvar in ["depol"]]
+    asymfitvar_cols = [delimiter.join([asymfitvar,asymfitvar+err_ext]) for asymfitvar in ["a0"]]
+    cols = ["bin_id","count",*binvar_cols,*depolvar_cols,*asymfitvar_cols]
+    header = delimiter.join(cols)
+
+    # Set column formats
+    fmt = ["%.3g" for i in range(2*(len(cols)-2))]
+    fmt = ["%d","%d", *fmt]
+
+    # Set bin means
+    binvar_means = {binvar: np.array([np.average([binscheme[binvar][i],binscheme[binvar][i+1]]).item() for i in range(len(binscheme[binvar])-1)]) for binvar in binscheme}
+    sum_binvar_nbins = np.sum([len(binvar_means[binvar]) for binvar in binscheme])
+
+    # Set linearly dependent data with random noise
+    data = []
+    id_key = "bin_id"
+    for binscheme_ids_idx in range(len(binscheme_ids)):
+
+        # Set bin id and count
+        bin_id = binscheme_ids[id_key].iloc[binscheme_ids_idx]
+        count = 100
+
+        # Set row data
+        binvar_data = np.array([[binvar_means[binvar][binscheme_ids[binvar].iloc[binscheme_ids_idx]],0.05] for binvar in binscheme.keys()]).flatten().tolist()
+        depolvar_data = [0.5,0.0]
+        asymfitvar_val = -1.0 + 2.0 * np.sum([binscheme_ids[binvar].iloc[binscheme_ids_idx] for binvar in binscheme.keys()]) / sum_binvar_nbins  #NOTE: Introduce a linear dependence on each bin variable
+        asymfitvar_val += np.random.rand() * 0.05 #NOTE: Introduce some random noise
+        asymfitvar_data = [asymfitvar_val,0.05]
+        row = [bin_id,count,*binvar_data,*depolvar_data,*asymfitvar_data]
+
+        # Add row data
+        data.append(row) 
+
+    # Save data to file
+    save_txt(
+        out_file_name,
+        data,
+        delimiter=",",
+        header=header,
+        fmt=fmt,
+        comments='',
+    )
+
+def create_jobs(configs,base_dir,submit_path,yaml_path):
     """
     Parameters
     ----------
-    divisions : dictionary, required
-        Map of option names to option values
+    configs : dictionary, required
+        Map of configuration option names to option values
     base_dir : string, required
         Path to directory in which to create job directories
     submit_path : string, required
@@ -29,8 +107,8 @@ def create_jobs(divisions,base_dir,submit_path,yaml_path):
     Each directory will contain an appropriately modified version of the supplied SLURM and yaml files.
     """
 
-    # Create map of elements of elements of divisions and combine completely into each other for one list
-    data_list = get_list(divisions)
+    # Create map of elements of elements of configs and combine completely into each other for one list
+    data_list = get_config_list(configs)
 
     # Loop resulting list
     for data_list_i in data_list:
@@ -64,12 +142,12 @@ def create_jobs(divisions,base_dir,submit_path,yaml_path):
         with open(submit_path_i, 'w') as submit_i:
             submit_i.write(doc)
 
-def submit_jobs(divisions,base_dir,submit_path,out_path,dry_run=False):
+def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dummy_data=False):
     """
     Parameters
     ----------
-    divisions : dictionary, required
-        Map of option names to option values
+    configs : dictionary, required
+        Map of configuration option names to option values
     base_dir : string, required
         Path to directory in which to create job directories
     submit_path : string, required
@@ -79,14 +157,17 @@ def submit_jobs(divisions,base_dir,submit_path,out_path,dry_run=False):
     dry_run : bool, optional
         Option to just print commands to text file and not submit jobs via sbatch
         Default : False
+    generate_dummy_data : bool, optional
+        Option to generate dummy output csv files in the same format as you would expect from `getKinBinnedAsym`
+        Default : False
 
     Description
     -----------
     Submit jobs within a job directory structure created by `orchesrate.create_jobs()`.
     """
 
-    # Create map of elements of elements of divisions and combine completely into each other for one list
-    data_list = get_list(divisions)
+    # Create map of elements of elements of configs and combine completely into each other for one list
+    data_list = get_config_list(configs)
 
     # Loop resulting list
     counter = 1
@@ -101,6 +182,7 @@ def submit_jobs(divisions,base_dir,submit_path,out_path,dry_run=False):
          
         # Submit job to SLURM
         command = 'echo \''+str(counter)+' sbatch '+os.path.abspath(submit_path_i)+'\' >> '+out_path+'; '
-        if (not dry_run): command = command+'sbatch '+os.path.abspath(submit_path_i)+' >> '+out_path
+        if not dry_run: command = command+'sbatch '+os.path.abspath(submit_path_i)+' >> '+out_path
         subprocess.run(command, shell=True, check=True, text=True)
+        if generate_dummy_data: write_file_from_config(job_dir)#NOTE: Write dummy data to configuration with a static binning scheme
         counter += 1
