@@ -1870,7 +1870,7 @@ def plot_results(
         old_sim_path = 'old_sim_path.csv',
         count_key = 'count',
         yerr_key = '',
-        lumi_ratio = 1.0,
+        lumi_ratio = 0.0,
     ):
     """
     Parameters
@@ -2056,7 +2056,7 @@ def plot_results(
         Default : ''
     lumi_ratio : optional, string
         Luminosity ratio for scaling
-        Default : 1.0
+        Default : 0.0
 
     Description
     -----------
@@ -2189,7 +2189,7 @@ def plot_results(
 
     # Save plot data to csv
     delimiter = ","
-    cols      = ["bin","count","x","y","xerr","yerr","xerrsyst","yerrsyst"] if rescale else ["bin","count","x","y","xerr","yerr","acceptanceratio","scaling"]
+    cols      = ["bin","count","x","y","xerr","yerr","xerrsyst","yerrsyst"] if not rescale else ["bin","count","x","y","xerr","yerr","acceptanceratio","scaling"]
     header    = delimiter.join(cols) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
     fmt       = ["%.3g" for i in range(len(cols)-2)]
     fmt       = ["%d","%d",*fmt]
@@ -2203,8 +2203,8 @@ def plot_results(
             y_mean,
             xerr=xerr_mean,
             yerr=yerr_mean,
-            xerr_syst=xerr_syst if rescale else acceptanceratio,
-            yerr_syst=yerr_syst if rescale else scaling,
+            xerr_syst=xerr_syst if not rescale else acceptanceratio,
+            yerr_syst=yerr_syst if not rescale else scaling,
             delimiter=delimiter,
             header=header,
             fmt=fmt,
