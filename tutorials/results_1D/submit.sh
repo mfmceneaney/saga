@@ -11,7 +11,7 @@
 #SBATCH --time=24:00:00
 
 export MYEXECUTABLE=$SAGA_HOME/build/getKinBinnedAsym
-export OUTDIR=$SAGA_HOME/tutorials/results
+export OUTDIR=$SAGA_HOME/tutorials/results_1D
 export YAML=$OUTDIR/args.yaml
 
 echo $MYEXECUTABLE

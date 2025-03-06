@@ -42,9 +42,9 @@ if use_bin_mig:
     bin_mig_df = sagas.load_csv(bin_mig_path)
     bin_mig_mat = sagas.get_bin_mig_mat(
         bin_mig_df,
-        id_gen_key='binid_gen',
-        id_rec_key='binid_rec',
-        mig_key='mig',
+        id_gen_key=id_gen_key,
+        id_rec_key=id_rec_key,
+        mig_key=mig_key,
     )
     sagas.save_bin_mig_mat_to_csv(
         bin_mig_mat,
