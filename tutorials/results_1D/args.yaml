@@ -1,0 +1,5 @@
+method: "method"
+asymfitvars: ["asymfitvar"]
+binschemes:
+  binscheme:
+    x: [0.0, 0.5,  1.0, 1.5,  2.0]
