@@ -14,7 +14,7 @@ mc_sg_match_formula: "(bool)(ppid_p_mc==3122 && pidx_p_mc==pidx_pim_mc && abs(dt
 fsgasyms_xs_name: "fsgasyms_xs"
 fsgasyms_xs_formula: "(float)(0.747*costhetaT*(depol0*sgasyms[0]*TMath::Cos(phi_h_ppim)+depol1*sgasyms[1]+depol1*sgasyms[2]*TMath::Cos(2.0*phi_h_ppim)))" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
 fbgasyms_xs_name: "fbgasyms_xs"
-fbgasyms_xs_formula: "(float)1.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+fbgasyms_xs_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
 randvar_name: "randvar"
 xs_name: "XS"
 helicity_name: "heli"

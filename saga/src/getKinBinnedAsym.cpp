@@ -152,7 +152,7 @@ void execute(const YAML::Node& node) {
     std::cout << "INFO: fbgasyms_xs_name: " << fbgasyms_xs_name << std::endl;
 
     // FBGASYMS_XS_FORMULA
-    std::string fbgasyms_xs_formula = "(float)1.0"; //NOTE: This may not be empty!
+    std::string fbgasyms_xs_formula = "(float)0.0"; //NOTE: This may not be empty!
     if (node["fbgasyms_xs_formula"]) {
         fbgasyms_xs_formula = node["fbgasyms_xs_formula"].as<std::string>();
     }
