@@ -10,9 +10,9 @@
 #SBATCH --gres=disk:1000
 #SBATCH --time=24:00:00
 
-export MYEXECUTABLE=$SAGA_HOME/build/getBinMigration
-export OUTDIR=$SAGA_HOME/test/
-export YAML=args.yaml
+export MYEXECUTABLE=$SAGA_HOME/build/getKinBinnedAsym
+export OUTDIR=$SAGA_HOME/tutorials/results
+export YAML=$OUTDIR/args.yaml
 
 echo $MYEXECUTABLE
 echo $OUTDIR
