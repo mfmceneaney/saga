@@ -63,7 +63,7 @@ use_average_depol: False
 use_extended_nll: true
 use_binned_fit: false
 massfit_nbins_conv: 1000
-massfit_sig_pdf_name: "cb" #NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss").
+massfit_sig_pdf_name: "cb" #NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss").  No mass fit will be applied if an empty string is passed.
 massfit_sg_region_min: 1.11
 massfit_sg_region_max: 1.13
 sgyield_name: "sgyield"
