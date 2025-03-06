@@ -130,6 +130,7 @@ if rescale:
             'old_sim_path':'results/',
             'count_key':'count',
             'yerr_key':'',
+            'xs_ratio':1.0,
             'lumi_ratio':1.0,
         },
     )
