@@ -787,6 +787,7 @@ def rescale_graph_data(
         old_sim_path = 'old_sim_path.csv',
         count_key = 'count',
         yerr_key = '',
+        xs_ratio = 1.0,
         lumi_ratio = 1.0,
         xvar_keys = ['x'],
         sgasym = 0.0,
@@ -826,9 +827,12 @@ def rescale_graph_data(
     yerr_key : optional, string
         CSV column key for graph bin y errors
         Default : ''
+    xs_ratio : optional, string
+        Cross-section ratio (new/old) for scaling
+        Default : 0.0
     lumi_ratio : optional, string
-        Luminosity ratio for scaling
-        Default : 1.0
+        Luminosity ratio (new/old) for scaling
+        Default : 0.0
     xvar_keys : list, optional
         List of binning variables for which to return mean values
         Default : ['x']
@@ -843,8 +847,10 @@ def rescale_graph_data(
 
     Description
     -----------
-    Rescale a graph loading new and old simulation graphs from file to compute the bin dependent
-    acceptance ratio and then multiplying by the luminosity ratio.
+    Rescale a graph from data (`old_dat`) loading new and old simulation graphs (`new_sim` and `old_sim`)
+    from file to compute the bin dependent acceptance ratio.  Start from from either the ratio (`new_sim`/`old_sim`)
+    of counts in that bin or the ratio counts estimated from asymmetry errors loaded from `yerr_key`and assuming poissonian statistics.
+    The rescaling ratio is then computed by multiplying by `lumi_ratio / xs_ratio`.
     """
 
     # Load other graphs from csv
@@ -857,7 +863,7 @@ def rescale_graph_data(
 
     # Compute scaled quantities
     acceptanceratio  = np.divide(new_sim_graph_count,old_sim_graph_count)
-    scaling          = acceptanceratio * lumi_ratio
+    scaling          = acceptanceratio * lumi_ratio / xs_ratio
     scaled_y_mean    = np.multiply(scaling,y_mean)
     scaled_yerr_mean = np.multiply(scaling,yerr_mean)
 
@@ -1870,6 +1876,7 @@ def plot_results(
         old_sim_path = 'old_sim_path.csv',
         count_key = 'count',
         yerr_key = '',
+        xs_ratio = 1.0,
         lumi_ratio = 0.0,
     ):
     """
@@ -2054,8 +2061,11 @@ def plot_results(
     yerr_key : optional, string
         CSV column key for graph bin y errors
         Default : ''
+    xs_ratio : optional, string
+        Cross-section ratio (new/old) for scaling
+        Default : 0.0
     lumi_ratio : optional, string
-        Luminosity ratio for scaling
+        Luminosity ratio (new/old) for scaling
         Default : 0.0
 
     Description
@@ -2084,6 +2094,7 @@ def plot_results(
             old_sim_path = old_sim_path,
             count_key = count_key,
             yerr_key = yerr_key,
+            xs_ratio = xs_ratio,
             lumi_ratio = lumi_ratio,
             xvar_keys = [xvar],
             sgasym = sgasyms[sgasym_idx],
