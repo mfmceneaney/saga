@@ -1142,21 +1142,24 @@ void getKinBinnedAsym(
 
         // Apply Lambda mass fit to FULL bin frame
         RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
-        std::vector<double> epss = applyLambdaMassFit(
-                ws,
-                massfitvars,
-                rooDataSetResult,
-                sgYield_name,
-                bgYield_name,
-                binframe,
-                massfit_nbins_conv,
-                massfit_model_name,
-                massfit_sig_pdf_name,
-                massfit_sg_region_min,
-                massfit_sg_region_max,
-                1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
-                scheme_binid
-            );
+        std::vector<double> epss = {0.0, 0.0};
+        if (massfit_sig_pdf_name.size()>0) {
+            epss = applyLambdaMassFit(
+                    ws,
+                    massfitvars,
+                    rooDataSetResult,
+                    sgYield_name,
+                    bgYield_name,
+                    binframe,
+                    massfit_nbins_conv,
+                    massfit_model_name,
+                    massfit_sig_pdf_name,
+                    massfit_sg_region_min,
+                    massfit_sg_region_max,
+                    1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
+                    scheme_binid
+                );
+        }
 
         // Apply sPlot
         std::string fit_dataset_name = dataset_name; // -> Use this for sPlot
