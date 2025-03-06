@@ -758,9 +758,16 @@ void execute(const YAML::Node& node) {
     }
     //TODO: Add output message about defined branches
 
+    // Define a lambda to get static random numbers for each rdf entry
+    std::map<ULong64_t,float> randvar_map;
+    if (inject_asym) d2_filtered.Foreach([&randvar_map,&gRandom](ULong64_t iEntry){ randvar_map[iEntry] = (float)gRandom->Rndm(); },{"rdfentry_"});
+    auto getEntrySlot = [&randvar_map](ULong64_t iEntry) {
+      return randvar_map[iEntry];
+    };
+
     // Define helicity variable, injecting and applying MC matching cuts if requested
     auto frame = (!inject_asym) ? d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str()) :
-                    d2_filtered.Define(randvar_name.c_str(),[&gRandom](){ return (float)gRandom->Rndm(); },{})
+                    d2_filtered.Define(randvar_name.c_str(),getEntrySlot,{"rdfentry_"})
                     .Define(xs_name.c_str(), [&pol]
                         (bool mc_sg_match, float fsgasyms_xs, float fbgasyms_xs) {
                             return (float)((mc_sg_match) ?
