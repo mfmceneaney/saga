@@ -551,6 +551,7 @@ void setWeightsFromLambdaMassFit(
                                                             rrvars[idx]->getMin(),
                                                             rrvars[idx]->getMax()
                                                         );
+            binscheme[asymfitvar] = binlims;
         }
 
         // Set bin cuts from bin scheme
