@@ -864,11 +864,12 @@ def rescale_graph_data(
     # Compute scaled quantities
     acceptanceratio  = np.divide(new_sim_graph_count,old_sim_graph_count)
     scaling          = acceptanceratio * lumi_ratio / xs_ratio
-    scaled_y_mean    = np.multiply(scaling,y_mean)
-    scaled_yerr_mean = np.multiply(scaling,yerr_mean)
+    scaled_ct_mean   = np.multiply(scaling,ct_mean)
+    err_scaling      = np.sqrt(np.divide(ct_mean,scaled_ct_mean)) #NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
+    scaled_yerr_mean = np.multiply(err_scaling,yerr_mean)
 
     # Create a length 1 list of graph data with scaled graph results
-    graph_list = np.array([[ct_mean,scaled_y_mean,scaled_yerr_mean,x_mean,xerr_mean]])
+    graph_list = np.array([[scaled_ct_mean,y_mean,scaled_yerr_mean,x_mean,xerr_mean]])
 
     graph = get_aggregate_graph(
             graph_list,
