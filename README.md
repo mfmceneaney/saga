@@ -105,6 +105,20 @@ Solving for $A_{signal}$:
 
 $A_{signal} = \frac{A_{measured}-\varepsilon A_{background}}{(1-\varepsilon)}$.
 
+A variant on sideband subtraction is to fit the combined signal and sideband region data while weighting the sideband events.  In this case, the weight for all signal region events is set to $W_{sg}=1.0$ and the weight for the sideband region events is set to:
+
+$W_{sb} = - \varepsilon \cdot N_{sg} / N_{sb}
+
+where $N_{sg}$ is the total number of events in the signal region and $N_{sb}$ is the total number of events in the sideband region.  Assume we have in the signal region:
+
+$N_{sg} = (1-\varepsilon)N_{sg} + \varepsilon N_{sg} = N_{signal} + N_{background}$,
+
+and assume the $N_{signal}$ events correspond to the asymmetry $A_{signal}$ and the $N_{background}$ **and** $N_{sb}$ events all correspond to the same background asymmetry $A_{background}$.  Then we can subtract out the effect of the $N_{background}$ events by subtracting the sideband events and correcting for the difference in normalizations.  Hence our combined signal and sideband dataset will now have normalization:
+
+$N_{signal} = (1-\varepsilon)N_{sg} + \varepsilon N_{sg} - \varepsilon \cdot N_{sg} / N_{sb} \cdot N_{sb}.
+
+This variation is useful in the case $\varepsilon$ has some correlation with the fit variables.  To counteract this effect, one must bin the sideband subtraction in the fit variables which can lead to low event counts in each bin.  Hence, it is more viable to compute $varepsilon$, $N_{sg}$, $N_{sb}$ in each bin and weight the entire kinematic bin rather than computing asymmetry results for each fit variable bin within each kinematic bin and encountering very low statistics.
+
 The second method, $_sPlots$, which you may read about here: [arXiv:physics/0402083](https://arxiv.org/abs/physics/0402083), is a generalized form of sideband subtraction which computes event-level weights to produce the signal distribution in a variable which is _uncorrelated_ with the invariant mass variable.
 
 ### Fitting Asymmetries
