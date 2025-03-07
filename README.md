@@ -117,7 +117,7 @@ and assume the $N_{signal}$ events correspond to the asymmetry $A_{signal}$ and 
 
 $N_{signal} = (1-\varepsilon)N_{sg} + \varepsilon N_{sg} - \varepsilon \cdot N_{sg} / N_{sb} \cdot N_{sb}$.
 
-This variation is useful in the case $\varepsilon$ has some correlation with the fit variables.  To counteract this effect, one must bin the sideband subtraction in the fit variables which can lead to low event counts in each bin.  Hence, it is more viable to compute $varepsilon$, $N_{sg}$, $N_{sb}$ in each bin and weight the entire kinematic bin rather than computing asymmetry results for each fit variable bin within each kinematic bin and encountering very low statistics.
+This variation is useful in the case $\varepsilon$ has some correlation with the fit variables.  To counteract this effect, one must bin the sideband subtraction in the fit variables which can lead to low event counts in each bin.  Hence, it is more viable to compute $\varepsilon$, $N_{sg}$, $N_{sb}$ in each bin and weight the entire kinematic bin rather than computing asymmetry results for each fit variable bin within each kinematic bin and encountering very low statistics.
 
 The second method, $_sPlots$, which you may read about here: [arXiv:physics/0402083](https://arxiv.org/abs/physics/0402083), is a generalized form of sideband subtraction which computes event-level weights to produce the signal distribution in a variable which is _uncorrelated_ with the invariant mass variable.
 
