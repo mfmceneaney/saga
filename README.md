@@ -120,7 +120,13 @@ For an unbinned ML fit the acceptance naturally reduces to a relative luminosity
 
 $PDF(h,P_{b},\vec{x},\vec{a},\vec{d})=1+h\cdot P_{b} \cdot A(\vec{x},\vec{a},\vec{d})$
 
-and $P_{b}$ is the polarization and $\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit variables, asymmetry parameters, and depolarization variables (treated as independent variables).  In executables and functions provided by this project, the given asymmetry formula is converted internally to a PDF of this form and a simultaneous fit is done over the different helicity states.
+and $P_{b}$ is the polarization and $\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit variables, asymmetry parameters, and depolarization variables (treated as independent variables).  In executables and functions provided by this project, the given asymmetry formula is converted internally to a PDF of this form and a simultaneous fit is done over the different helicity states.  For a dataset of length $N$, the likelihood parameter used for parameter optimization is:
+
+$\mathcal{L}(\vec{a}) = \prod_{i=1}^{N} PDF(h_i,P_{b},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
+
+An _extended_ ML Fit simply introduces the normalization factor $\mathcal{N}{\vec{a}}$ as an optimization parameter assuming a Poissonian distribution so that the extended likelihood becomes:
+
+$\mathcal{L}(\vec{a}) = \frac{\mathcal{N}(\vec{a})^Ne^{-\mathcal{N}(\vec{a})}}{N!}\prod_{i=1}^{N} PDF(h_i,P_{b},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
 Use the `getKinBinnedAsym` executable to run a set of generically binned asymmetry fits and save the results to a CSV file.
 
@@ -146,7 +152,9 @@ $N_{New Data,i} = N_{Old Data,i} \cdot \frac{R_{New Sim.,i}}{R_{Old Sim.,i}} \cd
 
 where $\mathcal{L}$ denotes the integrated luminosity of each dataset.
 
-In practice, rather than computing $N_{Generated}$ in each bin it is easier to divide $N_{Reconstructed}$ by the integrated cross-section since this should be directly proportional to $N_{Generated}$ and we take the ratio of the acceptance ratios so any extraneous units drop out anyway.
+In practice, rather than computing $N_{Generated}$ in each bin it is easier to divide $N_{Reconstructed}$ by the integrated cross-section ($XS$) since this should be directly proportional to $N_{Generated}$ and we take the ratio of the acceptance ratios so any extraneous units drop out anyway.  In this case you would compute:
+
+$N_{New Data,i} = N_{Old Data,i} \cdot \frac{N_{Reconstructed,New Sim.,i}}{N_{Reconstructed, Old Sim.,i}} \cdot \bigg{(}\frac{XS_{New Sim.,i}}{XS_{Old Sim.,i}}\bigg{)}^{-1} \cdot \frac{\mathcal{L_{New}}}{\mathcal{L_{Old}}}$.
 
 #
 
