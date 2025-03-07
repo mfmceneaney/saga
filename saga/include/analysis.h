@@ -616,7 +616,7 @@ void setWeightsFromLambdaMassFit(
         bgcut,
         weightvar,
         weightvar_lims,
-        massfit_results,
+        weights_map,
         weights_default,
         true
     );
