@@ -1156,7 +1156,7 @@ void getKinBinnedAsym(
         // Apply Lambda mass fit to FULL bin frame
         RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
         std::vector<double> epss = {0.0, 0.0};
-        if (massfit_sig_pdf_name.size()>0) {
+        if (massfit_sig_pdf_name.size()>0 && !use_binned_sb_weights) {  //NOTE: A mass fit in each bin is only needed for basic sideband subtraction and splots.
             epss = applyLambdaMassFit(
                     ws,
                     massfitvars,
