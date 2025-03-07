@@ -559,7 +559,7 @@ void setWeightsFromLambdaMassFit(
     }
 
     // Loop bins and apply fits recording background fractions and errors
-    std::map<int,std::vector<double>> massfit_results;
+    std::map<int,std::vector<double>> weights_map;
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
 
         // Get bin id and cut
@@ -572,6 +572,10 @@ void setWeightsFromLambdaMassFit(
 
         // Get bin unique id
         std::string bin_unique_id = Form("%s__asymfitvars_bin_%d",bin_id.c_str(),id);
+
+        // Get the signal and sideband counts
+        int sg_count = (int)*binframe.Filter(sgcut.c_str()).Count();
+        int bg_count = (int)*binframe.Filter(bgcut.c_str()).Count();
 
         // Get Lambda mass fit
         std::vector<double> massfit_result = applyLambdaMassFit(
@@ -590,7 +594,10 @@ void setWeightsFromLambdaMassFit(
                 bin_unique_id
         );
 
-        massfit_results[id] = massfit_result;
+        // Compute the sideband weights
+        double eps = massfit_result[0];
+        double sb_weight = - eps * sg_count / bg_count;
+        weights_map[id] = {1.0, sb_weight};
     }
 
     // Set data set weights from the binned mass fits
@@ -606,7 +613,7 @@ void setWeightsFromLambdaMassFit(
         weightvar_lims,
         massfit_results,
         weights_default,
-        false
+        true
     );
 
 } // void setWeightsFromLambdaMassFit(
