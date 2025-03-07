@@ -124,7 +124,7 @@ and $P_{b}$ is the polarization and $\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit 
 
 $\mathcal{L}(\vec{a}) = \prod_{i=1}^{N} PDF(h_i,P_{b},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
-An _extended_ ML Fit simply introduces the normalization factor $\mathcal{N}{\vec{a}}$ as an optimization parameter assuming a Poissonian distribution so that the extended likelihood becomes:
+An _extended_ ML Fit simply introduces the normalization factor $\mathcal{N}(\vec{a})$ as an optimization parameter assuming a Poissonian distribution so that the extended likelihood becomes:
 
 $\mathcal{L}(\vec{a}) = \frac{\mathcal{N}(\vec{a})^Ne^{-\mathcal{N}(\vec{a})}}{N!}\prod_{i=1}^{N} PDF(h_i,P_{b},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
