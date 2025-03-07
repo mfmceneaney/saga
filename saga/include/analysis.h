@@ -485,7 +485,12 @@ void getMassFitWeightedData(
 *
 * Apply a \f$\Lambda\f$ mass fit in each asymmetry fit variable bin
 * and weight the given dataset in the signal and background regions.
-* Note that all weights are set to zero outside these two regions.
+* Only sideband events will be weighted and the weight will be computed using the
+* background fraction $\varepsilon$ from the mass fit and scaled from sideband to
+* signal region counts to ensure non-negative normalization:
+* @f[
+* W_{sb} = - \varepsilon \cdot \frac{N_{sg}}{N_{sb}}.
+* @f]
 *
 * @param w RooWorkspace in which to work
 * @param rds RooDataSet to fit and weight
