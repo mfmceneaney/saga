@@ -88,7 +88,7 @@ namespace analysis {
 * @param sig_pdf_name Signal PDF name
 * @param sg_region_min Invariant mass signal region lower bound
 * @param sg_region_max Invariant mass signal region upper bound
-* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
+* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead of 2nd order
 * @param bin_id Unique bin identifier string
 *
 * @return List containing background fraction epsilon and its statistical error
@@ -498,7 +498,7 @@ void getMassFitWeightedData(
 * @param massfit_sig_pdf_name Signal PDF name
 * @param massfit_sg_region_min Invariant mass signal region lower bound
 * @param massfit_sg_region_max Invariant mass signal region upper bound
-* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
+* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead of 2nd order
 * @param bin_id Unique bin identifier string
 * @param sgcut Signal invariant mass region cut
 * @param bgcut Background invariant mass region cut
