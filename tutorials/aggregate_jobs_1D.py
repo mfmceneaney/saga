@@ -42,6 +42,7 @@ ext='.pdf'
 # Arguments for sagas.get_out_file_name()
 out_file_name_ext = '.csv'
 bin_mig_base_name="bin_mig_mat_"
+out_file_base_name = ''
 
 # Arguments for sagas.apply_bin_mig()
 use_bin_mig = True
@@ -178,6 +179,7 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
         # Get the name of the CSV file for the binning scheme you are interested in
         out_file_names = [sagas.get_out_file_name(
                 base_dir=outdir,
+                base_name=out_file_base_name,
                 binscheme_name=binscheme_name,
                 ext=out_file_name_ext
             ) for outdir in out_dirs]
