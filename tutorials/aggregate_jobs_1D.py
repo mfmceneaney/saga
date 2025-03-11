@@ -227,3 +227,4 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
 
         # Save the graph
         f.savefig(config_out_path)
+        f.close()
