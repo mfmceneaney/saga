@@ -35,13 +35,14 @@ binschemes = yaml_args[binschemes_name]
 # Arguments for sagas.get_config_list()
 result_name = "a0" #NOTE: This also gets recycled as the asymmetry name
 
-# Arguments for sagas.get_out_dirs_list()
+# Arguments for sagas.get_config_out_path()
 sep='_'
 ext='.pdf'
 
 # Arguments for sagas.get_out_file_name()
 out_file_name_ext = '.csv'
 bin_mig_base_name="bin_mig_mat_"
+out_file_base_name = ''
 
 # Arguments for sagas.apply_bin_mig()
 use_bin_mig = True
@@ -173,10 +174,12 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
                 sep=sep,
                 ext=ext,
             )
+        config_out_path = os.path.join(base_dir,config_out_path)
 
         # Get the name of the CSV file for the binning scheme you are interested in
         out_file_names = [sagas.get_out_file_name(
                 base_dir=outdir,
+                base_name=out_file_base_name,
                 binscheme_name=binscheme_name,
                 ext=out_file_name_ext
             ) for outdir in out_dirs]
@@ -215,8 +218,13 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
         # Create figure and axes
         f, ax = plt.subplots(figsize=figsize)
 
+        # Set additional arguments for saga.aggregate.plot_results()
+        plot_results_kwargs_base['sgasyms'] = config['sgasyms']
+        plot_results_kwargs_base['outpath'] = config_out_path
+
         # Plot the graph
         sagas.plot_results(ax,**aggregate_graph,**plot_results_kwargs_base)
 
         # Save the graph
         f.savefig(config_out_path)
+        f.close()

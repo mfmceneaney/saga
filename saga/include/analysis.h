@@ -88,7 +88,7 @@ namespace analysis {
 * @param sig_pdf_name Signal PDF name
 * @param sg_region_min Invariant mass signal region lower bound
 * @param sg_region_max Invariant mass signal region upper bound
-* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
+* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead of 2nd order
 * @param bin_id Unique bin identifier string
 *
 * @return List containing background fraction epsilon and its statistical error
@@ -485,7 +485,12 @@ void getMassFitWeightedData(
 *
 * Apply a \f$\Lambda\f$ mass fit in each asymmetry fit variable bin
 * and weight the given dataset in the signal and background regions.
-* Note that all weights are set to zero outside these two regions.
+* Only sideband events will be weighted and the weight will be computed using the
+* background fraction $\varepsilon$ from the mass fit and scaled from sideband to
+* signal region counts to ensure non-negative normalization:
+* @f[
+* W_{sb} = - \varepsilon \cdot \frac{N_{sg}}{N_{sb}}.
+* @f]
 *
 * @param w RooWorkspace in which to work
 * @param rds RooDataSet to fit and weight
@@ -498,7 +503,7 @@ void getMassFitWeightedData(
 * @param massfit_sig_pdf_name Signal PDF name
 * @param massfit_sg_region_min Invariant mass signal region lower bound
 * @param massfit_sg_region_max Invariant mass signal region upper bound
-* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead 2nd order
+* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead of 2nd order
 * @param bin_id Unique bin identifier string
 * @param sgcut Signal invariant mass region cut
 * @param bgcut Background invariant mass region cut
@@ -551,6 +556,7 @@ void setWeightsFromLambdaMassFit(
                                                             rrvars[idx]->getMin(),
                                                             rrvars[idx]->getMax()
                                                         );
+            binscheme[asymfitvar] = binlims;
         }
 
         // Set bin cuts from bin scheme
@@ -558,7 +564,7 @@ void setWeightsFromLambdaMassFit(
     }
 
     // Loop bins and apply fits recording background fractions and errors
-    std::map<int,std::vector<double>> massfit_results;
+    std::map<int,std::vector<double>> weights_map;
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
 
         // Get bin id and cut
@@ -571,6 +577,10 @@ void setWeightsFromLambdaMassFit(
 
         // Get bin unique id
         std::string bin_unique_id = Form("%s__asymfitvars_bin_%d",bin_id.c_str(),id);
+
+        // Get the signal and sideband counts
+        int sg_count = (int)*binframe.Filter(sgcut.c_str()).Count();
+        int bg_count = (int)*binframe.Filter(bgcut.c_str()).Count();
 
         // Get Lambda mass fit
         std::vector<double> massfit_result = applyLambdaMassFit(
@@ -589,7 +599,10 @@ void setWeightsFromLambdaMassFit(
                 bin_unique_id
         );
 
-        massfit_results[id] = massfit_result;
+        // Compute the sideband weights
+        double eps = massfit_result[0];
+        double sb_weight = - eps * sg_count / bg_count;
+        weights_map[id] = {1.0, sb_weight};
     }
 
     // Set data set weights from the binned mass fits
@@ -603,9 +616,9 @@ void setWeightsFromLambdaMassFit(
         bgcut,
         weightvar,
         weightvar_lims,
-        massfit_results,
+        weights_map,
         weights_default,
-        false
+        true
     );
 
 } // void setWeightsFromLambdaMassFit(
@@ -1143,7 +1156,7 @@ void getKinBinnedAsym(
         // Apply Lambda mass fit to FULL bin frame
         RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
         std::vector<double> epss = {0.0, 0.0};
-        if (massfit_sig_pdf_name.size()>0) {
+        if (massfit_sig_pdf_name.size()>0 && !use_binned_sb_weights) {  //NOTE: A mass fit in each bin is only needed for basic sideband subtraction and splots.
             epss = applyLambdaMassFit(
                     ws,
                     massfitvars,
