@@ -112,27 +112,23 @@ void execute(const YAML::Node& node) {
     // Check for nested bin scheme and then default to grid
     auto node_binscheme = node["binscheme"];
     if (node_binscheme && node_binscheme.IsMap()) {
-        std::map<std::vector<int>,std::vector<double>> nested_bin_lims;
+        std::map<std::vector<int>,std::vector<double>> nested_bin_lims; //TODO: See if can drop these arguments
         std::vector<std::string> new_binvars = {};
         saga::bins::findNestedBinLims(
             d2_filtered, // ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
             nested_bin_lims, // std::map<std::vector<int>,std::vector<double>> nested_bin_lims,
-            new_binvars, // std::vector<std::string> binvars,
+            {}, // std::vector<std::string> binvars,
             node_binscheme, // YAML::Node node_nested,
             "", // std::string node_nested_name,
             {}, // std::vector<int> coordinates = {},
             "nbins" // std::string nbins_key = "nbins"
         );
-        binvars = new_binvars;
-
-        //TODO: Convert nested_bin_lims to a YAML::Node
-        YAML::Node yaml_out;
 
         // Save bin limits to a yaml file
         std::ofstream outf; outf.open(outpath.c_str());
         std::ostream &out = outf;
         YAML::Emitter yout(out);
-        yout << yaml_out;
+        yout << node_binscheme;
 
     } else {
 

@@ -255,6 +255,10 @@ void findNestedBinLims(
                 break;
             }
         }
+
+        // Update yaml with bin limits
+        node_nested["bins"] = bin_lims;
+
     } // if (node_nested && node_nested.IsMap()) {
     else { return; }
 
