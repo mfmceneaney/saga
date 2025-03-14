@@ -76,7 +76,7 @@ Complementary to this aspect, the python libraries provide an easy interface for
 The python libraries also provide some generic functionality for reading output asymmetry results from CSV files, aggregating results from job directories created by `saga.orchestrate.create_jobs()`, loading and computing systematics, and plotting asymmetry results and saving them to CSV.  See, in particular, the `saga.aggregate` module.
 
 ### Examining Kinematics
-The first step to any analysis should be to peruse your data.  You will  also need average kinematics in each bin if you plan to compare with theory results.  Use  the `getBinKinematics` executable to get the statistics and average kinematics in each bin.
+The first step to any analysis should be to peruse your data.  Use the `getBinKinematicsTH1Ds` to produce 1D histograms of your kinematic variables in each bin.  You will  also need average kinematics in each bin if you plan to compare with theory results.  Use  the `getBinKinematics` executable to get the statistics and average kinematics in each bin.
 
 ### Binning
 Use the `findBinLimits` executable to find the bin limits that will give roughly equal bin statistics for each binning variable in your dataset.

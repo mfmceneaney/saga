@@ -48,3 +48,6 @@ target_link_libraries(getBinMigration PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataF
 
 add_executable(getBinKinematics ${EXECUTABLES_DIR}/getBinKinematics.cpp)
 target_link_libraries(getBinKinematics PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+
+add_executable(getBinKinematicsTH1Ds ${EXECUTABLES_DIR}/getBinKinematicsTH1Ds.cpp)
+target_link_libraries(getBinKinematicsTH1Ds PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)

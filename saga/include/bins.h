@@ -497,6 +497,53 @@ void getBinKinematics(
 
 } // void getBinKinematics()
 
+/**
+* @brief Create 1D kinematics histograms for each bin and save to a ROOT file.
+*
+* @param frame ROOT RDataframe from which to compute bin migration fraction
+* @param scheme_name Bin scheme name
+* @param bincuts Map of unique integer bin identifiers to bin cuts
+* @param kinvars List of kinematic variable names
+* @param kinvar_lims List of outer bin limits for each kinematic variable
+* @param kinvar_bins List of number of bins in each kinematic variable
+*/
+void getBinKinematicsTH1Ds(
+        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+        std::string                                                   scheme_name,
+        std::map<int,std::string>                                     bincuts,
+        std::vector<std::string>                                      kinvars,
+        std::vector<std::vector<double>>                              kinvar_lims,
+        std::vector<int>                                              kinvar_bins
+    ) {
+
+    // Open output ROOT file
+    std::string path = Form("%s_kinematics.root",scheme_name.c_str());
+    TFile *f = new TFile(path.c_str(),"RECREATE");
+
+    // Loop bin cut maps, get kinematics histograms, and write to ROOT
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+        // Get generated bin id and cut
+        int bin = it->first;
+        std::string bincut = it->second;
+
+        // Apply bin cut
+        auto frame_filtered = frame.Filter(bincut.c_str());
+
+        // Create 1D histograms for each kinematic variable
+        for (int idx=0; idx<kinvars.size(); idx++) {
+            std::string hist_name = Form("h1_bin%d_%s", bin, kinvars[idx].c_str());
+            TH1D h1 = (TH1D) *frame_filtered.Histo1D({hist_name.c_str(),kinvars[idx].c_str(),kinvar_bins[idx],kinvar_lims[idx][0],kinvar_lims[idx][1]},kinvars[idx].c_str());
+            f->WriteObject(&h1, hist_name.c_str());
+        }
+
+    } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+    // Close ROOT file
+    f->Close();
+
+} // void getBinKinematicsTH1Ds()
+
 } // namespace bins {
 
 } // namespace saga {
