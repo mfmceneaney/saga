@@ -151,28 +151,51 @@ std::vector<double> findBinLims(
 * @brief Recursively set a map of bin scheme coordinates to bin variable limits for a nested bin scheme.
 *
 * Given a dataframe and a yaml node defining a nested binning scheme with the desired number
-* of bins specified at each level, recursively set a map of bin scheme coordinates to bin variable limits.
+* of bins specified at each level, recursively set a map of bin scheme coordinates to bin variable limits
+* and a list of bin variables encountered.
 *
 * @param frame ROOT RDataFrame with which to find bin limits
+* @param nested_bin_lims Map of bin scheme coordinates to bin variable limits
+* @param binvars List of bin variables encountered (Note, the first bin variable will be set automatically from `node_nested_name`.)
 * @param node_nested YAML node containing nested bin scheme definition
 * @param node_nested_name Name of nested YAML node
-* @param nested_bin_lims Map of bin scheme coordinates to bin variable limits
 * @param coordinates Current bin scheme coordinates
-* @param binvars List of bin variables encountered (Note, the first bin variable will be set automatically from `node_nested_name`.)
 * @param nbins_key Key for number of bins at current depth
 */
 void findNestedBinLims(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-        YAML::Node node_nested,
-        std::string node_nested_name,
         std::map<std::vector<int>,std::vector<double>> nested_bin_lims,
+        std::vector<std::string> binvars,
+        YAML::Node node_nested,
+        std::string node_nested_name = "",
         std::vector<int> coordinates = {},
-        std::vector<std::string> binvars = {},
         std::string nbins_key = "nbins"
     ) {
 
+    // Check if you were given the bin scheme node to start
+    if (node_nested_name.size()==0) {  // NOTE: Assume you already check that this was a map.
+        for (auto it_nested = node_nested.begin(); it_nested != node_nested.end(); ++it_nested) {
+
+            // Get the entry key
+            std::string it_key = it_nested->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
+
+            // Recursion call
+            findNestedBinLims(
+                frame,
+                nested_bin_lims,
+                binvars,
+                it_nested->second,
+                it_key,
+                coordinates,
+                nbins_key
+            );
+                
+            // Break on first nested variable found
+            break;
+        }
+
     // Check the YAML node
-    if (node_nested && node_nested.IsMap()) {
+    } else if (node_nested && node_nested.IsMap()) {
 
         // Add to bin variables
         if (binvars.size()==0) {
@@ -218,11 +241,11 @@ void findNestedBinLims(
                     // Recursion call
                     findNestedBinLims(
                         df_filtered,
+                        nested_bin_lims,
+                        binvars,
                         it_nested->second,
                         it_key,
-                        nested_bin_lims,
                         new_coordinates,
-                        binvars,
                         nbins_key
                     );
 
