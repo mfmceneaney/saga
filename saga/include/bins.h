@@ -148,6 +148,96 @@ std::vector<double> findBinLims(
 } // std::vector<double> findBinLims()
 
 /**
+* @brief Recursively set a map of bin scheme coordinates to bin variable limits for a nested bin scheme.
+*
+* Given a dataframe and a yaml node defining a nested binning scheme with the desired number
+* of bins specified at each level, recursively set a map of bin scheme coordinates to bin variable limits.
+*
+* @param frame ROOT RDataFrame with which to find bin limits
+* @param node_nested YAML node containing nested bin scheme definition
+* @param node_nested_name Name of nested YAML node
+* @param nested_bin_lims Map of bin scheme coordinates to bin variable limits
+* @param coordinates Current bin scheme coordinates
+* @param binvars List of bin variables encountered (Note, the first bin variable will be set automatically from `node_nested_name`.)
+* @param nbins_key Key for number of bins at current depth
+*/
+void findNestedBinLims(
+        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+        YAML::Node node_nested,
+        std::string node_nested_name,
+        std::map<std::vector<int>,std::vector<double>> nested_bin_lims,
+        std::vector<int> coordinates = {},
+        std::vector<std::string> binvars = {},
+        std::string nbins_key = "nbins"
+    ) {
+
+    // Check the YAML node
+    if (node_nested && node_nested.IsMap()) {
+
+        // Add to bin variables
+        if (binvars.size()==0) {
+            binvars.push_back(node_nested_name);
+        } else {
+            if (binvars[binvars.size()-1]!=node_nested_name) binvars.push_back(node_nested_name);
+        }
+
+        // Check for number of bins
+        std::vector<double> bin_lims;
+        if (node_nested[nbins_key]) { //TODO: Also check if bins statically specified?
+            const int nbins = node_nested[nbins_key].as<int>();
+            bin_lims = findBinLims(frame, node_nested_name, nbins);
+            nested_bin_lims[coordinates] = bin_lims;
+        }
+
+        // Check if there is more depth and return if not
+        if (node_nested.size()<=1) return;
+
+        // Loop the entries in your nested entry looking for bin variables and select ONLY the first one found
+        for (auto it_nested = node_nested.begin(); it_nested != node_nested.end(); ++it_nested) {
+
+            // Get the entry key
+            std::string it_key = it_nested->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
+
+            // Check for requested bin number and produce bin limits if so
+            if (it_key != nbins_key) {
+
+                // Loop bins
+                for (int bin=0; bin<bin_lims.size()-1; bin++) {
+
+                    // Update coordinates
+                    std::vector<int> new_coordinates = coordinates;
+                    new_coordinates.push_back(bin);
+
+                    // Create cut
+                    std::string cut;
+                    saga::util::addLimitCuts(cut,{it_key},{{bin_lims[bin],bin_lims[bin+1]}});
+
+                    // Filter dataframe
+                    auto df_filtered = frame.Filter(cut);
+
+                    // Recursion call
+                    findNestedBinLims(
+                        df_filtered,
+                        it_nested->second,
+                        it_key,
+                        nested_bin_lims,
+                        new_coordinates,
+                        binvars,
+                        nbins_key
+                    );
+
+                }
+                
+                // Break on first nested variable found
+                break;
+            }
+        }
+    } // if (node_nested && node_nested.IsMap()) {
+    else { return; }
+
+} // void findNestedBinLims() {
+
+/**
 * @brief Compute bin limits on a regular interval between a minimum and maximum.
 *
 * @param nbins Number of bins
