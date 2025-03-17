@@ -160,14 +160,16 @@ std::vector<double> findBinLims(
 * @param nbins_key YAML key for number of bins at current depth
 * @param lims_key YAML key for bin limits at current depth
 * @param nested_key YAML key for nested binning
+* @param bin_cuts List of bin cuts to apply to the dataframe
 */
 void findNestedBinLims(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
         YAML::Node node,
-        std::string node_name  = "",
-        std::string nbins_key  = "nbins",
-        std::string lims_key   = "lims",
-        std::string nested_key = "nested"
+        std::string node_name             = "",
+        std::string nbins_key             = "nbins",
+        std::string lims_key              = "lims",
+        std::string nested_key            = "nested",
+        std::vector<std::string> bin_cuts = {}
     ) {
     
     // Check the YAML node
@@ -201,11 +203,15 @@ void findNestedBinLims(
                         it_nested->second[lims_key] = bin_lims;
                     }
 
-                    // Create bin cut
-                    std::string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[bin], bin_lims[bin+1]}});
+                    // Set bin cuts to carry to next depth of bin scheme
+                    std::vector<std::string> new_bin_cuts;
+                    for (int idx=0; idx<bin_lims.size()-1; idx++) {
+                        std::string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[idx], bin_lims[idx+1]}});
+                        new_bin_cuts.push_back(bincut);
+                    }
 
-                    // Filter dataframe
-                    auto df_filtered = frame.Filter(bincut.c_str());
+                    // Filter dataframe if a bin cut is available
+                    auto df_filtered = (bin_cuts.size()==0) ? frame : frame.Filter(bin_cuts[bin].c_str());
 
                     // Recursion call
                     findNestedBinLims(
@@ -214,7 +220,8 @@ void findNestedBinLims(
                         it_key,
                         nbins_key,
                         lims_key,
-                        nested_key
+                        nested_key,
+                        new_bin_cuts
                     );
                         
                     // Break on first nested bin variable found

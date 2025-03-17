@@ -119,7 +119,8 @@ void execute(const YAML::Node& node) {
             "", // std::string node_name = "",
             "nbins", // std::string nbins_key = "nbins",
             "lims", // std::string lims_key = "lims",
-            "nested" // std::string nested_key = "nested"
+            "nested", // std::string nested_key = "nested",
+            {} // std::vector<std::string> bin_cuts = {}
         );
 
         // Save bin limits to a yaml file
