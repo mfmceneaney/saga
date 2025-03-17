@@ -449,7 +449,7 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
     for (auto it_binschemes = node_binschemes.begin(); it_binschemes != node_binschemes.end(); ++it_binschemes) {
 
         // Get bin scheme name
-        std::string binscheme_name = it_binschemes->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
+        std::string binscheme_name = it_binschemes->first.as<std::string>();
 
         // Get bin scheme node
         auto node_binscheme = node_binschemes[binscheme_name];
@@ -457,34 +457,65 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
         // Read bin scheme
         if (node_binscheme && node_binscheme.IsMap()) {
 
-            // Loop bin scheme yaml and create grid bin scheme
+            // Recursively read nested bin scheme OR loop bin scheme yaml and create grid
             std::map<std::string,std::vector<double>> binscheme;
-            for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+            std::map<int,std::string> bincuts;
 
-                // Get bin variable name
-                std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+            // Check if you have a nested bin scheme
+            if (node_binscheme["nested"]) {
 
-                // Compute bin limits or read directly from yaml 
-                int nbins = 0;
-                std::vector<double> binlims;
-                auto node_binvar = node_binscheme[binvar];
-                if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
-                    int nbins = node_binvar["nbins"].as<int>();
-                    std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
-                    if (nbins>0 && lims.size()==2) {
-                        binlims = getBinLims(nbins,lims[0],lims[1]);
-                    } else { std::cerr<<"ERROR: Could not read bins for binvar: "<<binvar.c_str()<<std::endl; }
-                } else {
-                    binlims = node_binvar.as<std::vector<double>>();
+                try {
+                    // Set nested bin cuts
+                    std::vector<std::string> cuts;
+                    std::vector<std::string> old_cuts;
+                    setNestedBinCuts(cuts,node_binscheme,old_cuts,"");
+
+                    // Convert vector to map starting at given start index
+                    for (int idx=0; idx<cuts.size(); idx++) {
+                        bincuts[start_bin_id+idx] = cuts[idx];
+                    }
+                } catch (std::exception& e) {
+                    std::cerr<<"ERROR: Could not read nested bin limits for binscheme: "<<binscheme_name.c_str()<<std::endl;
                 }
+            }
+            
+            // Otherwise loop the yaml for a grid scheme
+            else {
+                for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
 
-                // Add bin limits list to bin scheme
-                binscheme[binvar] = binlims;
+                    // Get bin variable name
+                    std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
 
-            } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+                    // Compute bin limits or read directly from yaml 
+                    int nbins = 0;
+                    std::vector<double> binlims;
+                    auto node_binvar = node_binscheme[binvar];
+                    if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
+                        try {
+                            int nbins = node_binvar["nbins"].as<int>();
+                            std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
+                            if (nbins>0 && lims.size()==2) {
+                                binlims = getBinLims(nbins,lims[0],lims[1]);
+                            }
+                        } catch (std::exception& e) {
+                            std::cerr<<"ERROR: Could not compute bin limits for binvar: "<<binvar.c_str()<<std::endl;
+                        }
+                    } else {
+                        try {
+                            binlims = node_binvar.as<std::vector<double>>();
+                        } catch (std::exception& e) {
+                            std::cerr<<"ERROR: Could not read bin limits for binvar: "<<binvar.c_str()<<std::endl;
+                        }
+                    }
+
+                    // Add bin limits list to bin scheme
+                    binscheme[binvar] = binlims;
+
+                } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+            }
 
             // Get bin cuts map and reset bin id minimum
-            std::map<int,std::string> bincuts = getBinCuts(binscheme,min_bin_id);
+            if (binscheme.size()>0) bincuts = getBinCuts(binscheme,min_bin_id);
             bincuts_map[binscheme_name] = bincuts;
 
         } // if (node_binscheme && node_binscheme.IsMap()) {
