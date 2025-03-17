@@ -554,7 +554,30 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
         auto node_binscheme = node_binschemes[binscheme_name];
 
         // Read bin scheme
-        if (node_binscheme && node_binscheme.IsMap()) {
+        if (node_binscheme["nested"] && node_binscheme["nested"].IsSequence()) {
+
+            // Follow nested yaml structure and create nested bin scheme
+            YAML::Node node_nested = node_binscheme["nested"];
+            std::vector<std::string> binvars;
+            while (node_nested && node_nested.IsSequence()) {
+
+                // Loop keys to find the bin variable (only expect one entry!)
+                for (auto it = node_nested[0].begin(); it != node_nested[0].end(); ++it) {
+
+                    // Get bin variable name and add to list
+                    std::string binvar = it->first.as<std::string>();
+                    binvars.push_back(binvar);
+                    break;
+                }
+
+                // Reset the node
+                node_nested = node_nested[0]["nested"];
+
+            } // while (node_nested && node_nested.IsSequence()) {
+
+            binschemes_vars[binscheme_name] = binvars;
+
+        } else if (node_binscheme && node_binscheme.IsMap()) {
 
             // Loop bin scheme yaml and create grid bin scheme
             std::vector<std::string> binvars;
