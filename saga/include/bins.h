@@ -193,13 +193,16 @@ void findNestedBinLims(
                     // Get bin variable name
                     std::string it_key = it_nested->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
 
+                    // Filter dataframe if a bin cut is available
+                    auto df_filtered = (bin_cuts.size()==0) ? frame : frame.Filter(bin_cuts[bin].c_str());
+
                     // Check for bin limits and number of bins and find limits if not provided
                     std::vector<double> bin_lims;
                     if (it_nested->second[lims_key]) {
                         bin_lims = it_nested->second[lims_key].as<std::vector<double>>();
                     } else if (it_nested->second[nbins_key]) {
                         const int nbins = it_nested->second[nbins_key].as<int>();
-                        bin_lims = findBinLims(frame, it_key, nbins);
+                        bin_lims = findBinLims(df_filtered, it_key, nbins);
                         it_nested->second[lims_key] = bin_lims;
                     }
 
@@ -209,9 +212,6 @@ void findNestedBinLims(
                         std::string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[idx], bin_lims[idx+1]}});
                         new_bin_cuts.push_back(bincut);
                     }
-
-                    // Filter dataframe if a bin cut is available
-                    auto df_filtered = (bin_cuts.size()==0) ? frame : frame.Filter(bin_cuts[bin].c_str());
 
                     // Recursion call
                     findNestedBinLims(
