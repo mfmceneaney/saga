@@ -258,6 +258,112 @@ std::vector<double> getBinLims(
 } // std::vector<double> getBinLims(
 
 /**
+* @brief Set binning scheme cuts for a nested binning scheme.
+*
+* Recursively set a list of bin cuts given a YAML node defining a nested bin scheme.
+* Note that this will set cuts for all bins within the nested bin scheme.
+*
+* @param cuts List of nested binning cuts
+* @param node YAML node defining a nested bin scheme
+* @param node_name Name of nested YAML node
+* @param old_cuts Old list of cuts from previous recursion level
+* @param lims_key YAML key for bin limits
+* @param nested_key YAML key for nested binning
+*
+* @return List of bin cuts for nested binning scheme
+*/
+void setNestedBinCuts(//FIXME: CLEAN UP THIS METHOD
+        std::vector<std::string> &cuts, //NOTE: List to set.
+        YAML::Node               node,
+        std::vector<std::string> &old_cuts, //NOTE: Modify this separately in each branch and then add cuts to the overall vector before returning
+        std::string              node_name  = "",
+        std::string              lims_key   = "lims",
+        std::string              nested_key = "nested"
+    ) {
+
+    // Check the YAML node
+    if (node && node.IsMap()) {
+
+        // Check for bin limits
+        std::vector<double> lims;
+        if (node[lims_key] && node[lims_key].IsSequence()) {
+            lims = node[lims_key].as<std::vector<double>>();
+        }
+
+        // Set nbins lower limit to 0 since you allow passing limits with length 0
+        int nbins = lims.size()-1;
+        if (nbins<0) nbins=0;
+
+        // Loop bins and get bin cuts
+        std::vector<std::string> varcuts;
+        for (int bin=0; bin<nbins; bin++) {
+            std::string cut = saga::util::addLimitCuts("",{node_name.c_str()},{{lims[bin],lims[bin+1]}});
+            varcuts.push_back(cut);
+        }
+
+        // Loop previous cuts
+        std::vector<std::string> newcuts;
+        for (int idx=0; idx<old_cuts.size(); idx++) {
+            
+            // Loop this variable's cuts
+            for (int bin=0; bin<varcuts.size(); bin++) {
+                std::string newcut = Form("%s && %s",old_cuts[idx].c_str(),varcuts[bin].c_str());
+                newcuts.push_back(newcut);
+            }
+        }
+
+        // Reassign old_cuts
+        if (old_cuts.size()==0) { old_cuts = varcuts;}
+        else { old_cuts = newcuts; }
+
+        // Check for nested binning
+        if (node[nested_key] && node[nested_key].IsSequence()) {
+
+            // Get nested YAML node
+            auto node_nested = node[nested_key];
+
+            // Loop nested bins
+            for (int bin=0; bin<node_nested.size(); bin++) { //NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
+
+                // Get nested YAML node
+                auto node_nested_bin = node_nested[bin];
+
+                // Loop nested bin variables (only expect one!)
+                for (auto it_nested = node_nested_bin.begin(); it_nested != node_nested_bin.end(); ++it_nested) {
+
+                    // Get bin variable
+                    std::string it_key = it_nested->first.as<std::string>();
+
+                    // Create a new vector for uniqueness along different recursion branches
+                    std::vector<std::string> new_old_cuts;
+                    if (bin<old_cuts.size()) new_old_cuts = {old_cuts[bin]}; 
+
+                    // Recursion call
+                    setNestedBinCuts(
+                        cuts,
+                        it_nested->second,
+                        new_old_cuts,
+                        it_key,
+                        lims_key,
+                        nested_key
+                    );
+
+                    // Break on first nested variable found
+                    break;
+                }
+            }
+        } else {
+            for (int bin=0; bin<old_cuts.size(); bin++) {
+                cuts.push_back(old_cuts[bin]);
+            }
+            return;
+        } // if (node[nested_key] && node[nested_key].IsSequence()) {
+    } else {
+        return;
+    } // if (node && node.IsMap()) {
+}
+
+/**
 * @brief Produce binning scheme cuts for a grid binning scheme.
 *
 * Produce a map of unique integer bin identifiers to bin cuts given a map of bin variables
