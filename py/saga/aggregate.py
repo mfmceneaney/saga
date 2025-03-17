@@ -2156,10 +2156,11 @@ def plot_results(
         fb = ax1.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=fill_color)
 
     # Plot results
-    g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
-                        ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
-                        color=sg_colors[sgasym_idx], marker='o', linestyle=linestyle,
-                        linewidth=linewidth, markersize=markersize,label=sgasym_labels[sgasym_idx])
+    if yerr_mean is not None:
+        g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
+                            ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
+                            color=sg_colors[sgasym_idx], marker='o', linestyle=linestyle,
+                            linewidth=linewidth, markersize=markersize,label=sgasym_labels[sgasym_idx])
 
     # Add zero line
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
