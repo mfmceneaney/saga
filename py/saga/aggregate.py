@@ -2629,7 +2629,7 @@ def plot_results_array(
 
                 # Format graph titles and axes depending on location in grid array
                 if i!=0: plot_results_kwargs_array[i]['title'] = ''
-                if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
+                if i!=shape[0]-1: plot_results_kwargs_array[i]['xlabel'] = ''
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i])
