@@ -644,14 +644,14 @@ def get_binscheme_cuts_and_ids(
 
     # Set up data frame
     df = {id_key:[]}
-    for var in binscheme_keys:
+    for var in binscheme_vars:
         df[var] = []
 
     # Add data frame entries
     for idx in range(len(ids)):
         binscheme_binid = idx + start_idx
         df[id_key].append(binscheme_binid)
-        for var in binscheme_keys:
+        for var in binscheme_vars:
             df[var].append(ids[idx][var])
 
     #  Create pandas data frame
