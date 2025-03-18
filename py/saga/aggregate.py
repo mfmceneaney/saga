@@ -2589,6 +2589,10 @@ def plot_results_array(
         plot_results_kwargs_base = {},
         figsize = (16,10),
         outpath = 'plot_projections.pdf',
+        use_grid_titles = True,
+        use_grid_xlabels = True,
+        use_grid_ylabels = True,
+        use_grid_hist_ylabels = True,
         use_default_plt_settings = True,
     ):
     """
@@ -2607,6 +2611,18 @@ def plot_results_array(
     outpath : string, optional
         Output graphic path
         Default : 'plot_projections.pdf'
+    use_grid_titles : Boolean, optional
+        Option to assume grid titles and only use titles for plots on top row of array
+        Default : True
+    use_grid_xlabels : Boolean, optional
+        Option to assume grid x-axis labels and only use x-axis labels for plots on bottom row of array
+        Default : True
+    use_grid_ylabels : Boolean, optional
+        Option to assume grid y-axis labels and only use y-axis labels for plots on leftmost column of (2D) array
+        Default : True
+    use_grid_hist_ylabels : Boolean, optional
+        Option to assume grid histogram y-axis labels and only use histogram y-axis labels for plots on rightmost column of (2D) array
+        Default : True
     use_default_plt_settings : Boolean, optional
         Option to use default font and tick parameter style settings
         Default : True
@@ -2640,8 +2656,8 @@ def plot_results_array(
                     continue
 
                 # Format graph titles and axes depending on location in grid array
-                if i!=0: plot_results_kwargs_array[i]['title'] = ''
-                if i!=shape[0]-1: plot_results_kwargs_array[i]['xlabel'] = ''
+                if i!=0 and use_grid_titles: plot_results_kwargs_array[i]['title'] = ''
+                if i!=shape[0]-1 and use_grid_xlabels: plot_results_kwargs_array[i]['xlabel'] = ''
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i])
@@ -2660,10 +2676,10 @@ def plot_results_array(
                     continue
 
                 # Format graph titles and axes depending on location in grid array
-                if j!=0: plot_results_kwargs_array[i][j]['ylabel'] = ''
-                if i!=0: plot_results_kwargs_array[i][j]['title'] = ''
-                if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
-                if j!=shape[1]-1: plot_results_kwargs_array[i][j]['hist_ylabel'] = ''
+                if j!=0 and use_grid_ylabels: plot_results_kwargs_array[i][j]['ylabel'] = ''
+                if i!=0 and use_grid_titles: plot_results_kwargs_array[i][j]['title'] = ''
+                if i!=shape[0]-1 and use_grid_xlabels: plot_results_kwargs_array[i][j]['xlabel'] = ''
+                if j!=shape[1]-1 and use_grid_hist_ylabels: plot_results_kwargs_array[i][j]['hist_ylabel'] = ''
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i][j])
