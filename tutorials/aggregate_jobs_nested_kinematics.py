@@ -8,6 +8,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__f
 import saga.aggregate as sagas
 
 # Setup, modify these as needed for your specific binning scheme
+csv_path = os.path.abspath('results_kinematics/out_binscheme_kinematics.csv')
+hist_path = os.path.abspath('results_kinematics_hists/out_binscheme_kinematics.root')
 grid_shape = (3,2)
 kinvars = ['mass_pipim', 'phperp_pipim', 'z_pipim']
 xlabels = {'mass_pipim':'$M_{\pi^{+}\pi^{-}}$ (GeV)','phperp_pipim':'$P_{\perp, \pi^{+}\pi^{-}}$ (GeV)','z_pipim':'$z_{\pi^{+}\pi^{-}}$'}
@@ -15,7 +17,6 @@ xlims = {'mass_pipim':[0.0,3.0],'phperp_pipim':[0.0,1.25],'z_pipim':[0.0,1.0]}
 hist_colors = {'mass_pipim':['tab:blue'],'phperp_pipim':['tab:red'],'z_pipim':['tab:orange']}
 
 # Load kinematics CSV
-csv_path = "/path/to/out_binscheme_kinematics.csv" #NOTE: Modify this to the appropriate path
 df = pd.read_csv(csv_path)
 bin_ids = df['bin'].unique().tolist()
 
@@ -39,7 +40,7 @@ plot_results_kwargs_base = {
     'ylims':[0.0,800],
     'show_injected_asymmetries':False,
     'hist_clone_axis':False,
-    'hist_paths':['/path/to/out_binscheme_kinematics.root'], #NOTE: Modify this to the appropriate path
+    'hist_paths':[hist_path],
     'hist_labels':['RGH MC'],
     'ylabel': 'Counts',
     'watermark':'',
