@@ -471,8 +471,7 @@ def getSchemeVars(
 
     # Default to case you have a grid scheme
     else:
-        binsheme_vars = [var for var in node]
-        return binscheme_vars
+        return [var for var in node.keys()]
 
 def getNestedSchemeShape(
         node,
