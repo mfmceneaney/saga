@@ -1877,6 +1877,7 @@ def plot_hists(
         hist_colors = None,
         alpha=0.5,
         linewidth=2,
+        density=True,
         hist_labels = None,
         binlims = [],
         vlinestyle = 'dotted',
@@ -1909,6 +1910,9 @@ def plot_hists(
     linewidth : int, optional
         Line width for plotting histograms
         Default : 2
+    density : boolean, optional
+        Option to normalize histograms
+        Default : True
     hist_labels : list, optional
         List of histogram labels
         Default : None
@@ -1958,7 +1962,7 @@ def plot_hists(
         h = ax2.hist(
             h_x,
             bins=h_bins,
-            weights=h_y/np.sum(h_y),
+            weights=h_y/np.sum(h_y) if density else h_y,
             histtype=histtype,
             color=hist_colors[idx],
             alpha=alpha,
@@ -2199,6 +2203,7 @@ def plot_results(
         hist_colors = None,
         hist_alpha=0.5,
         hist_linewidth=2,
+        hist_density=True,
         hist_labels = None,
         binlims = [],
         vlinestyle = 'dotted',
@@ -2364,6 +2369,9 @@ def plot_results(
     hist_linewidth : int, optional
         Line width for plotting histograms
         Default : 2
+    density : boolean, optional
+        Option to normalize histograms
+        Default : True
     hist_labels : list, optional
         List of histogram labels
         Default : None
@@ -2469,6 +2477,7 @@ def plot_results(
             hist_colors = hist_colors,
             alpha=hist_alpha,
             linewidth=hist_linewidth,
+            density=hist_density,
             hist_labels = hist_labels,
             binlims = binlims,
             vlinestyle = vlinestyle,
