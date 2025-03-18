@@ -736,7 +736,7 @@ void getBinKinematics(
             double binvar_mean = (double)*frame_filtered.Mean(kinvars[idx].c_str());
             double binvar_err  = (double)*frame_filtered.StdDev(kinvars[idx].c_str());
             csvout << binvar_mean << csv_separator.c_str();
-            csvout << binvar_err << "_err";
+            csvout << binvar_err;
             if (idx<kinvars.size()-1) csvout << csv_separator.c_str();
         }
         csvout << std::endl;
