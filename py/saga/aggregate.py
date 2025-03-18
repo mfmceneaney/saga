@@ -2127,6 +2127,9 @@ def plot_systematics(
     # Save figure
     f1.savefig(outpath)
 
+    # Check whether you have graph data to save to CSV
+    if ct_mean is None: return
+
     # Save plot data to csv
     delimiter = ","
     if syst_names is None: syst_names = ["syst"+str(idx) for idx in range(nbins)]
