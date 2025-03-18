@@ -1982,6 +1982,52 @@ def plot_hists(
     # Plot legend if you cloned axis
     if clone_axis and legend_loc is not None and legend_loc!='': ax2.legend(loc=legend_loc)
 
+def get_bin_kinematics_title(
+        bin_id,
+        df,
+        cols=['x','Q2'],
+        col_titles={'x':'x', 'Q2':'Q^{2}'},
+        err_ext='_err',
+        sep=' , '
+    ):
+    """
+    Parameters
+    ----------
+    bin_id : int, required
+        Bin id in kinematics dataframe
+    df : pandas.Dataframe, required
+        Dataframe of kinematic variable means and errors in each kinematic bin
+    cols : list, optional
+        List of column names of kinematics to add to bin title
+        Default : ['x','Q2']
+    cols : list, optional
+        List of kinematics LaTeX titles
+        Default : ['x','Q^{2}']
+    err_ext : string, optional
+        Extension for forming column names of kinematic variable errors
+        Default : '_err'
+    sep : string, optional
+        Separator string for kinematics values in bin title
+        Default : ' , '
+
+    Returns
+    -------
+    string
+        Title string
+
+    Description
+    -----------
+    Create a title string for the requested bin index and kinematic variables showing the mean and error values for
+    each of the requested kinematic variables in the given bin.
+    """
+
+    return sep.join(
+        [
+            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\pm{df.iloc[bin_id].loc[cols[idx]+err_ext]:.2f}$"
+            for idx, col in enumerate(cols)
+        ]
+    )
+
 def plot_systematics(
         x_means,
         yerr_syst,
