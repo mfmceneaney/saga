@@ -24,7 +24,7 @@ def write_file_from_config(outdir):
     binscheme = yaml_args["binschemes"][binscheme_name]
 
     # Get the list of bin ids
-    binscheme_cuts, binscheme_cut_titles, binscheme_ids = get_binscheme_cuts_and_ids(
+    binscheme_cuts, binscheme_cut_titles, binscheme_ids, nested_grid_shape = get_binscheme_cuts_and_ids(
         binscheme,
         start_idx=0,
         id_key='bin_id'
