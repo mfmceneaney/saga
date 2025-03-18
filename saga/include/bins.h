@@ -279,7 +279,7 @@ std::vector<double> getBinLims(
 *
 * @return List of bin cuts for nested binning scheme
 */
-void setNestedBinCuts(//FIXME: CLEAN UP THIS METHOD
+void setNestedBinCuts(
         std::vector<std::string> &cuts, //NOTE: List to set.
         YAML::Node               node,
         std::vector<std::string> &old_cuts, //NOTE: Modify this separately in each branch and then add cuts to the overall vector before returning
