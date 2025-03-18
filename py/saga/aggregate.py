@@ -2623,6 +2623,10 @@ def plot_results_array(
     if len(shape)==1:
         for i in range(shape[0]):
 
+                # Check for masked entry
+                if graph_array[i] is None:
+                    continue
+
                 # Format graph titles and axes depending on location in grid array
                 if i!=0: plot_results_kwargs_array[i]['title'] = ''
                 if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
@@ -2638,6 +2642,10 @@ def plot_results_array(
     else:
         for i in range(shape[0]):
             for j in range(shape[1]):
+
+                # Check for masked entry
+                if graph_array[i][j] is None:
+                    continue
 
                 # Format graph titles and axes depending on location in grid array
                 if j!=0: plot_results_kwargs_array[i][j]['ylabel'] = ''
