@@ -2617,7 +2617,7 @@ def plot_results_array(
     if len(shape) not in (1,2): raise TypeError('`plot_projections()` : `graph_array` shape must have shape with len(shape) in (1,2) but shape = ',shape)
 
     # Create figure and axes
-    f, ax = plt.subplots(*shape,figsize=figsize)
+    f, ax = plt.subplots(*shape,figsize=figsize,squeeze=not len(shape)>1) #NOTE: squeeze will squeeze out dimension one axes!
 
     # Loop axes and plot results for 1D and 2D cases
     if len(shape)==1:
