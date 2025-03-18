@@ -449,7 +449,7 @@ def getSchemeVars(
 
     Description
     -----------
-    Find the bin scheme variable in a bin scheme with either a nested or grid structure.
+    Find the bin scheme variables in a bin scheme with either a nested or grid structure.
     """
 
     # Initialize array
@@ -697,6 +697,10 @@ def reshape_nested_grid(
     reshaped_proj_ids = [[fill_value for i in range(shape[1])] for j in range(shape[0])]
 
     # Check the nested grid shape
+    if nested_grid_shape is None:
+        return proj_ids
+    if type(nested_grid_shape)!=list:
+        raise TypeError('`nested_grid_shape` must be a list of integers')
     if len(nested_grid_shape)==0:
         raise ValueError('`nested_grid_shape` must be a non-empty list')
     if not type(nested_grid_shape[0])==int:
@@ -806,7 +810,7 @@ def get_projection_ids(
         all_proj_ids.append(proj_ids.tolist())
         all_proj_arr_var_ids.append(arr_var_ids)
 
-    all_proj_ids = np.reshape(all_proj_ids,grid_shape) if nested_grid_shape is not None else reshape_nested(all_proj_ids, nested_grid_shape)
+    all_proj_ids = np.reshape(all_proj_ids,grid_shape) if nested_grid_shape is None else reshape_nested(all_proj_ids, nested_grid_shape)
     all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,(*nbins_arr,len(arr_vars)))
 
     return all_proj_ids, arr_vars, all_proj_arr_var_ids
