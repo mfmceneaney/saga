@@ -304,6 +304,248 @@ def load_csv(
     inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
     return pd.read_csv(inpath)
 
+def setNestedBinCuts(
+        cuts,
+        cut_titles,
+        ids,
+        node,
+        old_cuts       = [],
+        old_cut_titles = [],
+        old_ids        = [],
+        var            = "",
+        lims_key       = "lims",
+        nested_key     = "nested",
+        binvar_titles  = {}
+    ):
+
+    """
+    Parameters
+    ----------
+    cuts : list, required
+        List of cuts to recursively update
+    cut_titles : list, required
+        List of cut titles to recursively update
+    ids : list, required
+        List of bin ids to recursively update
+    old_cuts : list, optional
+        List of cuts from previous recursion
+        Default : []
+    old_cut_titles : list, optional
+        List of cut titles from previous recursion
+        Default : []
+    old_ids : list, optional
+        List of bin ids from previous recursion
+        Default : []
+    var : string, optional
+        Bin scheme variable at current recursion depth
+        Default : ""
+    lims_key : optional, string
+        Key for bin limits
+        Default : "lims"
+    nested_key : optional, string
+        Key for nested bin scheme
+        Default : "nested"
+    binvar_titles : optional, dictionary
+        Map of bin scheme variable names to LaTeX titles
+
+    Description
+    -----------
+    Recursively set lists of bin cuts, titles, and ids for each bin scheme variable
+    in a nested binning scheme.
+    """
+
+    # Check the YAML node
+    if (type(node)==dict):
+
+        # Check for bin limits
+        lims = []
+        if (lims_key in node.keys() and type(node[lims_key])==list):
+            lims = node[lims_key]
+
+        # Set nbins lower limit to 0 since you allow passing limits with length 0
+        nbins = len(lims)-1
+        if (nbins<0): nbins=0
+
+        # Get bin variable title
+        var_title = var if var not in binvar_titles else binvar_titles[var]
+
+        # Loop bins and get bin cuts
+        varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
+        varids  = [i for i in range(nbins)]
+        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
+        varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+
+        # Expand bin cuts and cut titles and projection ids maps
+        old_cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in old_cuts] if len(old_cuts)>0 else varcuts
+        old_cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in old_cut_titles] if len(old_cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
+        old_ids = [dict({var:varid},**id_map) for varid in varids for id_map in old_ids] if len(old_ids)>0 else [{var:el} for el in varids]
+
+        # Check for nested binning
+        if (nested_key in node.keys() and type(node[nested_key])==list):
+
+            # Get nested YAML node
+            node_nested = node[nested_key]
+
+            # Loop nested bins
+            for ibin in range(len(node_nested)): #NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
+
+                # Get nested YAML node
+                node_nested_bin = node_nested[ibin]
+
+                # Loop nested bin variables (only expect one!)
+                for it_key in node_nested_bin:
+
+                    # Get nested YAML node
+                    it_nested = node_nested_bin[it_key]
+
+                    # Create a new vector for uniqueness along different recursion branches
+                    new_old_cuts = []
+                    new_old_cut_titles = []
+                    new_old_ids = []
+                    if (ibin<len(old_cuts)):
+                        new_old_cuts = [old_cuts[ibin]]
+                        new_old_cut_titles = [old_cut_titles[ibin]]
+                        new_old_ids = [old_ids[ibin]]
+
+                    # Recursion call
+                    setNestedBinCuts(
+                        cuts,
+                        cut_titles,
+                        ids,
+                        it_nested,
+                        new_old_cuts,
+                        new_old_cut_titles,
+                        new_old_ids,
+                        it_key,
+                        lims_key,
+                        nested_key
+                    )
+
+                    # Break on first nested variable found
+                    break
+
+        # Case you don't have further nested binning
+        else:
+            for ibin in range(len(old_cuts)):
+                cuts.append(old_cuts[ibin])
+                cut_titles.append(old_cut_titles[ibin])
+                ids.append(old_ids[ibin])
+            return
+    else:
+        return
+
+def getSchemeVars(
+        node,
+        nested_key = "nested"
+    ):
+    """
+    Parameters
+    ----------
+    node : required, dict
+        Map of bin scheme variables to bin limits arrays with either a nested or grid structure
+    nested_key : optional, string
+        Key for nested bin scheme structure
+        Default : "nested"
+
+    Description
+    -----------
+    Find the bin scheme variable in a bin scheme with either a nested or grid structure.
+    """
+
+    # Initialize array
+    binscheme_vars = []
+
+    # Check for nested bin scheme
+    if (type(node)==dict and nested_key in node.keys() and type(node[nested_key])==list and type(node[nested_key][0])==dict):
+
+        # Get nested node
+        node_nested = dict(node)
+
+        while (type(node_nested)==dict and nested_key in node_nested.keys() and type(node_nested[nested_key])==list and type(node_nested[nested_key][0])==dict):
+
+            binvar = list(node_nested[nested_key][0].keys())[0]
+            binscheme_vars.append(binvar)
+            node_nested = dict(node_nested[nested_key][0][binvar])
+        
+        return binscheme_vars
+
+    # Default to case you have a grid scheme
+    else:
+        binsheme_vars = [var for var in node]
+        return binscheme_vars
+
+def getNestedSchemeShape(
+        node,
+        lims_key   = "lims",
+        nested_key = "nested"
+    ):
+    """
+    Parameters
+    ----------
+    node : required, dict
+        Map of bin scheme variables to bin limits arrays with a nested structure
+    lims_key : optional, string
+        Key for bin limits arrays
+        Default : "lims"
+    nested_key : optional, string
+        Key for nested bin scheme structure
+        Default : "nested"
+
+    Raises
+    ------
+    ValueErrror:
+        Raise an error if the `node` does not define a 2D nested bin structure.
+
+    Returns
+    -------
+    binscheme_shape
+        List of lengths of nested bin variable bins for each bin in the outer variable
+        of a 2D nested bin scheme
+
+    Description
+    -----------
+    Find the bin scheme shapes for a 2D bin scheme with nested structure.
+    """
+
+    # Initialize array
+    binscheme_shape = []
+
+    # Check for nested bin scheme
+    if (type(node)==dict and nested_key in node.keys() and type(node[nested_key])==list and type(node[nested_key][0])==dict):
+
+        # Get nested node
+        node_nested = dict(node)
+
+        # Loop nested node
+        depth = 0
+        while (type(node_nested)==dict and nested_key in node_nested.keys() and type(node_nested[nested_key])==list and type(node_nested[nested_key][0])==dict):
+            
+            # Get bin variable
+            binvar = list(node_nested[nested_key][0].keys())[0]
+            
+            # Increment and cheeck depth
+            depth += 1
+            if depth>=2:
+
+                # Add shapes to list at a recursion depth of 2 and exit loop
+                for idx in range(len(node_nested[nested_key])):
+                    shape = 0
+                    if lims_key in node_nested[nested_key][idx][binvar].keys():
+                        shape = len(node_nested[nested_key][idx][binvar][lims_key])-1
+                        shape = max(0,shape)
+                    binscheme_shape.append(shape)
+                break
+            
+            # Update nested node
+            node_nested = dict(node_nested[nested_key][0][binvar])
+        
+        return binscheme_shape
+
+    # Case you do not have a nested bin scheme
+    else:
+        raise ValueError("`node` must define have a 2D nested bin scheme structure")
+
+
 def get_binscheme_cuts_and_ids(
         binscheme,
         start_idx=0,
@@ -327,14 +569,17 @@ def get_binscheme_cuts_and_ids(
 
     Returns
     -------
-    (dict, dict, pandas.DataFrame)
+    (dict, dict, pandas.DataFrame, list or None)
         Dictionary of bin ids to cuts, dictionary of bin ids to bin cut
-        title dictionaries, and a pandas dataframe with bin ids under
-        `id_key` and the projection bin ids under the respective variable names.
+        title dictionaries, a pandas dataframe with bin ids under
+        `id_key` and the projection bin ids under the respective variable names,
+        and the shape of the nested bin scheme at depth 2.  Note that the nested
+        grid shape will be `None` if no 2D nested bin scheme is defined.
 
     Description
     -----------
     Create a maps of bin ids to bin cuts and titles and a data frame mapping bin ids to projection bin ids.
+    Also, check and return the nested bin scheme shapes at depth 2 in the case of a 2D nested bin scheme.
     """
 
     # Initialize arrays
@@ -342,30 +587,57 @@ def get_binscheme_cuts_and_ids(
     cut_titles = []
     ids  = []
 
+    # Initialize nested shape
+    nested_grid_shape = None
+
     # Set titles using raw bin variable names if no titles are provided
-    if binvar_titles is None or len(binvar_titles)!=len(binscheme): binvar_titles = [var for var in binscheme]
+    binscheme_vars = getSchemeVars(binscheme,nested_key='nested')
+    if binvar_titles is None or len(binvar_titles)!=len(binscheme_vars): binvar_titles = [var for var in binscheme_vars]
 
-    # Loop bin variables
-    for var_idx, var in enumerate(binscheme):
+    # Check for nested bin scheme
+    if (type(binscheme)==dict and 'nested' in binscheme.keys() and type(binscheme['nested'])==list and type(binscheme['nested'][0])==dict):
 
-        # Set the variable title
-        var_title  = binvar_titles[var_idx]
+        # Recursively set bin scheme cuts map
+        setNestedBinCuts(
+            cuts,
+            cut_titles,
+            ids,
+            binscheme,
+            lims_key      = 'lims',
+            nested_key    = 'nested',
+            binvar_titles = binvar_titles
+        )
 
-        # Get bin variable limits, projection ids, cuts and cut titles
-        nbins = len(binscheme[var])-1
-        lims = binscheme[var]
-        if type(binscheme[var])==dict and 'nbins' in binscheme[var].keys() and 'lims' in binscheme[var].keys():
-            nbins = binscheme[var]['nbins']
-            lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
-        varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
-        varids  = [i for i in range(nbins)]
-        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
-        varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+        nested_grid_shape = getNestedSchemeShape(
+            binscheme,
+            lims_key   = 'lims',
+            nested_key = 'nested'
+        )
 
-        # Expand bin cuts and cut titles and projection ids maps
-        cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
-        cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in cut_titles] if len(cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
-        ids  = [dict({var:varid},**id_map) for varid in varids for id_map in ids] if len(ids)>0 else [{var:el} for el in varids]
+    # Grid bin scheme case
+    else:
+
+        # Loop bin variables
+        for var_idx, var in enumerate(binscheme):
+
+            # Set the variable title
+            var_title  = binvar_titles[var_idx]
+
+            # Get bin variable limits, projection ids, cuts and cut titles
+            nbins = len(binscheme[var])-1
+            lims = binscheme[var]
+            if type(binscheme[var])==dict and 'nbins' in binscheme[var].keys() and 'lims' in binscheme[var].keys():
+                nbins = binscheme[var]['nbins']
+                lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
+            varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
+            varids  = [i for i in range(nbins)]
+            varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
+            varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+
+            # Expand bin cuts and cut titles and projection ids maps
+            cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
+            cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in cut_titles] if len(cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
+            ids  = [dict({var:varid},**id_map) for varid in varids for id_map in ids] if len(ids)>0 else [{var:el} for el in varids]
 
     # Turn cuts and cuts_titles into maps
     cuts = {start_idx+idx: cuts[idx] for idx in range(len(cuts))}
@@ -373,20 +645,73 @@ def get_binscheme_cuts_and_ids(
 
     # Set up data frame
     df = {id_key:[]}
-    for var in binscheme:
+    for var in binscheme_keys:
         df[var] = []
 
     # Add data frame entries
     for idx in range(len(ids)):
         binscheme_binid = idx + start_idx
         df[id_key].append(binscheme_binid)
-        for var in binscheme:
+        for var in binscheme_keys:
             df[var].append(ids[idx][var])
 
     #  Create pandas data frame
     df = pd.DataFrame(df)
 
-    return cuts, cut_titles, df
+    return cuts, cut_titles, df, nested_grid_shape
+
+def reshape_nested_grid(
+        proj_ids,
+        nested_grid_shape,
+        fill_value = None,
+    ):
+    """
+    Parameters
+    ----------
+    grid : required, list
+        List of projection ids to reshape
+    nested_grid_shape : required, list
+        List of (irregular) nested grid array dimensions
+    fill_value : optional, int
+        Fill value for padding
+        Default : None
+
+    Returns
+    -------
+    A reshaped grid array padded to dimension `(len(nested_grid_shape),max(nested_grid_shape))`
+
+    Raises
+    ------
+    ValueError
+        If `nested_grid_shape` is empty or not a list of integers or if `sum(nested_grid_shape)`
+        is not the same length as the number of projections in `proj_ids`
+
+    Description
+    -----------
+    Reshape projection ids for an irregular nested bin scheme padding to the largest
+    nested dimension with `fill_value`.
+    """
+
+    # Get the shape of the new array and instantiate it
+    shape = [len(nested_grid_shape),max(nested_grid_shape)]
+    reshaped_proj_ids = [[fill_value for i in range(shape[1])] for j in range(shape[0])]
+
+    # Check the nested grid shape
+    if len(nested_grid_shape)==0:
+        raise ValueError('`nested_grid_shape` must be a non-empty list')
+    if not type(nested_grid_shape[0])==int:
+        raise TypeError('`nested_grid_shape` must be a list of integers')
+    if sum(nested_grid_shape)!=len(proj_ids):
+        raise ValueError('`sum(nested_grid_shape)` must be the same length as the number of projections in `proj_ids`')
+
+    # Loop projection ids and set your new grid array values
+    counter = 0
+    for i, dim in enumerate(nested_grid_shape):
+        for j in range(dim):
+            reshaped_proj_ids[i][j] = proj_ids[counter]
+            counter += 1
+
+    return reshaped_proj_ids
 
 def get_projection_ids(
         df,
@@ -411,12 +736,15 @@ def get_projection_ids(
     arr_var_bins : optional, dict
         Dictionary of array binning scheme variable names to the specific projection bin ids to look for in those variables
         Default : {}
+    nested_grid_shape : optional, list
+        One dimensional list of nested grid dimensions, note this will be padded with `None` to the largest nested dimension
+        Default : None
 
     Returns
     -------
     (all_proj_ids, arr_vars, all_proj_arr_var_ids)
         An array of each projection's unique bin ids, a list of the array binning variables encountered,
-        and an of the array variables' bin ids for each projection.  Note the array shapes should be `(*N_BINS_PROJ_VARS,*N_BINS_ARR_VARS)`.
+        and an array of the array variables' bin ids for each projection.  Note the array shapes should be `(*N_BINS_PROJ_VARS,*N_BINS_ARR_VARS)`.
         If `N_BINS_PROJ_VARS=[5]` and `N_BINS_ARR_VARS=[3,8]` then the shape of `all_proj_ids` and `all_proj_arr_var_ids`
         will  be `(3,8,5)`.
 
@@ -478,7 +806,7 @@ def get_projection_ids(
         all_proj_ids.append(proj_ids.tolist())
         all_proj_arr_var_ids.append(arr_var_ids)
 
-    all_proj_ids = np.reshape(all_proj_ids,grid_shape)
+    all_proj_ids = np.reshape(all_proj_ids,grid_shape) if nested_grid_shape is not None else reshape_nested(all_proj_ids, nested_grid_shape)
     all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,(*nbins_arr,len(arr_vars)))
 
     return all_proj_ids, arr_vars, all_proj_arr_var_ids
@@ -693,7 +1021,7 @@ def get_graph_array(
     dfs : required, list
         Array of pandas dataframes containing bin ids and data
     proj_ids : required, list
-        Array of unique integer bin ids
+        Array of unique integer bin ids, note if entries are set to None the graph array entry will also be set to None to allow for masked grids
     id_key : optional, string
         String identifier for bin id column
         Default : 'bin_id'
@@ -748,7 +1076,7 @@ def get_graph_array(
                 ],
                 xvar_keys=xvar_keys,
                 sgasym=sgasyms[i][j] if type(sgasym) is not float else sgasym
-            ) for j in range(shape[1])] for i in range(shape[0])
+            ) if proj_ids[i][j] is not None else None for j in range(shape[1])] for i in range(shape[0]) #NOTE Allow masked grid
         ]
 
     # Create a graph array in the 1D grid case

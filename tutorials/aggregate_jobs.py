@@ -180,7 +180,7 @@ for config_idx in range(len(config_list)):
             sagas.apply_bin_mig(df,inv_bin_mig_mat,results_keys=results_keys) #NOTE: THIS MODIFIES THE DATAFRAMES IN PLACE
 
     # Get bin scheme cuts and ids
-    binscheme_cuts, binscheme_cut_titles, binscheme_ids = sagas.get_binscheme_cuts_and_ids(
+    binscheme_cuts, binscheme_cut_titles, binscheme_ids, nested_grid_shape = sagas.get_binscheme_cuts_and_ids( #TODO: RETURN GRID SHAPE FROM THIS GUY...
                                                         binscheme,
                                                         start_idx=start_idx,
                                                         id_key=id_key,
@@ -193,7 +193,8 @@ for config_idx in range(len(config_list)):
             proj_vars,
             arr_vars = arr_vars,
             id_key=id_key,
-            arr_var_bins=arr_var_bins
+            arr_var_bins=arr_var_bins,#TODO: ADD CHECK HERE FOR OTHER ARR VAR BINS SPECIFIED
+            nested_grid_shape=nested_grid_shape,
         )
 
     # Open a single graph
