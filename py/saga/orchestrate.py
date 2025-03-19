@@ -13,8 +13,8 @@ from .aggregate import get_config_list, get_config_str, get_binscheme_cuts_and_i
 
 def write_file_from_config(outdir):
     """
-    WRITE DUMMY DATA FOR A CONFIGURATION ASSUMING THE `args.yaml` FILE EXISTS
-    AND CONTAINS A BIN SCHEME NAMED `binscheme.
+    WRITE DUMMY DATA FOR A CONFIGURATION ASSUMING THE :obj:`args.yaml` FILE EXISTS
+    AND CONTAINS A BIN SCHEME NAMED :obj:`binscheme`.
     """
 
     binscheme_name = "binscheme" #NOTE: MAKE SURE THIS MATCHES THE DUMMY BIN SCHEME NAME IN ARGS.YAML
@@ -157,11 +157,11 @@ def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dum
     dry_run : bool, optional
         Option to just print commands to text file and not submit jobs via sbatch
     generate_dummy_data : bool, optional
-        Option to generate dummy output csv files in the same format as you would expect from `getKinBinnedAsym`
+        Option to generate dummy output csv files in the same format as you would expect from :meth:`getKinBinnedAsym`
 
     Description
     -----------
-    Submit jobs within a job directory structure created by `orchesrate.create_jobs()`.
+    Submit jobs within a job directory structure created by :meth:`orchesrate.create_jobs`.
     """
 
     # Create map of elements of elements of configs and combine completely into each other for one list
