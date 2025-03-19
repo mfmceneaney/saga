@@ -92,13 +92,13 @@ def create_jobs(configs,base_dir,submit_path,yaml_path):
     """
     Parameters
     ----------
-    configs : dictionary, required
+    configs : dict, required
         Map of configuration option names to option values
-    base_dir : string, required
+    base_dir : str, required
         Path to directory in which to create job directories
-    submit_path : string, required
+    submit_path : str, required
         Path to base version of SLURM job submission script
-    yaml_path : string, required
+    yaml_path : str, required
         Path to base version of yaml file containing arguments for the executable run in the SLURM job submission script
 
     Description
@@ -146,13 +146,13 @@ def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dum
     """
     Parameters
     ----------
-    configs : dictionary, required
+    configs : dict, required
         Map of configuration option names to option values
-    base_dir : string, required
+    base_dir : str, required
         Path to directory in which to create job directories
-    submit_path : string, required
+    submit_path : str, required
         Path to base version of SLURM job submission script
-    yaml_path : string, required
+    yaml_path : str, required
         Path to base version of yaml file containing arguments for the executable run in the SLURM job submission script
     dry_run : bool, optional
         Option to just print commands to text file and not submit jobs via sbatch
