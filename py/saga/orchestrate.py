@@ -156,10 +156,8 @@ def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dum
         Path to base version of yaml file containing arguments for the executable run in the SLURM job submission script
     dry_run : bool, optional
         Option to just print commands to text file and not submit jobs via sbatch
-        Default : False
     generate_dummy_data : bool, optional
         Option to generate dummy output csv files in the same format as you would expect from `getKinBinnedAsym`
-        Default : False
 
     Description
     -----------

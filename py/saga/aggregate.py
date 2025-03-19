@@ -27,7 +27,6 @@ def get_config_str(
         Configuration mapping option names to option values
     sep : str, optional
         String separator
-        Default : '_'
 
     Returns
     -------
@@ -62,10 +61,8 @@ def get_config_out_path(
         Job configuration map
     sep : str, optional
         String separator
-        Default : '_'
     sep : str, optional
         File extension
-        Default : '.pdf'
 
     Returns
     -------
@@ -95,16 +92,12 @@ def get_out_file_name(
     ----------
     base_dir : str, optional
         Base directory for file path
-        Default : None
     base_name : str, optional
         Base name used to construct file name
-        Default : ''
     binscheme_name : str, optional
         Name of binning scheme
-        Default : 'x'
     ext : str, optional
         File extension
-        Default : '.csv'
 
     Returns
     -------
@@ -129,7 +122,6 @@ def get_config_list(
         Map of configuration option names to option values
     aggregate_keys : list, optional
         List of keys over which to group configurations
-        Default : []
 
     Description
     -----------
@@ -167,7 +159,6 @@ def get_out_dirs_list(
         Path to directory in which to create job directories
     aggregate_keys : list, optional
         List of keys over which to group configurations
-        Default : []
 
     Returns
     -------
@@ -287,10 +278,8 @@ def load_csv(
         Path to CSV file containing table
     old_path : str, optional
         Directory name to replace
-        Default : None'
     new_path : str, optional
         Directory name to insert if not None
-        Default : None
 
     Returns
     -------
@@ -330,22 +319,16 @@ def set_nested_bin_cuts(
         List of bin ids to recursively update
     old_cuts : list, optional
         List of cuts from previous recursion
-        Default : []
     old_cut_titles : list, optional
         List of cut titles from previous recursion
-        Default : []
     old_ids : list, optional
         List of bin ids from previous recursion
-        Default : []
     var : str, optional
         Bin scheme variable at current recursion depth
-        Default : ""
     lims_key : str, optional
         Key for bin limits
-        Default : "lims"
     nested_key : str, optional
         Key for nested bin scheme
-        Default : "nested"
     binvar_titles : dict, optional
         Map of bin scheme variable names to LaTeX titles
 
@@ -446,7 +429,6 @@ def get_scheme_vars(
         Map of bin scheme variables to bin limits arrays with either a nested or grid structure
     nested_key : str, optional
         Key for nested bin scheme structure
-        Default : "nested"
 
     Description
     -----------
@@ -486,10 +468,8 @@ def get_nested_scheme_shape(
         Map of bin scheme variables to bin limits arrays with a nested structure
     lims_key : str, optional
         Key for bin limits arrays
-        Default : "lims"
     nested_key : str, optional
         Key for nested bin scheme structure
-        Default : "nested"
 
     Raises
     ------
@@ -559,13 +539,10 @@ def get_binscheme_cuts_and_ids(
         Dictionary mapping binning variables to bin limits arrays
     start_idx : int, optional
         Starting integer for enumerating bin unique integer ids
-        Default : 0
     id_key : str, optional
         Column name for bin unique integer ids
-        Default : 'bin_id'
     binvar_titles : list, optional
         List of latex format titles for bin variables for forming cut titles
-        Default : []
 
     Returns
     -------
@@ -674,7 +651,6 @@ def reshape_nested_grid(
         List of (irregular) nested grid array dimensions
     fill_value : int, optional
         Fill value for padding
-        Default : None
 
     Returns
     -------
@@ -734,16 +710,12 @@ def get_projection_ids(
         Projection variables
     arr_vars : list, optional
         Variables in which to construct a grid of results
-        Default : []
     id_key : str, optional
         Column name for bin unique integer ids
-        Default : 'bin_id'
     arr_var_bins : dict, optional
         Dictionary of array binning scheme variable names to the specific projection bin ids to look for in those variables
-        Default : {}
     nested_grid_shape : list, optional
         One dimensional list of nested grid dimensions, note this will be padded with `None` to the largest nested dimension
-        Default : None
 
     Returns
     -------
@@ -834,19 +806,14 @@ def get_graph_data(
         List of unique integer bin ids
     id_key : str, optional
         String identifier for bin id column
-        Default : 'bin_id'
     count_key : str, optional
         String identifier for bin count column
-        Default : 'count'
     xvar_keys : list, optional
         List of binning variables for which to return mean values
-        Default : ['x']
     asym_key : str, optional
         Asymmetry variables for which to return mean value
-        Default : 'a0'
     err_ext : str, optional
         Extension for forming error column names
-        Default : 'err'
 
     Returns
     -------
@@ -933,10 +900,8 @@ def get_aggregate_graph(
         List of graphs with dimension `(N_GRAPHS, 2*(1+N_XVAR_KEYS), N_BIN_IDS)`
     xvar_keys : list, optional
         List of binning variables for which to return mean values
-        Default : ['x']
     sgasym : float, optional
         Injected signal asymmetry for computing difference of measured and injected values
-        Default : 0.0
 
     Returns
     -------
@@ -1029,22 +994,16 @@ def get_graph_array(
         Array of unique integer bin ids, note if entries are set to None the graph array entry will also be set to None to allow for masked grids
     id_key : str, optional
         String identifier for bin id column
-        Default : 'bin_id'
     count_key : str, optional
         String identifier for bin count column
-        Default : 'count'
     xvar_keys : list, optional
         List of binning variables for which to return mean values
-        Default : ['x']
     asym_key : str, optional
         Asymmetry variables for which to return mean value
-        Default : 'a0'
     err_ext : str, optional
         Extension for forming error column names
-        Default : 'err'
     sgasym : float or list, optional
         Injected signal asymmetry for computing difference of measured and injected values
-        Default : 0.0
 
     Returns
     -------
@@ -1130,48 +1089,34 @@ def rescale_graph_data(
     ----------
     ct_mean : list, required
         Count mean values for each bin
-        Default : None
     x_mean : list, required
         x mean values for each bin
-        Default : None
     y_mean : list, required
         y mean values for each bin
-        Default : None
     xerr_mean : list, required
         x error alues for each bin
-        Default : None
     yerr_mean : list, required
         y error values for each bin
-        Default : None
     path : str, required
         Path where the given graph data will be stored
     old_dat_path : str, optional
         Part of `path` to replace
-        Default : 'old_dat_path.csv'
     new_sim_path : str, optional
         Path with which to replace `old_dat_path` to find new simulation graph CSVs
-        Default : 'new_sim_path.csv'
     old_sim_path : str, optional
         Path with which to replace `old_dat_path` to find new simulation graph CSVs
-        Default : 'old_sim_path.csv'
     count_key : str, optional
         CSV column key for graph bin counts
-        Default : 'count'
     yerr_key : str, optional
         CSV column key for graph bin y errors
-        Default : ''
     xs_ratio : str, optional
         Cross-section ratio (new/old) for scaling
-        Default : 0.0
     lumi_ratio : str, optional
         Luminosity ratio (new/old) for scaling
-        Default : 0.0
     xvar_keys : list, optional
         List of binning variables for which to return mean values
-        Default : ['x']
     sgasym : float or list, optional
         Injected signal asymmetry for computing difference of measured and injected values
-        Default : 0.0
 
     Returns
     -------
@@ -1338,13 +1283,10 @@ def get_bin_mig_mat(
         Pandas dataframe of bin migration matrix
     id_gen_key : str, optional
         Key for generated bin indices
-        Default : 'binid_gen'
     id_rec_key : str, optional
         Key for reconstructed bin indices
-        Default : 'binid_rec'
     mig_key : str, optional
         Key for bin migration fractions
-        Default : 'mig'
 
     Returns
     -------
@@ -1410,7 +1352,6 @@ def offset_graph_x(
         Value by which to offset graph values
     axis : int, optional
         Axis along which to offset the graph
-        Default : 0
 
     Description
     -----------
@@ -1437,16 +1378,12 @@ def save_txt(
         2D data array with dimensions `[N_COLUMNS,N_ROWS]`
     delimiter : str, optional
         CSV format delimiter
-        Default : ","
     header : str, optional
         CSV header
-        Default : None
     fmt : str, optional
         CSV column formats
-        Default : None
     comments : str, optional
         CSV comments
-        Default : ""
 
     Description
     -----------
@@ -1484,28 +1421,20 @@ def save_graph_to_csv(
         Graph y values
     xerr : list, optional
         Graph x error values
-        Default : None
     yerr : list, optional
         Graph y error values
-        Default : None
     xerr_syst : list, optional
         Graph x systematic error values
-        Default : None
     yerr_syst : list, optional
         Graph y systematic error values
-        Default : None
     delimiter : str, optional
         CSV format delimiter
-        Default : ","
     header : str, optional
         CSV header
-        Default : None
     fmt : str, optional
         CSV column formats
-        Default : None
     comments : str, optional
         CSV comments
-        Default : ""
 
     Description
     -----------
@@ -1544,19 +1473,14 @@ def save_graph_systematics_to_csv(
         Graph x values
     yerr_syst : list, optional
         Graph y systematic error values decomposed into the different sources of systematic error
-        Default : None
     delimiter : str, optional
         CSV format delimiter
-        Default : ","
     header : str, optional
         CSV header
-        Default : None
     fmt : str, optional
         CSV column formats
-        Default : None
     comments : str, optional
         CSV comments
-        Default : ""
 
     Description
     -----------
@@ -1591,22 +1515,16 @@ def save_bin_mig_mat_to_csv(
         2D bin migration matrix with (i,j) `->` (generated,reconstructed)
     base_dir : str, required
         Path to directory in which matrix will be saved
-        Default : 'systematics/bin_migration/'
     basename : str, optional
         Name of reconstructed bin variable
-        Default : 'x'
     delimiter : str, optional
         CSV format delimiter
-        Default : ","
     header : str, optional
         CSV header
-        Default : None
     fmt : str, optional
         CSV column formats, automatically set if not specified
-        Default : None
     comments : str, optional
         CSV comments
-        Default : ""
 
     Raises
     ------
@@ -1657,7 +1575,6 @@ def apply_bin_mig(
         Inverse of bin migration matrix mapping generated bins to reconstructed bins
     results_keys : list, optional
         List of keys to results entries to which to apply bin migration corrections
-        Default : 'a0'
 
     Description
     -----------
@@ -1681,13 +1598,10 @@ def compute_systematics(
         Array of asymmetry results
     bin_migration_mat : np.array, optional
         Bin migration matrix mapping generated bins to reconstructed bins
-        Default : None
     systematic_scales_mat : np.array, optional
         Array of systematic errors to be scaled by y values before being added in quadrature to other systematic errors
-        Default : None
     systematics_additive_mat : np.array, optional
         Array of absolute systematic errors to add to other systematic errors
-        Default : None
 
     Returns
     -------
@@ -1768,19 +1682,14 @@ def plot_injected_asyms(
         List of colors for each injected asymmetries
     sgasym_idx : int, optional
         Injected signal asymmetry index
-        Default : 0
     ylims : tuple, optional
         y limits for plotting
-        Default : (-1.0,1.0)
     label_base : str, optional
         Base label to prepend to ytitles for injected asymmetries
-        Default : 'Injected Signal '
     linestyle : str, optional
         Line style
-        Default : '--'
     linewidth : int, optional
         Line width
-        Default : 1
 
     Description
     -----------
@@ -1822,7 +1731,6 @@ def plot_watermark(
         Matplotlib.pyplot figure axis
     watermark : str, optional
         Watermark text
-        Default : 'CLAS12 Preliminary'
 
     Description
     -----------
@@ -1846,7 +1754,6 @@ def plot_vlines(
         List of bin limits in a 1D binning scheme
     linestyle : str, optional
         Line style
-        Default : 'dotted'
 
     Description
     -----------
@@ -1892,43 +1799,30 @@ def plot_hists(
         Matplotlib.pyplot figure axis
     clone_axis : bool, optional
         Option to create a twin y axis sharing the x axis of the given axis
-        Default : True
     ylabel : str, optional
         Y axis label for twin axis
-        Default : 'Density'
     ylims : tuple, optional
         Y axis limits for twin axis
-        Default : (0.0,0.05)
     histtype : str, optional
         Matplotlib.pyplot histogram type
-        Default : 'step'
     hist_colors : list, optional
         List of histogram colors
-        Default : None
     alpha : float, optional
         Alpha plotting paramater for histograms
-        Default : 0.5
     linewidth : int, optional
         Line width for plotting histograms
-        Default : 2
     density : bool, optional
         Option to normalize histograms
-        Default : True
     hist_labels : list, optional
         List of histogram labels
-        Default : None
     binlims : list, optional
         List of bin limits in a 1D binning scheme
-        Default : []
     vlinestyle : str, optional
         Vertical line style for drawing bin limits on histogram
-        Default : 'dotted'
     vline_hist_idx : int, optional
         Index of histogram for which to draw vertical lines for bin limits
-        Default : -1
     legend_loc : str, optional
         Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
-        Default : 'upper right'
 
     Description
     -----------
@@ -2000,16 +1894,12 @@ def get_bin_kinematics_title(
         Dataframe of kinematic variable means and errors in each kinematic bin
     cols : list, optional
         List of column names of kinematics to add to bin title
-        Default : ['x','Q2']
     col_titles : list, optional
         List of kinematics LaTeX titles
-        Default : {'x':'x', 'Q2':'Q^{2}'}
     err_ext : str, optional
         Extension for forming column names of kinematic variable errors
-        Default : '_err'
     sep : str, optional
         Separator string for kinematics values in bin title
-        Default : ' , '
 
     Returns
     -------
@@ -2049,14 +1939,12 @@ def get_lims_coords(
         List of outer limits for the y-axis variable
     var_keys : list, optional
         List names of x and y axis variables for a grid bin scheme
-        Default : []
     nested_key : str, optional
         Key for nested bins
     lims_key : str, optional
         Key for bin limits
     swap_axes : bool, optional
         Swap the default x and y axes order
-        Default : False
 
     Raises
     ------
@@ -2179,7 +2067,6 @@ def plot_th2(h2, ax, norm=colors.LogNorm()):
         Matplotlib.pyplot axis to plot on
     norm : str or matplotlib.colors.Normalize, optional
         Normalization used to scale data to `[0,1]` range before mapping to a color map
-        Default : matplotlib.colors.LogNorm()
 
     Description
     -----------
@@ -2237,79 +2124,54 @@ def plot_systematics(
         Array of absolute systematic error in each bin further indexed by the sources of systematic error
     palette : str, optional
         Seaborn color palette
-        Default : 'Dark2'
     stacked : bool, optional
         Whether to stack histograms from different sources of systematic error
-        Default : False
     syst_names : list, optional
         List of column names for each source of systematic error
-        Default : None
     syst_labels : list, optional
         List of labels for each source of systematic error
-        Default : None
     xlims : tuple, optional
         x limits for plotting
-        Default : (0.0,1.0)
     ylims : tuple, optional
         y limits for plotting
-        Default : (-1.0,1.0)
     xvar : str, optional
         Bin variable name
-        Default : 'x'
     title : str, optional
         Plot title
-        Default : 'Systematic Errors'
     xtitle : str, optional
         x axis title
-        Default : '$Q^{2} (GeV^{2})$'
     ytitle : str, optional
         y axis title
-        Default : '$\Delta \mathcal{A}$'
     outpath : str, optional
         Name of output pdf
-        Default : 'systematics.pdf'
     watermark : str, optional
         Optional watermark to put on top of plot
-        Default : 'CLAS12 Preliminary'
     use_default_plt_settings : bool, optional
         Option to use default font and tick parameter style settings
-        Default : True
     legend_loc : str, optional
         Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
-        Default : 'upper left'
     ecolor : str, optional
         Error line color
-        Default : 'black'
     ecolor : float, optional
         Error line width
-        Default : 2.0
     capsize : int, optional
         Error cap size
-        Default : 18
     capthick : float, optional
         Error cap thickness
-        Default : 2.0
     marker : str, optional
         Marker type
-        Default : 'o'
     markersize : int, optional
         Marker size
-        Default : 20
     linestyle : str, optional
         Line style
-        Default : None
     linewidth : float, optional
         Line width
-        Default : 0.0
     gridlinewidth : float, optional
         Grid line width
-        Default : 0.5
     axlinewidth : float, optional
         Axis line and injected asymmetries line width
-        Default : 1.0
     figsize : tuple, optional
         Figure size
-        Default : (16,10)
 
     Description
     -----------
@@ -2441,190 +2303,128 @@ def plot_results(
         Matplotlib.pyplot figure axis
     ct_mean : list, optional
         Count mean values for each bin
-        Default : None
     x_mean : list, optional
         x mean values for each bin
-        Default : None
     y_mean : list, optional
         y mean values for each bin
-        Default : None
     xerr_mean : list, optional
         x error alues for each bin
-        Default : None
     yerr_mean : list, optional
         y error values for each bin
-        Default : None
     xerr_syst : list, optional
         x systematic error alues for each bin
-        Default : None
     yerr_syst : list, optional
         y systematic error values for each bin
-        Default : None
     y_min : list, optional
         y minimum values for each bin
-        Default : None
     y_max : list, optional
         y maximum values for each bin
-        Default : None
     y_std : list, optional
         y standard deviation values for each bin
-        Default : None
     ydiff_mean : list, optional
         y difference from injected signal asymmetry mean values for each bin
-        Default : None
     ydiff_std : list, optional
         y difference from injected signal asymmetry standard deviation values for each bin
-        Default : None
     ydiff_min : list, optional
         y difference from injected signal asymmetry minimum values for each bin
-        Default : None
     ydiff_max : list, optional
         y difference from injected signal asymmetry maximum values for each bin
-        Default : None
     xlims : tuple, optional
         x limits for plotting
-        Default : (0.0,1.0)
     ylims : tuple, optional
         y limits for plotting
-        Default : (-1.0,1.0)
     title : str, optional
         Plot title
-        Default : 'x'
     xvar : str, optional
         Bin variable name
-        Default : 'x'
     xlabel : str, optional
         x axis label
-        Default : '$x$'
     ylabel : str, optional
         y axis label
-        Default : '$\mathcal{A}$'
     sgasym_labels : list, optional
         List of signal asymmetry labels
-        Default : ['$\mathcal{A}$']
     bgasym_labels : list, optional
         List of background asymmetry labels
-        Default : ['$\mathcal{A}$']
     sgasym_idx : int, optional
         Index of injected signal asymmetry
-        Default : 0
     sgasyms : list, optional
         List of injected signal asymmetries
-        Default : [0.10]
     bgasyms : list, optional
         List of injected background asymmetries
-        Default : [0.00]
     sg_colors : list, optional
         List of signal asymmetry plotting colors
-        Default : ['blue']
     bg_colors : list, optional
         List of background asymmetry plotting colors
-        Default : ['red']
     fill_color : str, optional
         Color of 1 sigma band or systematic uncertainties
-        Default : 'gray'
     outpath : str, optional
         Name of output pdf
-        Default : 'systematics.pdf'
     watermark : str, optional
         Optional watermark to put on top of plot
-        Default : 'CLAS12 Preliminary'
     show_injected_asymmetries : bool, optional
         Option to show injected signal and background asymmetries
-        Default : False
     legend_loc : str, optional
         Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
-        Default : 'upper left'
     ecolor : str, optional
         Error line color
-        Default : 'black'
     ecolor : float, optional
         Error line width
-        Default : 2.0
     capsize : int, optional
         Error cap size
-        Default : 18
     capthick : float, optional
         Error cap thickness
-        Default : 2.0
     marker : str, optional
         Marker type
-        Default : 'o'
     markersize : int, optional
         Marker size
-        Default : 20
     linestyle : str, optional
         Line style
-        Default : None
     linewidth : float, optional
         Line width
-        Default : 0.0
     gridlinewidth : float, optional
         Grid line width
-        Default : 0.5
     axlinewidth : float, optional
         Axis line and injected asymmetries line width
-        Default : 1.0
     hist_clone_axis : bool, optional
         Option to create a twin y axis sharing the x axis of the given axis
-        Default : True
     hist_ylabel : str, optional
         Y axis label for twin axis
-        Default : 'Density'
     hist_ylims : tuple, optional
         Y axis limits for twin axis
-        Default : (0.0,0.05)
     histtype : str, optional
         Matplotlib.pyplot histogram type
-        Default : 'step'
     hist_colors : list, optional
         List of histogram colors
-        Default : None
     hist_alpha : float, optional
         Alpha plotting paramater for histograms
-        Default : 0.5
     hist_linewidth : int, optional
         Line width for plotting histograms
-        Default : 2
     density : bool, optional
         Option to normalize histograms
-        Default : True
     hist_labels : list, optional
         List of histogram labels
-        Default : None
     binlims : list, optional
         List of bin limits in a 1D binning scheme
-        Default : []
     vlinestyle : str, optional
         Vertical line style for drawing bin limits on histogram
-        Default : 'dotted'
     vline_hist_idx : int, optional
         Index of histogram for which to draw vertical lines for bin limits
-        Default : -1
     hist_legend_loc : str, optional
         Matplotlib.pyplot legend location string for histograms, will not be plotted if set to None or ''
-        Default : 'upper right'
     old_dat_path : str, optional
         Part of `path` to replace
-        Default : 'old_dat_path.csv'
     new_sim_path : str, optional
         Path with which to replace `old_dat_path` to find new simulation graph CSVs
-        Default : 'new_sim_path.csv'
     old_sim_path : str, optional
         Path with which to replace `old_dat_path` to find new simulation graph CSVs
-        Default : 'old_sim_path.csv'
     count_key : str, optional
         CSV column key for graph bin counts
-        Default : 'count'
     yerr_key : str, optional
         CSV column key for graph bin y errors
-        Default : ''
     xs_ratio : float, optional
         Cross-section ratio (new/old) for scaling
-        Default : 0.0
     lumi_ratio : float, optional
         Luminosity ratio (new/old) for scaling
-        Default : 0.0
 
     Description
     -----------
@@ -2821,28 +2621,20 @@ def plot_results_array(
         List array of `plot_results()` key word arguments for each graph
     plot_results_kwargs_base : dict, optional
         Dictionary of base `plot_results()` key word arguments to apply to every graph
-        Default : {}
     figsize : tuple, optional
         Figure size
-        Default : (16,10)
     outpath : str, optional
         Output graphic path
-        Default : 'plot_projections.pdf'
     use_grid_titles : bool, optional
         Option to assume grid titles and only use titles for plots on top row of array
-        Default : True
     use_grid_xlabels : bool, optional
         Option to assume grid x-axis labels and only use x-axis labels for plots on bottom row of array
-        Default : True
     use_grid_ylabels : bool, optional
         Option to assume grid y-axis labels and only use y-axis labels for plots on leftmost column of (2D) array
-        Default : True
     use_grid_hist_ylabels : bool, optional
         Option to assume grid histogram y-axis labels and only use histogram y-axis labels for plots on rightmost column of (2D) array
-        Default : True
     use_default_plt_settings : bool, optional
         Option to use default font and tick parameter style settings
-        Default : True
 
     Description
     -----------
