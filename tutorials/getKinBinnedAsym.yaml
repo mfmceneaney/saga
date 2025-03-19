@@ -37,7 +37,7 @@ binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name:
     xF_ppim: [0.0000, 0.0504, 0.1082, 0.1784, 0.2775, 1.0]
   z_ppim:
     z_ppim: [0.0000, 0.5928, 0.6856, 0.7698, 0.8597, 1.0]
-bincuts_yaml: ""
+binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
 binvars: ["run","x","xF_ppim","z_ppim"]
 binvar_titles: ["run","x","x_{F p#pi^{-}}","z_{p#pi^{-}}"]
 binvar_lims: [[1,100],[0,1],[0,1],[0,1]]
