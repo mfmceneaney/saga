@@ -46,6 +46,7 @@ plot_results_kwargs_base = {
     'hist_density':False,
     'axlinewidth':0,
     'hist_dim':2,
+    'legend_loc':None #NOTE: Do not plot a legend since you are using 2d hists.
 }
 
 # Set additional kwargs
