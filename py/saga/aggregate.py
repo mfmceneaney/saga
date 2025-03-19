@@ -2207,7 +2207,6 @@ def plot_th2(h2, ax, norm=colors.LogNorm(), **kwargs):
     Easily plot a `TH2` histogram loaded from ROOT.
     """
 
-
     # Get the middle values of each bin
     x = np.ravel([[np.average([h2[1][i],h2[1][i+1]]) for j in range(len(h2[2])-1) ] for i in range(len(h2[1])-1)])
     y = np.ravel([[np.average([h2[2][j],h2[2][j+1]]) for j in range(len(h2[2])-1) ] for i in range(len(h2[1])-1)])
