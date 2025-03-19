@@ -109,32 +109,57 @@ void execute(const YAML::Node& node) {
     // Apply overall cuts AFTER defining variables
     auto d2_filtered = d2.Filter(cuts.c_str());
 
-    // Initialize map that will be converted to yaml
-    std::map<std::string,std::vector<double>> binlimits;
-
-    // Loop variables to bin in
-    for (int binvar_idx = 0; binvar_idx<binvars.size(); binvar_idx++) {
-
-        // Get desired number of bins
-        int nbins = nbins_list[binvar_idx];
-
-        // Find bin limits
-        std::vector<double> _binlimits = saga::bins::findBinLims(
-            d2_filtered,
-            binvars[binvar_idx],
-            nbins
+    // Check for nested bin scheme and then default to grid
+    std::string node_binscheme_name = "binscheme";
+    auto node_binscheme = node[node_binscheme_name];
+    if (node_binscheme && node_binscheme.IsMap()) {
+        saga::bins::findNestedBinLims(
+            d2_filtered, // ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+            node_binscheme, // YAML::Node node,
+            "", // std::string node_name = "",
+            "nbins", // std::string nbins_key = "nbins",
+            "lims", // std::string lims_key = "lims",
+            "nested", // std::string nested_key = "nested",
+            {} // std::vector<std::string> bin_cuts = {}
         );
 
-        // Add bin limits to map
-        binlimits[binvars[binvar_idx]] = _binlimits;
-   
-    }// loop over bin variables
+        // Save bin limits to a yaml file
+        std::ofstream outf; outf.open(outpath.c_str());
+        std::ostream &out = outf;
+        YAML::Emitter yout(out);
+        YAML::Node node_out;
+        node_out[node_binscheme_name] = node_binscheme;
+        yout << node_out;
 
-    // Save bin limits to a yaml file
-    std::ofstream outf; outf.open(outpath.c_str());
-    std::ostream &out = outf;
-    YAML::Emitter yout(out);
-    yout << YAML::Flow << binlimits;
+    } else {
+
+        // Initialize map that will be converted to yaml
+        std::map<std::string,std::vector<double>> binlimits;
+
+        // Loop variables to bin in
+        for (int binvar_idx = 0; binvar_idx<binvars.size(); binvar_idx++) {
+
+            // Get desired number of bins
+            int nbins = nbins_list[binvar_idx];
+
+            // Find bin limits
+            std::vector<double> _binlimits = saga::bins::findBinLims(
+                d2_filtered,
+                binvars[binvar_idx],
+                nbins
+            );
+
+            // Add bin limits to map
+            binlimits[binvars[binvar_idx]] = _binlimits;
+    
+        }// loop over bin variables
+
+        // Save bin limits to a yaml file
+        std::ofstream outf; outf.open(outpath.c_str());
+        std::ostream &out = outf;
+        YAML::Emitter yout(out);
+        yout << YAML::Flow << binlimits;
+    }
 
 } // void execute()
 

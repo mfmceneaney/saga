@@ -1,0 +1,50 @@
+baseoutpath: "out_" #NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>.csv`.
+inpath: "/path/to/*.root"
+tree: "t"
+nthreads: 1
+cuts: "Q2>1 && W>2 && y<0.8 && sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0 && mx_pipim>1.5 && xF_pi>0.0 && xF_pim>0.0 && TMath::Abs(TMath::ATan2(px_pi,pz_pi))<30.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(py_pi,pz_pi))<25.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(px_pim,pz_pim))<30.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(py_pim,pz_pim))<25.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(px_e,pz_e))<30.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(py_e,pz_e))<25.0*TMath::Pi()/180.0"
+mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
+particle_suffixes: ["_pi","_pim"]
+binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
+  binscheme:
+    nested:
+      - Q2:
+          nbins: 3
+          nested:
+            - x:
+                nbins: 2
+                lims:
+                  - 0.07142139226198196
+                  - 0.13565279470011596
+                  - 0.35550543665885925
+            - x:
+                nbins: 2
+                lims:
+                  - 0.12861931324005127
+                  - 0.18938342242240908
+                  - 0.43612998723983765
+            - x:
+                nbins: 1
+                lims:
+                  - 0.16986700892448425
+                  - 0.7200235724449158
+          lims:
+            - 1.1156911849975586
+            - 2.0207878542009987
+            - 2.6904720152600605
+            - 9.41070556640625
+  binscheme_grid:
+    Q2: [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]
+    x: [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+bincuts_yaml: ""
+binvars: [] #NOTE: ONLY INCLUDE OTHER VARIABLE NAMES AND LIMITS TO AUTOMATICALLY APPLY OVERALL LIMIT CUTS
+binvar_lims: []
+depolvars: []
+depolvar_lims: []
+asymfitvars: []
+asymfitvar_lims: []
+massfitvars: []
+massfitvar_lims: []
+kinvars: ["z_pipim","phperp_pipim","mass_pipim"]
+kinvar_lims: [[0.0,1.0],[0.0,1.25],[0.0,3.0]]
+kinvar_bins: [100,100,100]

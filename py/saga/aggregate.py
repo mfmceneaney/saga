@@ -6,6 +6,7 @@
 import uproot as ur
 import numpy as np
 import pandas as pd
+from matplotlib import colors
 import matplotlib.pyplot as plt
 import seaborn as sbn
 
@@ -304,6 +305,247 @@ def load_csv(
     inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
     return pd.read_csv(inpath)
 
+def setNestedBinCuts(
+        cuts,
+        cut_titles,
+        ids,
+        node,
+        old_cuts       = [],
+        old_cut_titles = [],
+        old_ids        = [],
+        var            = "",
+        lims_key       = "lims",
+        nested_key     = "nested",
+        binvar_titles  = {}
+    ):
+
+    """
+    Parameters
+    ----------
+    cuts : list, required
+        List of cuts to recursively update
+    cut_titles : list, required
+        List of cut titles to recursively update
+    ids : list, required
+        List of bin ids to recursively update
+    old_cuts : list, optional
+        List of cuts from previous recursion
+        Default : []
+    old_cut_titles : list, optional
+        List of cut titles from previous recursion
+        Default : []
+    old_ids : list, optional
+        List of bin ids from previous recursion
+        Default : []
+    var : string, optional
+        Bin scheme variable at current recursion depth
+        Default : ""
+    lims_key : optional, string
+        Key for bin limits
+        Default : "lims"
+    nested_key : optional, string
+        Key for nested bin scheme
+        Default : "nested"
+    binvar_titles : optional, dictionary
+        Map of bin scheme variable names to LaTeX titles
+
+    Description
+    -----------
+    Recursively set lists of bin cuts, titles, and ids for each bin scheme variable
+    in a nested binning scheme.
+    """
+
+    # Check the YAML node
+    if (type(node)==dict):
+
+        # Check for bin limits
+        lims = []
+        if (lims_key in node.keys() and type(node[lims_key])==list):
+            lims = node[lims_key]
+
+        # Set nbins lower limit to 0 since you allow passing limits with length 0
+        nbins = len(lims)-1
+        if (nbins<0): nbins=0
+
+        # Get bin variable title
+        var_title = var if var not in binvar_titles else binvar_titles[var]
+
+        # Loop bins and get bin cuts
+        varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
+        varids  = [i for i in range(nbins)]
+        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
+        varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+
+        # Expand bin cuts and cut titles and projection ids maps
+        old_cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in old_cuts] if len(old_cuts)>0 else varcuts
+        old_cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in old_cut_titles] if len(old_cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
+        old_ids = [dict({var:varid},**id_map) for varid in varids for id_map in old_ids] if len(old_ids)>0 else [{var:el} for el in varids]
+
+        # Check for nested binning
+        if (nested_key in node.keys() and type(node[nested_key])==list):
+
+            # Get nested YAML node
+            node_nested = node[nested_key]
+
+            # Loop nested bins
+            for ibin in range(len(node_nested)): #NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
+
+                # Get nested YAML node
+                node_nested_bin = node_nested[ibin]
+
+                # Loop nested bin variables (only expect one!)
+                for it_key in node_nested_bin:
+
+                    # Get nested YAML node
+                    it_nested = node_nested_bin[it_key]
+
+                    # Create a new vector for uniqueness along different recursion branches
+                    new_old_cuts = []
+                    new_old_cut_titles = []
+                    new_old_ids = []
+                    if (ibin<len(old_cuts)):
+                        new_old_cuts = [old_cuts[ibin]]
+                        new_old_cut_titles = [old_cut_titles[ibin]]
+                        new_old_ids = [old_ids[ibin]]
+
+                    # Recursion call
+                    setNestedBinCuts(
+                        cuts,
+                        cut_titles,
+                        ids,
+                        it_nested,
+                        new_old_cuts,
+                        new_old_cut_titles,
+                        new_old_ids,
+                        it_key,
+                        lims_key,
+                        nested_key
+                    )
+
+                    # Break on first nested variable found
+                    break
+
+        # Case you don't have further nested binning
+        else:
+            for ibin in range(len(old_cuts)):
+                cuts.append(old_cuts[ibin])
+                cut_titles.append(old_cut_titles[ibin])
+                ids.append(old_ids[ibin])
+            return
+    else:
+        return
+
+def getSchemeVars(
+        node,
+        nested_key = "nested"
+    ):
+    """
+    Parameters
+    ----------
+    node : required, dict
+        Map of bin scheme variables to bin limits arrays with either a nested or grid structure
+    nested_key : optional, string
+        Key for nested bin scheme structure
+        Default : "nested"
+
+    Description
+    -----------
+    Find the bin scheme variables in a bin scheme with either a nested or grid structure.
+    """
+
+    # Initialize array
+    binscheme_vars = []
+
+    # Check for nested bin scheme
+    if (type(node)==dict and nested_key in node.keys() and type(node[nested_key])==list and type(node[nested_key][0])==dict):
+
+        # Get nested node
+        node_nested = dict(node)
+
+        while (type(node_nested)==dict and nested_key in node_nested.keys() and type(node_nested[nested_key])==list and type(node_nested[nested_key][0])==dict):
+
+            binvar = list(node_nested[nested_key][0].keys())[0]
+            binscheme_vars.append(binvar)
+            node_nested = dict(node_nested[nested_key][0][binvar])
+        
+        return binscheme_vars
+
+    # Default to case you have a grid scheme
+    else:
+        return [var for var in node.keys()]
+
+def getNestedSchemeShape(
+        node,
+        lims_key   = "lims",
+        nested_key = "nested"
+    ):
+    """
+    Parameters
+    ----------
+    node : required, dict
+        Map of bin scheme variables to bin limits arrays with a nested structure
+    lims_key : optional, string
+        Key for bin limits arrays
+        Default : "lims"
+    nested_key : optional, string
+        Key for nested bin scheme structure
+        Default : "nested"
+
+    Raises
+    ------
+    ValueErrror:
+        Raise an error if the `node` does not define a 2D nested bin structure.
+
+    Returns
+    -------
+    binscheme_shape
+        List of lengths of nested bin variable bins for each bin in the outer variable
+        of a 2D nested bin scheme
+
+    Description
+    -----------
+    Find the bin scheme shapes for a 2D bin scheme with nested structure.
+    """
+
+    # Initialize array
+    binscheme_shape = []
+
+    # Check for nested bin scheme
+    if (type(node)==dict and nested_key in node.keys() and type(node[nested_key])==list and type(node[nested_key][0])==dict):
+
+        # Get nested node
+        node_nested = dict(node)
+
+        # Loop nested node
+        depth = 0
+        while (type(node_nested)==dict and nested_key in node_nested.keys() and type(node_nested[nested_key])==list and type(node_nested[nested_key][0])==dict):
+            
+            # Get bin variable
+            binvar = list(node_nested[nested_key][0].keys())[0]
+            
+            # Increment and cheeck depth
+            depth += 1
+            if depth>=2:
+
+                # Add shapes to list at a recursion depth of 2 and exit loop
+                for idx in range(len(node_nested[nested_key])):
+                    shape = 0
+                    if lims_key in node_nested[nested_key][idx][binvar].keys():
+                        shape = len(node_nested[nested_key][idx][binvar][lims_key])-1
+                        shape = max(0,shape)
+                    binscheme_shape.append(shape)
+                break
+            
+            # Update nested node
+            node_nested = dict(node_nested[nested_key][0][binvar])
+        
+        return binscheme_shape
+
+    # Case you do not have a nested bin scheme
+    else:
+        raise ValueError("`node` must define have a 2D nested bin scheme structure")
+
+
 def get_binscheme_cuts_and_ids(
         binscheme,
         start_idx=0,
@@ -327,14 +569,17 @@ def get_binscheme_cuts_and_ids(
 
     Returns
     -------
-    (dict, dict, pandas.DataFrame)
+    (dict, dict, pandas.DataFrame, list or None)
         Dictionary of bin ids to cuts, dictionary of bin ids to bin cut
-        title dictionaries, and a pandas dataframe with bin ids under
-        `id_key` and the projection bin ids under the respective variable names.
+        title dictionaries, a pandas dataframe with bin ids under
+        `id_key` and the projection bin ids under the respective variable names,
+        and the shape of the nested bin scheme at depth 2.  Note that the nested
+        grid shape will be `None` if no 2D nested bin scheme is defined.
 
     Description
     -----------
     Create a maps of bin ids to bin cuts and titles and a data frame mapping bin ids to projection bin ids.
+    Also, check and return the nested bin scheme shapes at depth 2 in the case of a 2D nested bin scheme.
     """
 
     # Initialize arrays
@@ -342,30 +587,57 @@ def get_binscheme_cuts_and_ids(
     cut_titles = []
     ids  = []
 
+    # Initialize nested shape
+    nested_grid_shape = None
+
     # Set titles using raw bin variable names if no titles are provided
-    if binvar_titles is None or len(binvar_titles)!=len(binscheme): binvar_titles = [var for var in binscheme]
+    binscheme_vars = getSchemeVars(binscheme,nested_key='nested')
+    if binvar_titles is None or len(binvar_titles)!=len(binscheme_vars): binvar_titles = [var for var in binscheme_vars]
 
-    # Loop bin variables
-    for var_idx, var in enumerate(binscheme):
+    # Check for nested bin scheme
+    if (type(binscheme)==dict and 'nested' in binscheme.keys() and type(binscheme['nested'])==list and type(binscheme['nested'][0])==dict):
 
-        # Set the variable title
-        var_title  = binvar_titles[var_idx]
+        # Recursively set bin scheme cuts map
+        setNestedBinCuts(
+            cuts,
+            cut_titles,
+            ids,
+            binscheme,
+            lims_key      = 'lims',
+            nested_key    = 'nested',
+            binvar_titles = binvar_titles
+        )
 
-        # Get bin variable limits, projection ids, cuts and cut titles
-        nbins = len(binscheme[var])-1
-        lims = binscheme[var]
-        if type(binscheme[var])==dict and 'nbins' in binscheme[var].keys() and 'lims' in binscheme[var].keys():
-            nbins = binscheme[var]['nbins']
-            lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
-        varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
-        varids  = [i for i in range(nbins)]
-        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
-        varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+        nested_grid_shape = getNestedSchemeShape(
+            binscheme,
+            lims_key   = 'lims',
+            nested_key = 'nested'
+        )
 
-        # Expand bin cuts and cut titles and projection ids maps
-        cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
-        cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in cut_titles] if len(cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
-        ids  = [dict({var:varid},**id_map) for varid in varids for id_map in ids] if len(ids)>0 else [{var:el} for el in varids]
+    # Grid bin scheme case
+    else:
+
+        # Loop bin variables
+        for var_idx, var in enumerate(binscheme):
+
+            # Set the variable title
+            var_title  = binvar_titles[var_idx]
+
+            # Get bin variable limits, projection ids, cuts and cut titles
+            nbins = len(binscheme[var])-1
+            lims = binscheme[var]
+            if type(binscheme[var])==dict and 'nbins' in binscheme[var].keys() and 'lims' in binscheme[var].keys():
+                nbins = binscheme[var]['nbins']
+                lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
+            varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
+            varids  = [i for i in range(nbins)]
+            varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
+            varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+
+            # Expand bin cuts and cut titles and projection ids maps
+            cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
+            cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in cut_titles] if len(cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
+            ids  = [dict({var:varid},**id_map) for varid in varids for id_map in ids] if len(ids)>0 else [{var:el} for el in varids]
 
     # Turn cuts and cuts_titles into maps
     cuts = {start_idx+idx: cuts[idx] for idx in range(len(cuts))}
@@ -373,20 +645,77 @@ def get_binscheme_cuts_and_ids(
 
     # Set up data frame
     df = {id_key:[]}
-    for var in binscheme:
+    for var in binscheme_vars:
         df[var] = []
 
     # Add data frame entries
     for idx in range(len(ids)):
         binscheme_binid = idx + start_idx
         df[id_key].append(binscheme_binid)
-        for var in binscheme:
+        for var in binscheme_vars:
             df[var].append(ids[idx][var])
 
     #  Create pandas data frame
     df = pd.DataFrame(df)
 
-    return cuts, cut_titles, df
+    return cuts, cut_titles, df, nested_grid_shape
+
+def reshape_nested_grid(
+        proj_ids,
+        nested_grid_shape,
+        fill_value = None,
+    ):
+    """
+    Parameters
+    ----------
+    grid : required, list
+        List of projection ids to reshape
+    nested_grid_shape : required, list
+        List of (irregular) nested grid array dimensions
+    fill_value : optional, int
+        Fill value for padding
+        Default : None
+
+    Returns
+    -------
+    A reshaped grid array padded to dimension `(len(nested_grid_shape),max(nested_grid_shape))`
+
+    Raises
+    ------
+    ValueError
+        If `nested_grid_shape` is empty or not a list of integers or if `sum(nested_grid_shape)`
+        is not the same length as the number of projections in `proj_ids`
+
+    Description
+    -----------
+    Reshape projection ids for an irregular nested bin scheme padding to the largest
+    nested dimension with `fill_value`.
+    """
+
+    # Get the shape of the new array and instantiate it
+    shape = [len(nested_grid_shape),max(nested_grid_shape)]
+    reshaped_proj_ids = [[fill_value for i in range(shape[1])] for j in range(shape[0])]
+
+    # Check the nested grid shape
+    if nested_grid_shape is None:
+        return proj_ids
+    if type(nested_grid_shape)!=list:
+        raise TypeError('`nested_grid_shape` must be a list of integers')
+    if len(nested_grid_shape)==0:
+        raise ValueError('`nested_grid_shape` must be a non-empty list')
+    if not type(nested_grid_shape[0])==int:
+        raise TypeError('`nested_grid_shape` must be a list of integers')
+    if sum(nested_grid_shape)!=len(proj_ids):
+        raise ValueError('`sum(nested_grid_shape)` must be the same length as the number of projections in `proj_ids`')
+
+    # Loop projection ids and set your new grid array values
+    counter = 0
+    for i, dim in enumerate(nested_grid_shape):
+        for j in range(dim):
+            reshaped_proj_ids[i][j] = proj_ids[counter]
+            counter += 1
+
+    return reshaped_proj_ids
 
 def get_projection_ids(
         df,
@@ -411,12 +740,15 @@ def get_projection_ids(
     arr_var_bins : optional, dict
         Dictionary of array binning scheme variable names to the specific projection bin ids to look for in those variables
         Default : {}
+    nested_grid_shape : optional, list
+        One dimensional list of nested grid dimensions, note this will be padded with `None` to the largest nested dimension
+        Default : None
 
     Returns
     -------
     (all_proj_ids, arr_vars, all_proj_arr_var_ids)
         An array of each projection's unique bin ids, a list of the array binning variables encountered,
-        and an of the array variables' bin ids for each projection.  Note the array shapes should be `(*N_BINS_PROJ_VARS,*N_BINS_ARR_VARS)`.
+        and an array of the array variables' bin ids for each projection.  Note the array shapes should be `(*N_BINS_PROJ_VARS,*N_BINS_ARR_VARS)`.
         If `N_BINS_PROJ_VARS=[5]` and `N_BINS_ARR_VARS=[3,8]` then the shape of `all_proj_ids` and `all_proj_arr_var_ids`
         will  be `(3,8,5)`.
 
@@ -478,7 +810,7 @@ def get_projection_ids(
         all_proj_ids.append(proj_ids.tolist())
         all_proj_arr_var_ids.append(arr_var_ids)
 
-    all_proj_ids = np.reshape(all_proj_ids,grid_shape)
+    all_proj_ids = np.reshape(all_proj_ids,grid_shape) if nested_grid_shape is None else reshape_nested(all_proj_ids, nested_grid_shape)
     all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,(*nbins_arr,len(arr_vars)))
 
     return all_proj_ids, arr_vars, all_proj_arr_var_ids
@@ -693,7 +1025,7 @@ def get_graph_array(
     dfs : required, list
         Array of pandas dataframes containing bin ids and data
     proj_ids : required, list
-        Array of unique integer bin ids
+        Array of unique integer bin ids, note if entries are set to None the graph array entry will also be set to None to allow for masked grids
     id_key : optional, string
         String identifier for bin id column
         Default : 'bin_id'
@@ -748,7 +1080,7 @@ def get_graph_array(
                 ],
                 xvar_keys=xvar_keys,
                 sgasym=sgasyms[i][j] if type(sgasym) is not float else sgasym
-            ) for j in range(shape[1])] for i in range(shape[0])
+            ) if proj_ids[i][j] is not None else None for j in range(shape[1])] for i in range(shape[0]) #NOTE Allow masked grid
         ]
 
     # Create a graph array in the 1D grid case
@@ -1545,6 +1877,7 @@ def plot_hists(
         hist_colors = None,
         alpha=0.5,
         linewidth=2,
+        density=True,
         hist_labels = None,
         binlims = [],
         vlinestyle = 'dotted',
@@ -1577,6 +1910,9 @@ def plot_hists(
     linewidth : int, optional
         Line width for plotting histograms
         Default : 2
+    density : boolean, optional
+        Option to normalize histograms
+        Default : True
     hist_labels : list, optional
         List of histogram labels
         Default : None
@@ -1626,7 +1962,7 @@ def plot_hists(
         h = ax2.hist(
             h_x,
             bins=h_bins,
-            weights=h_y/np.sum(h_y),
+            weights=h_y/np.sum(h_y) if density else h_y,
             histtype=histtype,
             color=hist_colors[idx],
             alpha=alpha,
@@ -1645,6 +1981,221 @@ def plot_hists(
 
     # Plot legend if you cloned axis
     if clone_axis and legend_loc is not None and legend_loc!='': ax2.legend(loc=legend_loc)
+
+def get_bin_kinematics_title(
+        bin_id,
+        df,
+        cols=['x','Q2'],
+        col_titles={'x':'x', 'Q2':'Q^{2}'},
+        err_ext='_err',
+        sep=' , '
+    ):
+    """
+    Parameters
+    ----------
+    bin_id : int, required
+        Bin id in kinematics dataframe
+    df : pandas.Dataframe, required
+        Dataframe of kinematic variable means and errors in each kinematic bin
+    cols : list, optional
+        List of column names of kinematics to add to bin title
+        Default : ['x','Q2']
+    cols : list, optional
+        List of kinematics LaTeX titles
+        Default : ['x','Q^{2}']
+    err_ext : string, optional
+        Extension for forming column names of kinematic variable errors
+        Default : '_err'
+    sep : string, optional
+        Separator string for kinematics values in bin title
+        Default : ' , '
+
+    Returns
+    -------
+    string
+        Title string
+
+    Description
+    -----------
+    Create a title string for the requested bin index and kinematic variables showing the mean and error values for
+    each of the requested kinematic variables in the given bin.
+    """
+
+    return sep.join(
+        [
+            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\pm{df.iloc[bin_id].loc[cols[idx]+err_ext]:.2f}$"
+            for idx, col in enumerate(cols)
+        ]
+    )
+
+def get_lims_coords(
+        node,
+        outer_xlims,
+        outer_ylims,
+        var_keys=[],
+        nested_key='nested',
+        lims_key='lims',
+        swap_axes=False,
+    ):
+    """
+    Parameters
+    ----------
+    node : dict, required
+        Bin scheme node
+    outer_xlims : list, required
+        List of outer limits for the x-axis variable
+    outer_ylims : list, required
+        List of outer limits for the y-axis variable
+    var_keys : list, optional
+        List names of x and y axis variables for a grid bin scheme
+        Default : []
+    nested_key : str, optional
+        Key for nested bins
+    lims_key : str, optional
+        Key for bin limits
+    swap_axes : Boolean, optional
+        Swap the default x and y axes order
+        Default : False
+
+    Raises
+    ------
+    ValueError
+        Raises error if no acceptable bin scheme is found.
+
+    Returns
+    -------
+    list
+        List of line coordinates in the form `((x1,x2),(y1,y1))`
+
+    Description
+    -----------
+    Get a list of line coordinates delineating the bin limits for a nested 2D binning scheme.
+    """
+
+    # Initialize coordinates list
+    lims_coords = []
+
+    # Check node
+    if (type(node)==dict and nested_key in node and type(node[nested_key])==list and type(node[nested_key][0])==dict):
+
+        # Get first level nested node and get horizontal limits coordinates
+        binvar_x = list(node[nested_key][0].keys())[0]
+        node_nested = node[nested_key][0][binvar_x]
+        horizontal_lims = [
+            [outer_xlims,[y0,y0]] for y0 in node_nested[lims_key][1:-1]
+        ]
+        ylims = node_nested[lims_key]
+
+        # Check nested node and get limits list
+        xlims = []
+        if (type(node_nested)==dict and nested_key in node_nested and type(node_nested[nested_key])==list and type(node_nested[nested_key][0])==dict):
+
+            # Loop nested nodes and get limits lists
+            for el in node_nested[nested_key]:
+                binvar_y = list(el.keys())[0]
+                if lims_key in el[binvar_y]: xlims.append(el[binvar_y][lims_key])
+
+            # Loop xlims and set vertical limit coordinates
+            vertical_lims = []
+            for yidx, xlim in enumerate(xlims):
+                for xidx, x in enumerate(xlim[1:-1]):
+                    el = [[xlims[yidx][xidx+1],xlims[yidx][xidx+1]],[ylims[yidx] if yidx>0 else outer_ylims[0],ylims[yidx+1] if yidx<len(xlims)-1 else outer_ylims[-1]]]
+                    vertical_lims.append(el)
+
+
+            # Add to coordinates list
+            lims_coords.extend(vertical_lims)
+        lims_coords.extend(horizontal_lims)
+    
+    # Grid scheme case
+    elif type(node)==dict and len(var_keys)==2:
+
+        # Get limits from node
+        xvar, yvar = var_keys
+        xlims = node[xvar]
+        ylims = node[yvar]
+        
+        # Get line coordinates
+        horizontal_lims = [
+            [outer_xlims,[y0,y0]] for y0 in ylims[1:-1]
+        ]
+        vertical_lims = [
+            [[x0,x0],outer_ylims] for x0 in xlims[1:-1]
+        ]
+
+        # Add to coordinates list
+        lims_coords.extend(vertical_lims)
+        lims_coords.extend(horizontal_lims)
+
+    # Default to raising value error
+    else:
+        raise ValueError(f'Could not identify a 2D nested or grid bin scheme in `node`:\n{node}')
+
+    # Swap axes if needed
+    if swap_axes:
+        lims_coords = [[el[1],el[0]] for el in lims_coords] 
+
+    return lims_coords
+
+def plot_lines(
+        ax,
+        coordinates,
+        linecolor='red',
+        linewidth=1
+    ):
+    """
+    Parameters
+    ----------
+    ax : matplotlib.pyplot.axis, required
+        Matplotlib axis to plot on
+    coordinates : list of lists, required
+        List of coordinate pairs each with structure `((x1,y1),(x2,y2))`
+    color : str, optional
+        Line color
+    linewidth : int, optional
+        Line width
+
+    Description
+    -----------
+    Plot a set of lines from a list of coordinates.
+    """
+
+    # Check coordinates shape
+    if len(np.shape(coordinates))==3 and np.shape(coordinates)[1:]!=(2,2):
+        raise ValueError(f'Expected shape (2,2) but got {np.shape(coordinates)}')
+
+    # Plot lines
+    for coords in coordinates:
+        ax.plot(*coords, color=linecolor, linewidth=linewidth, marker = 'o', markersize=0)
+
+def plot_TH2(h2, ax, norm=colors.LogNorm()):
+    """
+    Parameters
+    ----------
+    h2 : list, required
+        List of histogram data with structure `[weights, xbins, ybins]`
+    ax : matplotlib.pyplot.axis, required
+        Axis to plot on
+    norm : string or matplotlib.colors.Normalize, optional
+        Normalization used to scale data to `[0,1]` range before mapping to a color map
+
+    Description
+    -----------
+    Easily plot a `TH2` histogram loaded from ROOT.
+    """
+
+    # Get the middle values of each bin
+    x = np.ravel([[np.average([h2[1][i],h2[1][i+1]]) for j in range(len(h2[2])-1) ] for i in range(len(h2[1])-1)])
+    y = np.ravel([[np.average([h2[2][j],h2[2][j+1]]) for j in range(len(h2[2])-1) ] for i in range(len(h2[1])-1)])
+
+    # Get the counts in each bin
+    weights = np.ravel(h2[0])
+
+    # Get the bin sizes
+    bins = (len(h2[1])-1, len(h2[2])-1)
+
+    # Plot the histogram
+    ax.hist2d(x,y,weights=weights,bins=bins, norm=norm)
 
 def plot_systematics(
         x_means,
@@ -1867,6 +2418,7 @@ def plot_results(
         hist_colors = None,
         hist_alpha=0.5,
         hist_linewidth=2,
+        hist_density=True,
         hist_labels = None,
         binlims = [],
         vlinestyle = 'dotted',
@@ -2032,6 +2584,9 @@ def plot_results(
     hist_linewidth : int, optional
         Line width for plotting histograms
         Default : 2
+    density : boolean, optional
+        Option to normalize histograms
+        Default : True
     hist_labels : list, optional
         List of histogram labels
         Default : None
@@ -2137,6 +2692,7 @@ def plot_results(
             hist_colors = hist_colors,
             alpha=hist_alpha,
             linewidth=hist_linewidth,
+            density=hist_density,
             hist_labels = hist_labels,
             binlims = binlims,
             vlinestyle = vlinestyle,
@@ -2156,10 +2712,11 @@ def plot_results(
         fb = ax1.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=fill_color)
 
     # Plot results
-    g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
-                        ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
-                        color=sg_colors[sgasym_idx], marker='o', linestyle=linestyle,
-                        linewidth=linewidth, markersize=markersize,label=sgasym_labels[sgasym_idx])
+    if yerr_mean is not None:
+        g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
+                            ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
+                            color=sg_colors[sgasym_idx], marker='o', linestyle=linestyle,
+                            linewidth=linewidth, markersize=markersize,label=sgasym_labels[sgasym_idx])
 
     # Add zero line
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
@@ -2198,6 +2755,9 @@ def plot_results(
 
     # Plot legend
     if legend_loc is not None and legend_loc!='': ax1.legend(loc=legend_loc)
+
+    # Check whether you have graph data to save to CSV
+    if ct_mean is None: return
 
     # Save plot data to csv
     delimiter = ","
@@ -2244,6 +2804,10 @@ def plot_results_array(
         plot_results_kwargs_base = {},
         figsize = (16,10),
         outpath = 'plot_projections.pdf',
+        use_grid_titles = True,
+        use_grid_xlabels = True,
+        use_grid_ylabels = True,
+        use_grid_hist_ylabels = True,
         use_default_plt_settings = True,
     ):
     """
@@ -2262,6 +2826,18 @@ def plot_results_array(
     outpath : string, optional
         Output graphic path
         Default : 'plot_projections.pdf'
+    use_grid_titles : Boolean, optional
+        Option to assume grid titles and only use titles for plots on top row of array
+        Default : True
+    use_grid_xlabels : Boolean, optional
+        Option to assume grid x-axis labels and only use x-axis labels for plots on bottom row of array
+        Default : True
+    use_grid_ylabels : Boolean, optional
+        Option to assume grid y-axis labels and only use y-axis labels for plots on leftmost column of (2D) array
+        Default : True
+    use_grid_hist_ylabels : Boolean, optional
+        Option to assume grid histogram y-axis labels and only use histogram y-axis labels for plots on rightmost column of (2D) array
+        Default : True
     use_default_plt_settings : Boolean, optional
         Option to use default font and tick parameter style settings
         Default : True
@@ -2284,15 +2860,19 @@ def plot_results_array(
     if len(shape) not in (1,2): raise TypeError('`plot_projections()` : `graph_array` shape must have shape with len(shape) in (1,2) but shape = ',shape)
 
     # Create figure and axes
-    f, ax = plt.subplots(*shape,figsize=figsize)
+    f, ax = plt.subplots(*shape,figsize=figsize,squeeze=not len(shape)>1) #NOTE: squeeze will squeeze out dimension one axes!
 
     # Loop axes and plot results for 1D and 2D cases
     if len(shape)==1:
         for i in range(shape[0]):
 
+                # Check for masked entry
+                if graph_array[i] is None:
+                    continue
+
                 # Format graph titles and axes depending on location in grid array
-                if i!=0: plot_results_kwargs_array[i]['title'] = ''
-                if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
+                if i!=0 and use_grid_titles: plot_results_kwargs_array[i]['title'] = ''
+                if i!=shape[0]-1 and use_grid_xlabels: plot_results_kwargs_array[i]['xlabel'] = ''
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i])
@@ -2306,11 +2886,15 @@ def plot_results_array(
         for i in range(shape[0]):
             for j in range(shape[1]):
 
+                # Check for masked entry
+                if graph_array[i][j] is None:
+                    continue
+
                 # Format graph titles and axes depending on location in grid array
-                if j!=0: plot_results_kwargs_array[i][j]['ylabel'] = ''
-                if i!=0: plot_results_kwargs_array[i][j]['title'] = ''
-                if i!=shape[0]-1: plot_results_kwargs_array[i][j]['xlabel'] = ''
-                if j!=shape[1]-1: plot_results_kwargs_array[i][j]['hist_ylabel'] = ''
+                if j!=0 and use_grid_ylabels: plot_results_kwargs_array[i][j]['ylabel'] = ''
+                if i!=0 and use_grid_titles: plot_results_kwargs_array[i][j]['title'] = ''
+                if i!=shape[0]-1 and use_grid_xlabels: plot_results_kwargs_array[i][j]['xlabel'] = ''
+                if j!=shape[1]-1 and use_grid_hist_ylabels: plot_results_kwargs_array[i][j]['hist_ylabel'] = ''
 
                 # Plot results
                 plot_results_kwargs = dict(plot_results_kwargs_base,**plot_results_kwargs_array[i][j])

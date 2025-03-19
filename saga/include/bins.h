@@ -148,6 +148,97 @@ std::vector<double> findBinLims(
 } // std::vector<double> findBinLims()
 
 /**
+* @brief Recursively set a map of bin scheme coordinates to bin variable limits for a nested bin scheme.
+*
+* Given a dataframe and a yaml node defining a nested binning scheme with the desired number
+* of bins specified at each level, recursively set a map of bin scheme coordinates to bin variable limits
+* and a list of bin variables encountered.
+*
+* @param frame ROOT RDataFrame with which to find bin limits
+* @param node YAML node containing nested bin scheme definition
+* @param node_name Name of YAML node
+* @param nbins_key YAML key for number of bins at current depth
+* @param lims_key YAML key for bin limits at current depth
+* @param nested_key YAML key for nested binning
+* @param bin_cuts List of bin cuts to apply to the dataframe
+*/
+void findNestedBinLims(
+        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+        YAML::Node node,
+        std::string node_name             = "",
+        std::string nbins_key             = "nbins",
+        std::string lims_key              = "lims",
+        std::string nested_key            = "nested",
+        std::vector<std::string> bin_cuts = {}
+    ) {
+    
+    // Check the YAML node
+    if (node && node.IsMap()) {
+
+        // Check if there is more depth and return if not
+        if (node[nested_key] && node[nested_key].IsSequence()) {
+
+            // Get nested YAML node
+            auto node_nested = node[nested_key];
+
+            // Loop bins
+            for (int bin=0; bin<node_nested.size(); bin++) {
+
+                // Get nested bin YAML node
+                auto node_nested_bin = node_nested[bin];
+
+                // Loop each nested bin looking for bin variables and select ONLY the first one found
+                for (auto it_nested = node_nested_bin.begin(); it_nested != node_nested_bin.end(); ++it_nested) {
+
+                    // Get bin variable name
+                    std::string it_key = it_nested->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
+
+                    // Filter dataframe if a bin cut is available
+                    auto df_filtered = (bin_cuts.size()==0) ? frame : frame.Filter(bin_cuts[bin].c_str());
+
+                    // Check for bin limits and number of bins and find limits if not provided
+                    std::vector<double> bin_lims;
+                    if (it_nested->second[lims_key]) {
+                        bin_lims = it_nested->second[lims_key].as<std::vector<double>>();
+                    } else if (it_nested->second[nbins_key]) {
+                        const int nbins = it_nested->second[nbins_key].as<int>();
+                        bin_lims = findBinLims(df_filtered, it_key, nbins);
+                        it_nested->second[lims_key] = bin_lims;
+                    }
+
+                    // Set bin cuts to carry to next depth of bin scheme
+                    std::vector<std::string> new_bin_cuts;
+                    for (int idx=0; idx<bin_lims.size()-1; idx++) {
+                        std::string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[idx], bin_lims[idx+1]}});
+                        new_bin_cuts.push_back(bincut);
+                    }
+
+                    // Recursion call
+                    findNestedBinLims(
+                        df_filtered,
+                        it_nested->second,
+                        it_key,
+                        nbins_key,
+                        lims_key,
+                        nested_key,
+                        new_bin_cuts
+                    );
+                        
+                    // Break on first nested bin variable found
+                    break;
+
+                } // for (auto it_nested = node_nested_bin.begin(); it_nested != node_nested_bin.end(); ++it_nested) {
+
+            } // for (int bin=0; bin<node_nested.size(); bin++) {
+
+        } else { return; } // if (node[nested_key] && node[nested_key].IsSequence()) {
+
+    } // if (node && node.IsMap()) {
+    else { return; }
+
+} // void findNestedBinLims() {
+
+/**
 * @brief Compute bin limits on a regular interval between a minimum and maximum.
 *
 * @param nbins Number of bins
@@ -172,6 +263,112 @@ std::vector<double> getBinLims(
     return binlims;
 
 } // std::vector<double> getBinLims(
+
+/**
+* @brief Set binning scheme cuts for a nested binning scheme.
+*
+* Recursively set a list of bin cuts given a YAML node defining a nested bin scheme.
+* Note that this will set cuts for all bins within the nested bin scheme.
+*
+* @param cuts List of nested binning cuts
+* @param node YAML node defining a nested bin scheme
+* @param node_name Name of nested YAML node
+* @param old_cuts Old list of cuts from previous recursion level
+* @param lims_key YAML key for bin limits
+* @param nested_key YAML key for nested binning
+*
+* @return List of bin cuts for nested binning scheme
+*/
+void setNestedBinCuts(
+        std::vector<std::string> &cuts, //NOTE: List to set.
+        YAML::Node               node,
+        std::vector<std::string> &old_cuts, //NOTE: Modify this separately in each branch and then add cuts to the overall vector before returning
+        std::string              node_name  = "",
+        std::string              lims_key   = "lims",
+        std::string              nested_key = "nested"
+    ) {
+
+    // Check the YAML node
+    if (node && node.IsMap()) {
+
+        // Check for bin limits
+        std::vector<double> lims;
+        if (node[lims_key] && node[lims_key].IsSequence()) {
+            lims = node[lims_key].as<std::vector<double>>();
+        }
+
+        // Set nbins lower limit to 0 since you allow passing limits with length 0
+        int nbins = lims.size()-1;
+        if (nbins<0) nbins=0;
+
+        // Loop bins and get bin cuts
+        std::vector<std::string> varcuts;
+        for (int bin=0; bin<nbins; bin++) {
+            std::string cut = saga::util::addLimitCuts("",{node_name.c_str()},{{lims[bin],lims[bin+1]}});
+            varcuts.push_back(cut);
+        }
+
+        // Loop previous cuts
+        std::vector<std::string> newcuts;
+        for (int idx=0; idx<old_cuts.size(); idx++) {
+            
+            // Loop this variable's cuts
+            for (int bin=0; bin<varcuts.size(); bin++) {
+                std::string newcut = Form("%s && %s",old_cuts[idx].c_str(),varcuts[bin].c_str());
+                newcuts.push_back(newcut);
+            }
+        }
+
+        // Reassign old_cuts
+        if (old_cuts.size()==0) { old_cuts = varcuts;}
+        else { old_cuts = newcuts; }
+
+        // Check for nested binning
+        if (node[nested_key] && node[nested_key].IsSequence()) {
+
+            // Get nested YAML node
+            auto node_nested = node[nested_key];
+
+            // Loop nested bins
+            for (int bin=0; bin<node_nested.size(); bin++) { //NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
+
+                // Get nested YAML node
+                auto node_nested_bin = node_nested[bin];
+
+                // Loop nested bin variables (only expect one!)
+                for (auto it_nested = node_nested_bin.begin(); it_nested != node_nested_bin.end(); ++it_nested) {
+
+                    // Get bin variable
+                    std::string it_key = it_nested->first.as<std::string>();
+
+                    // Create a new vector for uniqueness along different recursion branches
+                    std::vector<std::string> new_old_cuts;
+                    if (bin<old_cuts.size()) new_old_cuts = {old_cuts[bin]}; 
+
+                    // Recursion call
+                    setNestedBinCuts(
+                        cuts,
+                        it_nested->second,
+                        new_old_cuts,
+                        it_key,
+                        lims_key,
+                        nested_key
+                    );
+
+                    // Break on first nested variable found
+                    break;
+                }
+            }
+        } else {
+            for (int bin=0; bin<old_cuts.size(); bin++) {
+                cuts.push_back(old_cuts[bin]);
+            }
+            return;
+        } // if (node[nested_key] && node[nested_key].IsSequence()) {
+    } else {
+        return;
+    } // if (node && node.IsMap()) {
+}
 
 /**
 * @brief Produce binning scheme cuts for a grid binning scheme.
@@ -259,7 +456,7 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
     for (auto it_binschemes = node_binschemes.begin(); it_binschemes != node_binschemes.end(); ++it_binschemes) {
 
         // Get bin scheme name
-        std::string binscheme_name = it_binschemes->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
+        std::string binscheme_name = it_binschemes->first.as<std::string>();
 
         // Get bin scheme node
         auto node_binscheme = node_binschemes[binscheme_name];
@@ -267,34 +464,65 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
         // Read bin scheme
         if (node_binscheme && node_binscheme.IsMap()) {
 
-            // Loop bin scheme yaml and create grid bin scheme
+            // Recursively read nested bin scheme OR loop bin scheme yaml and create grid
             std::map<std::string,std::vector<double>> binscheme;
-            for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+            std::map<int,std::string> bincuts;
 
-                // Get bin variable name
-                std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+            // Check if you have a nested bin scheme
+            if (node_binscheme["nested"]) {
 
-                // Compute bin limits or read directly from yaml 
-                int nbins = 0;
-                std::vector<double> binlims;
-                auto node_binvar = node_binscheme[binvar];
-                if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
-                    int nbins = node_binvar["nbins"].as<int>();
-                    std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
-                    if (nbins>0 && lims.size()==2) {
-                        binlims = getBinLims(nbins,lims[0],lims[1]);
-                    } else { std::cerr<<"ERROR: Could not read bins for binvar: "<<binvar.c_str()<<std::endl; }
-                } else {
-                    binlims = node_binvar.as<std::vector<double>>();
+                try {
+                    // Set nested bin cuts
+                    std::vector<std::string> cuts;
+                    std::vector<std::string> old_cuts;
+                    setNestedBinCuts(cuts,node_binscheme,old_cuts,"");
+
+                    // Convert vector to map starting at given start index
+                    for (int idx=0; idx<cuts.size(); idx++) {
+                        bincuts[start_bin_id+idx] = cuts[idx];
+                    }
+                } catch (std::exception& e) {
+                    std::cerr<<"ERROR: Could not read nested bin limits for binscheme: "<<binscheme_name.c_str()<<std::endl;
                 }
+            }
+            
+            // Otherwise loop the yaml for a grid scheme
+            else {
+                for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
 
-                // Add bin limits list to bin scheme
-                binscheme[binvar] = binlims;
+                    // Get bin variable name
+                    std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
 
-            } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+                    // Compute bin limits or read directly from yaml 
+                    int nbins = 0;
+                    std::vector<double> binlims;
+                    auto node_binvar = node_binscheme[binvar];
+                    if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
+                        try {
+                            int nbins = node_binvar["nbins"].as<int>();
+                            std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
+                            if (nbins>0 && lims.size()==2) {
+                                binlims = getBinLims(nbins,lims[0],lims[1]);
+                            }
+                        } catch (std::exception& e) {
+                            std::cerr<<"ERROR: Could not compute bin limits for binvar: "<<binvar.c_str()<<std::endl;
+                        }
+                    } else {
+                        try {
+                            binlims = node_binvar.as<std::vector<double>>();
+                        } catch (std::exception& e) {
+                            std::cerr<<"ERROR: Could not read bin limits for binvar: "<<binvar.c_str()<<std::endl;
+                        }
+                    }
+
+                    // Add bin limits list to bin scheme
+                    binscheme[binvar] = binlims;
+
+                } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
+            }
 
             // Get bin cuts map and reset bin id minimum
-            std::map<int,std::string> bincuts = getBinCuts(binscheme,min_bin_id);
+            if (binscheme.size()>0) bincuts = getBinCuts(binscheme,min_bin_id);
             bincuts_map[binscheme_name] = bincuts;
 
         } // if (node_binscheme && node_binscheme.IsMap()) {
@@ -326,7 +554,30 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
         auto node_binscheme = node_binschemes[binscheme_name];
 
         // Read bin scheme
-        if (node_binscheme && node_binscheme.IsMap()) {
+        if (node_binscheme["nested"] && node_binscheme["nested"].IsSequence()) {
+
+            // Follow nested yaml structure and create nested bin scheme
+            YAML::Node node_nested = node_binscheme["nested"];
+            std::vector<std::string> binvars;
+            while (node_nested && node_nested.IsSequence()) {
+
+                // Loop keys to find the bin variable (only expect one entry!)
+                for (auto it = node_nested[0].begin(); it != node_nested[0].end(); ++it) {
+
+                    // Get bin variable name and add to list
+                    std::string binvar = it->first.as<std::string>();
+                    binvars.push_back(binvar);
+                    break;
+                }
+
+                // Reset the node
+                node_nested = node_nested[0]["nested"];
+
+            } // while (node_nested && node_nested.IsSequence()) {
+
+            binschemes_vars[binscheme_name] = binvars;
+
+        } else if (node_binscheme && node_binscheme.IsMap()) {
 
             // Loop bin scheme yaml and create grid bin scheme
             std::vector<std::string> binvars;
