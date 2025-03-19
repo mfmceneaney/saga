@@ -8,10 +8,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__f
 import saga.aggregate as sagas
 
 # Setup, modify these as needed for your specific binning scheme
-csv_path = os.path.abspath('results_kinematics/out_binscheme_kinematics.csv')
-hist_path = os.path.abspath('results_kinematics_hists/out_binscheme_kinematics.root')
+csv_path = os.path.abspath('results_kinematics_hists_2D/out_binscheme_kinematics.csv')
+hist_path = os.path.abspath('results_kinematics_hists_2D/out_binscheme_kinematics_2d.root')
 grid_shape = (3,2)
-kinvars = ['mass_pipim', 'phperp_pipim', 'z_pipim']
+kinvars = [['z_pipim', 'phperp_pipim']]
 xlabels = {'mass_pipim':'$M_{\pi^{+}\pi^{-}}$ (GeV)','phperp_pipim':'$P_{\perp, \pi^{+}\pi^{-}}$ (GeV)','z_pipim':'$z_{\pi^{+}\pi^{-}}$'}
 xlims = {'mass_pipim':[0.0,3.0],'phperp_pipim':[0.0,1.25],'z_pipim':[0.0,1.0]}
 hist_colors = {'mass_pipim':['tab:blue'],'phperp_pipim':['tab:red'],'z_pipim':['tab:orange']}
@@ -24,33 +24,33 @@ bin_ids = df['bin'].unique().tolist()
 graph_array = [[{} for j in range(len(bin_ids))] for i in range(len(kinvars))]
 plot_results_kwargs_array = [[
         {
-            'hist_keys':[f'h1_bin{bin_id}_'+kinvar],
+            'hist_keys':[f'h2_bin{bin_id}_'+kinvar_x+'_'+kinvar_y],
             'title':sagas.get_bin_kinematics_title(bin_id,df),
-            'xlims':xlims[kinvar],
-            'xlabel':xlabels[kinvar],
-            'hist_colors':hist_colors[kinvar],
+            'xlims':xlims[kinvar_x],
+            'xlabel':xlabels[kinvar_x],
+            'ylims':xlims[kinvar_y],
+            'ylabel':xlabels[kinvar_y],
         }
         for bin_id in bin_ids
     ]
-    for kinvar in kinvars
+    for kinvar_x, kinvar_y in kinvars
 ]
 
 # Set base kwargs
 plot_results_kwargs_base = {
-    'ylims':[0.0,450],
     'show_injected_asymmetries':False,
     'hist_clone_axis':False,
     'hist_paths':[hist_path],
     'hist_labels':['RGH MC'],
-    'hist_linewidth':4,
-    'ylabel': 'Counts',
     'watermark':'',
-    'hist_density':False
+    'hist_density':False,
+    'axlinewidth':0,
+    'hist_dim':2,
 }
 
 # Set additional kwargs
 figsize = (16*len(bin_ids),10*len(kinvars))
-outpath = 'rgh_kinematics.pdf'
+outpath = 'rgh_kinematics_2d.pdf'
 use_default_plt_settings = True
 use_grid_xlabels = False
 

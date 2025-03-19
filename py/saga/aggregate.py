@@ -1791,6 +1791,7 @@ def plot_hists(
         vlinestyle = 'dotted',
         vline_hist_idx = -1,
         legend_loc = 'upper right',
+        hist_dim = 1,
     ):
     """
     Parameters
@@ -1823,6 +1824,9 @@ def plot_hists(
         Index of histogram for which to draw vertical lines for bin limits
     legend_loc : str, optional
         Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
+    hist_dim : int, optional
+        Dimension of histogram to plot.  Must be either 1 or 2.
+        Default : 1
 
     Description
     -----------
@@ -1844,35 +1848,50 @@ def plot_hists(
     if hist_labels is None:
         hist_labels = ["h"+str(i) for i in range(len(hist_paths))]
 
-    # Loop histograms and draw
-    for idx, hist_path in enumerate(hist_paths):
+    # Check line width as a flag for drawing th2ds
+    if hist_dim==1:
 
-        # Load histogram and convert to numpy
-        h_y, h_bins = load_th1(hist_path,hist_keys[idx])
+        # Loop histograms and draw
+        for idx, hist_path in enumerate(hist_paths):
 
-        # Get mean x bin values
-        h_x = [(h_bins[i]+h_bins[i+1])/2 for i in range(len(h_bins)-1)]
+            # Load histogram and convert to numpy
+            h_y, h_bins = load_th1(hist_path,hist_keys[idx])
 
-        # Plot histogram
-        h = ax2.hist(
-            h_x,
-            bins=h_bins,
-            weights=h_y/np.sum(h_y) if density else h_y,
-            histtype=histtype,
-            color=hist_colors[idx],
-            alpha=alpha,
-            linewidth=linewidth,
-            label=hist_labels[idx],
-            density=False
-        )
+            # Get mean x bin values
+            h_x = [(h_bins[i]+h_bins[i+1])/2 for i in range(len(h_bins)-1)]
 
-        # Plot bin limits if supplied and we are on the last histogram
-        if idx==(vline_hist_idx if vline_hist_idx>=0 else len(hist_paths)-1) and len(binlims)>0:
-            plot_vlines(
-                h,
-                binlims,
-                linestyle = vlinestyle,
+            # Plot histogram
+            h = ax2.hist(
+                h_x,
+                bins=h_bins,
+                weights=h_y/np.sum(h_y) if density else h_y,
+                histtype=histtype,
+                color=hist_colors[idx],
+                alpha=alpha,
+                linewidth=linewidth,
+                label=hist_labels[idx],
+                density=False
             )
+
+            # Plot bin limits if supplied and we are on the last histogram
+            if idx==(vline_hist_idx if vline_hist_idx>=0 else len(hist_paths)-1) and len(binlims)>0:
+                plot_vlines(
+                    h,
+                    binlims,
+                    linestyle = vlinestyle,
+                )
+
+    # Assume TH2D histograms and plot
+    else:
+
+        # Loop histograms and draw
+        for idx, hist_path in enumerate(hist_paths):
+
+            # Load histogram and convert to numpy
+            h2 = load_th1(hist_path,hist_keys[idx])
+
+            # Plot histogram
+            plot_th2(h2, ax1, add_colorbar=True, norm=colors.LogNorm(), label=hist_labels[idx]) #NOTE: Just fix the colorbar option for now since it's not likely you would want a 2D hist without a z axis scale legend.
 
     # Plot legend if you cloned axis
     if clone_axis and legend_loc is not None and legend_loc!='': ax2.legend(loc=legend_loc)
@@ -2057,7 +2076,89 @@ def plot_lines(
     for coords in coordinates:
         ax.plot(*coords, color=linecolor, linewidth=linewidth, marker = 'o', markersize=0)
 
-def plot_th2(h2, ax, norm=colors.LogNorm()):
+def get_bin_centers(
+        cuts,
+        swap_axes=False
+    ):
+    """
+    Parameters
+    ----------
+    cuts : dict, required
+        Dictionary of bin ids to bin cuts
+    swap_axes : bool, optional
+        Swap the default x and y axes order
+        Default : False
+
+    Returns
+    -------
+    tuple
+        Tuple of maps of bin ids to bin centers and bin widths respectively
+
+    Description
+    -----------
+    Get the bin center coordinates from a list of (rectangular 2D) bin cuts.
+    Note that bin cuts are assumed to be of the form
+    `(binvar_x>=xmin && binvar_x<=xmax) && (binvar_y>=ymin && binvar_y<=ymax)`.
+    """
+
+    # Convert dictionary to lists
+    new_cuts = [cuts[idx] for idx in cuts]
+    bin_ids = [idx for idx in cuts]
+
+    # Convert 2D bin cuts into bin widths and centers
+    bin_centers = [cut.replace('=','').split(") && (") for cut in new_cuts]
+    bin_centers = [[el[0].replace('(','').split(' && '),el[1].replace(')','').split(' && ')] for el in bin_centers]
+    bin_centers = [[[float(el[idx][0].split('>')[1]),float(el[idx][1].split('<')[1])] for idx, _ in enumerate(el)] for el in bin_centers]
+    bin_widths  = [[el[0][1]-el[0][0],el[1][1]-el[1][0]] for el in bin_centers] #NOTE: ORDERING IS IMPORTANT HERE
+    bin_centers = [[np.average(el[0]).item(),np.average(el[1]).item()] for el in bin_centers]
+
+    # Swap axes if needed
+    if swap_axes:
+        bin_centers = [[el[1],el[0]] for el in bin_centers]
+        bin_widths = [[el[1],el[0]] for el in bin_widths]
+
+    # Convert back to dictionaries
+    bin_centers = {bin_ids[idx]:bin_centers[idx] for idx in range(len(bin_centers))}
+    bin_widths  = {bin_ids[idx]:bin_widths[idx]  for idx in range(len(bin_widths))}
+
+    return bin_centers, bin_widths
+
+def plot_bin_ids(
+        ax,
+        bin_centers,
+        bin_widths=None,
+        size=25,
+        color='red',
+        alpha=1.0,
+    ):
+    """
+    Parameters
+    ----------
+    ax : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot axis to plot on
+    bin_centers : dict, required
+        Dictionary of bin ids to bin centers
+    bin_widths : dict, optional
+        Dictionary of bin ids to bin widths each of the form `(width_x, width_y)`
+    size : int, optional
+        Font size for bin id text
+    color : str, optional
+        Text color
+    alpha : float, optional
+        Text alpha value
+    """
+
+    # Plot bin ids on bin centers
+    for bin_id in bin_centers:
+        ax.text(*bin_centers[bin_id], f'{bin_id}', size=size, color=color, alpha=alpha, horizontalalignment='center', verticalalignment='center')
+
+def plot_th2(
+        h2,
+        ax,
+        add_colorbar=True,
+        norm=colors.LogNorm(),
+        **kwargs
+    ):
     """
     Parameters
     ----------
@@ -2065,8 +2166,14 @@ def plot_th2(h2, ax, norm=colors.LogNorm()):
         List of 2D histogram data with structure `(weights, xbins, ybins)`
     ax : matplotlib.axes._axes.Axes, required
         Matplotlib.pyplot axis to plot on
+    add_colorbar : bool, optional
+        Add a colorbar to show the z-axis scale
+        Default : True
     norm : str or matplotlib.colors.Normalize, optional
         Normalization used to scale data to `[0,1]` range before mapping to a color map
+        Default : matplotlib.colors.LogNorm()
+    **kwargs
+        Additional parameters are passed along to the `matplotlib.pyplot.hist2d` method
 
     Description
     -----------
@@ -2084,7 +2191,8 @@ def plot_th2(h2, ax, norm=colors.LogNorm()):
     bins = (len(h2[1])-1, len(h2[2])-1)
 
     # Plot the histogram
-    ax.hist2d(x,y,weights=weights,bins=bins, norm=norm)
+    hist2d = ax.hist2d(x,y,weights=weights,bins=bins, norm=norm, **kwargs)
+    if add_colorbar: plt.colorbar(hist2d[3],ax=ax)
 
 def plot_systematics(
         x_means,
@@ -2288,6 +2396,7 @@ def plot_results(
         vlinestyle = 'dotted',
         vline_hist_idx = -1,
         hist_legend_loc = 'upper right',
+        hist_dim = 1,
         old_dat_path = 'old_dat_path.csv',
         new_sim_path = 'new_sim_path.csv',
         old_sim_path = 'old_sim_path.csv',
@@ -2411,6 +2520,10 @@ def plot_results(
         Index of histogram for which to draw vertical lines for bin limits
     hist_legend_loc : str, optional
         Matplotlib.pyplot legend location string for histograms, will not be plotted if set to None or ''
+        Default : 'upper right'
+    hist_dim : int, optional
+        Dimension of histogram to plot.  Must be either 1 or 2.
+        Default : 1
     old_dat_path : str, optional
         Part of `path` to replace
     new_sim_path : str, optional
@@ -2500,6 +2613,7 @@ def plot_results(
             vlinestyle = vlinestyle,
             vline_hist_idx = vline_hist_idx,
             legend_loc = hist_legend_loc,
+            hist_dim = hist_dim,
         )
 
     # Plot systematic errors

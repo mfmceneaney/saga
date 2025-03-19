@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__f
 import saga.aggregate as sagas
 
 # Setup, modify these as needed for your specific binning scheme
-yaml_path = os.path.abspath('getBinKinematicsTH1Ds.yaml')
+yaml_path = os.path.abspath('results_kinematics/args.yaml')
 hist_path = os.path.abspath('out_binscheme_binvars_2D.root')
 hist_name = 'h2__x_Q2'
 binscheme_name = 'binscheme' #NOTE: Use `binscheme_grid` in the example yaml to plot some grid bin scheme limits.
@@ -19,6 +19,8 @@ binvar_labels = {'x':'$x$','Q2':'$Q^{2}$ (GeV)$^{2}$'}
 binvar_lims = {'x':[0.0,1.0],'Q2':[1.0,11.0]}
 outpath = f'binscheme2d_{binvars[0]}_{binvars[1]}.pdf'
 var_keys = []#binvars #NOTE: This should only be set in the case of a 2D grid scheme.
+start_idx = 0
+id_key = 'bin_id'
 
 # Read bin scheme from YAML
 yaml_args = sagas.load_yaml(yaml_path)
@@ -41,6 +43,27 @@ ax.set_ylabel(binvar_labels[binvars[1]])
 # Get the bin limit line coordinates and plot
 lims_coords = sagas.get_lims_coords(binscheme, binvar_lims['x'], binvar_lims['Q2'], var_keys=var_keys)
 sagas.plot_lines(ax, lims_coords, linecolor='red', linewidth=1)
+
+# Get bin scheme cuts and ids
+cuts, _, _, _ = sagas.get_binscheme_cuts_and_ids(
+                                                    binscheme,
+                                                    start_idx=start_idx,
+                                                    id_key=id_key,
+                                                    binvar_titles=None,
+                                                )
+
+# Get the bin centers
+bin_centers, bin_widths = sagas.get_bin_centers(cuts,swap_axes=False)
+
+# Plot the bin ids
+sagas.plot_bin_ids(
+        ax,
+        bin_centers,
+        bin_widths=bin_widths,
+        size=25,
+        color='red',
+        alpha=1.0,
+    )
 
 # Save the figure
 f.savefig(outpath)
