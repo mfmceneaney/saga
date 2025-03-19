@@ -822,7 +822,7 @@ def get_graph_data(
 
     Description
     -----------
-    Read graph data (`count`,`y`,`yerr`,`x0`,`x0err`,`x1`,`x1_err`,...) for a projection plot from a pandas dataframe.
+    Read graph data `(count, y, yerr, x0, x0err, x1, x1_err,...)` for a projection plot from a pandas dataframe.
     """
 
     # Initialize arrays
@@ -1127,7 +1127,7 @@ def rescale_graph_data(
     -----------
     Rescale a graph from data (`old_dat`) loading new and old simulation graphs (`new_sim` and `old_sim`)
     from file to compute the bin dependent acceptance ratio.  Start from from either the ratio (`new_sim`/`old_sim`)
-    of counts in that bin or the ratio counts estimated from asymmetry errors loaded from `yerr_key`and assuming poissonian statistics.
+    of counts in that bin or the ratio counts estimated from asymmetry errors loaded from `yerr_key` and assuming poissonian statistics.
     The rescaling ratio is then computed by multiplying by `lumi_ratio / xs_ratio`.
     """
 
@@ -1485,7 +1485,7 @@ def save_graph_systematics_to_csv(
     Description
     -----------
     Write a set of graph y systematic errors to a CSV file with the systematic error values broken down by source.
-    This means the argument `yerr_syst` should have shape (`nbins`,`nsources`) where `nbins` is the number of 
+    This means the argument `yerr_syst` should have shape `(nbins, nsources)` where `nbins` is the number of 
     kinematic bins and `nsources` is the number of sources of systematic error.
     """
 
