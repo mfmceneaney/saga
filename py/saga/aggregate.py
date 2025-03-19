@@ -2137,11 +2137,17 @@ def get_lims_coords(
 
     return lims_coords
 
-def plot_lines(ax, coordinates, linecolor='red', linewidth=1):
+def plot_lines(
+        ax,
+        coordinates,
+        linecolor='red',
+        linewidth=1
+    ):
     """
     Parameters
     ----------
     ax : matplotlib.pyplot.axis, required
+        Matplotlib axis to plot on
     coordinates : list of lists, required
         List of coordinate pairs each with structure `((x1,y1),(x2,y2))`
     color : str, optional
