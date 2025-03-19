@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__f
 import saga.aggregate as sagas
 
 # Setup, modify these as needed for your specific binning scheme
-yaml_path = os.path.abspath('getBinKinematicsTH1Ds.yaml')
+yaml_path = os.path.abspath('results_kinematics/args.yaml')
 hist_path = os.path.abspath('out_binscheme_binvars_2D.root')
 hist_name = 'h2__x_Q2'
 binscheme_name = 'binscheme' #NOTE: Use `binscheme_grid` in the example yaml to plot some grid bin scheme limits.

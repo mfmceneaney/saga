@@ -49,7 +49,7 @@ plot_results_kwargs_base = {
 }
 
 # Set additional kwargs
-figsize = (16*grid_shape[0]*grid_shape[1]*1.2,10*len(kinvars)*1.2)
+figsize = (16*len(bin_ids),10*len(kinvars))
 outpath = 'rgh_kinematics_2d.pdf'
 use_default_plt_settings = True
 use_grid_xlabels = False

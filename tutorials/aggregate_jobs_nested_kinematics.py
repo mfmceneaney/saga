@@ -21,7 +21,7 @@ df = pd.read_csv(csv_path)
 bin_ids = df['bin'].unique().tolist()
 
 # Set graph and plot_results arrays
-graph_array = [[{},{},{},{},{}] for i in range(len(kinvars))]
+graph_array = [[{} for j in range(len(bin_ids))] for i in range(len(kinvars))]
 plot_results_kwargs_array = [[
         {
             'hist_keys':[f'h1_bin{bin_id}_'+kinvar],
@@ -37,18 +37,19 @@ plot_results_kwargs_array = [[
 
 # Set base kwargs
 plot_results_kwargs_base = {
-    'ylims':[0.0,800],
+    'ylims':[0.0,450],
     'show_injected_asymmetries':False,
     'hist_clone_axis':False,
     'hist_paths':[hist_path],
     'hist_labels':['RGH MC'],
+    'hist_linewidth':4,
     'ylabel': 'Counts',
     'watermark':'',
     'hist_density':False
 }
 
 # Set additional kwargs
-figsize = (16*grid_shape[0]*grid_shape[1],10*len(kinvars))
+figsize = (16*len(bin_ids),10*len(kinvars))
 outpath = 'rgh_kinematics.pdf'
 use_default_plt_settings = True
 use_grid_xlabels = False
