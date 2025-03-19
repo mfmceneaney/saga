@@ -1826,7 +1826,6 @@ def plot_hists(
         Matplotlib.pyplot legend location string, will not be plotted if set to None or ''
     hist_dim : int, optional
         Dimension of histogram to plot.  Must be either 1 or 2.
-        Default : 1
 
     Description
     -----------
@@ -2087,7 +2086,6 @@ def get_bin_centers(
         Dictionary of bin ids to bin cuts
     swap_axes : bool, optional
         Swap the default x and y axes order
-        Default : False
 
     Returns
     -------
@@ -2168,10 +2166,8 @@ def plot_th2(
         Matplotlib.pyplot axis to plot on
     add_colorbar : bool, optional
         Add a colorbar to show the z-axis scale
-        Default : True
     norm : str or matplotlib.colors.Normalize, optional
         Normalization used to scale data to `[0,1]` range before mapping to a color map
-        Default : matplotlib.colors.LogNorm()
     **kwargs
         Additional parameters are passed along to the `matplotlib.pyplot.hist2d` method
 
@@ -2520,10 +2516,8 @@ def plot_results(
         Index of histogram for which to draw vertical lines for bin limits
     hist_legend_loc : str, optional
         Matplotlib.pyplot legend location string for histograms, will not be plotted if set to None or ''
-        Default : 'upper right'
     hist_dim : int, optional
         Dimension of histogram to plot.  Must be either 1 or 2.
-        Default : 1
     old_dat_path : str, optional
         Part of `path` to replace
     new_sim_path : str, optional
