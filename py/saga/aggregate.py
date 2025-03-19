@@ -1997,7 +1997,7 @@ def plot_hists(
             h2 = load_th1(hist_path,hist_keys[idx])
 
             # Plot histogram
-            plot_th2(h2, ax1, norm=colors.LogNorm(), label=hist_labels[idx])
+            plot_th2(h2, ax1, add_colorbar=True, norm=colors.LogNorm(), label=hist_labels[idx]) #NOTE: Just fix the colorbar option for now since it's not likely you would want a 2D hist without a z axis scale legend.
 
     # Plot legend if you cloned axis
     if clone_axis and legend_loc is not None and legend_loc!='': ax2.legend(loc=legend_loc)
@@ -2188,7 +2188,13 @@ def plot_lines(
     for coords in coordinates:
         ax.plot(*coords, color=linecolor, linewidth=linewidth, marker = 'o', markersize=0)
 
-def plot_th2(h2, ax, norm=colors.LogNorm(), **kwargs):
+def plot_th2(
+        h2,
+        ax,
+        add_colorbar=True,
+        norm=colors.LogNorm(),
+        **kwargs
+    ):
     """
     Parameters
     ----------
@@ -2196,6 +2202,9 @@ def plot_th2(h2, ax, norm=colors.LogNorm(), **kwargs):
         List of 2D histogram data with structure `(weights, xbins, ybins)`
     ax : matplotlib.axes._axes.Axes, required
         Matplotlib.pyplot axis to plot on
+    add_colorbar : bool, optional
+        Add a colorbar to show the z-axis scale
+        Default : True
     norm : str or matplotlib.colors.Normalize, optional
         Normalization used to scale data to `[0,1]` range before mapping to a color map
         Default : matplotlib.colors.LogNorm()
@@ -2218,7 +2227,8 @@ def plot_th2(h2, ax, norm=colors.LogNorm(), **kwargs):
     bins = (len(h2[1])-1, len(h2[2])-1)
 
     # Plot the histogram
-    ax.hist2d(x,y,weights=weights,bins=bins, norm=norm, **kwargs)
+    hist2d = ax.hist2d(x,y,weights=weights,bins=bins, norm=norm, **kwargs)
+    if add_colorbar: plt.colorbar(hist2d[3],ax=ax)
 
 def plot_systematics(
         x_means,
