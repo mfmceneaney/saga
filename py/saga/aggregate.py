@@ -305,7 +305,7 @@ def load_csv(
     inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
     return pd.read_csv(inpath)
 
-def setNestedBinCuts(
+def set_nested_bin_cuts(
         cuts,
         cut_titles,
         ids,
@@ -409,7 +409,7 @@ def setNestedBinCuts(
                         new_old_ids = [old_ids[ibin]]
 
                     # Recursion call
-                    setNestedBinCuts(
+                    set_nested_bin_cuts(
                         cuts,
                         cut_titles,
                         ids,
@@ -435,7 +435,7 @@ def setNestedBinCuts(
     else:
         return
 
-def getSchemeVars(
+def get_scheme_vars(
         node,
         nested_key = "nested"
     ):
@@ -474,7 +474,7 @@ def getSchemeVars(
     else:
         return [var for var in node.keys()]
 
-def getNestedSchemeShape(
+def get_nested_scheme_shape(
         node,
         lims_key   = "lims",
         nested_key = "nested"
@@ -591,14 +591,14 @@ def get_binscheme_cuts_and_ids(
     nested_grid_shape = None
 
     # Set titles using raw bin variable names if no titles are provided
-    binscheme_vars = getSchemeVars(binscheme,nested_key='nested')
+    binscheme_vars = get_scheme_vars(binscheme,nested_key='nested')
     if binvar_titles is None or len(binvar_titles)!=len(binscheme_vars): binvar_titles = [var for var in binscheme_vars]
 
     # Check for nested bin scheme
     if (type(binscheme)==dict and 'nested' in binscheme.keys() and type(binscheme['nested'])==list and type(binscheme['nested'][0])==dict):
 
         # Recursively set bin scheme cuts map
-        setNestedBinCuts(
+        set_nested_bin_cuts(
             cuts,
             cut_titles,
             ids,
@@ -608,7 +608,7 @@ def get_binscheme_cuts_and_ids(
             binvar_titles = binvar_titles
         )
 
-        nested_grid_shape = getNestedSchemeShape(
+        nested_grid_shape = get_nested_scheme_shape(
             binscheme,
             lims_key   = 'lims',
             nested_key = 'nested'
@@ -2168,7 +2168,7 @@ def plot_lines(
     for coords in coordinates:
         ax.plot(*coords, color=linecolor, linewidth=linewidth, marker = 'o', markersize=0)
 
-def plot_TH2(h2, ax, norm=colors.LogNorm()):
+def plot_th2(h2, ax, norm=colors.LogNorm()):
     """
     Parameters
     ----------

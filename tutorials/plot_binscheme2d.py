@@ -34,7 +34,7 @@ sagas.set_default_plt_settings()
 f, ax = plt.subplots(figsize=(16,10))
 
 # Plot the 2D distribution
-sagas.plot_TH2(h2, ax, norm=colors.LogNorm())
+sagas.plot_th2(h2, ax, norm=colors.LogNorm())
 ax.set_xlabel(binvar_labels[binvars[0]])
 ax.set_ylabel(binvar_labels[binvars[1]])
 
