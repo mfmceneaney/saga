@@ -57,7 +57,7 @@
 * @author Matthew F. McEneaney
 * @date 12/Dec./2024
 * @version 0.0.0
-* @brief Fit asymmetries using RooFit unbinned extended Maximum Likelihood methods and sideband subtraction 
+* @brief Fit asymmetries using RooFit unbinned Maximum Likelihood methods and sideband subtraction 
 * or the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a> for background correction.
 */
 
@@ -74,8 +74,8 @@ namespace analysis {
 * yield variables to workspace for use with sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
 * This will also return \f$\varepsilon\f$ which is the fraction of events
 * in the signal region (`sig_region_min`,`sig_region_max`) which
-* are background based on the difference between the observed
-* distribution and the histogrammed background function.
+* are background.  The background fraction is computed using the sums of the observed
+* distribution and the histogrammed background function in the signal region respectively.
 *
 * @param w RooWorkspace in which to work
 * @param massfitvars Invariant mass fit variable names
@@ -91,7 +91,7 @@ namespace analysis {
 * @param use_poly4_bg Use a 4th order Chebychev polynomial background instead of 2nd order
 * @param bin_id Unique bin identifier string
 *
-* @return List containing background fraction epsilon and its statistical error
+* @return List containing background fraction \f$\varepsilon\f$ and its statistical error
 */
 std::vector<double> applyLambdaMassFit(
     RooWorkspace *w,
@@ -409,7 +409,7 @@ std::vector<double> applyLambdaMassFit(
 * @param weightvar_lims Weight variable limits
 * @param weights_map Map of unique integer bin identifiers to weight vectors
 * @param weights_default Weight variable default value for events outside provided cuts
-* @param use_raw_weights Option to raw signal and background weights instead of interpretting first entry of weight vectors as the background fraction \f$\varepsilon\f$
+* @param use_raw_weights Option to use raw signal and background weights instead of interpreting first entry of weight vectors as the background fraction \f$\varepsilon\f$
 */
 void getMassFitWeightedData(
     RooWorkspace                                                 *w,
@@ -626,7 +626,7 @@ void setWeightsFromLambdaMassFit(
 /**
 * @brief Apply the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
 *
-* Apply sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a> given a dataset, yield variables, and a model and 
+* Apply sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a> given a dataset, yield variables, and a PDF model and 
 * add the sWeighted datasets to the workspace.
 * 
 * @param w RooWorkspace in which to work
@@ -683,7 +683,7 @@ void applySPlot(
 * & 1 + h \cdot P \cdot A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
 * \end{aligned}
 * @f]
-* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the corresponding depolarization factors.
+* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
 *
 * The variable names in the fit formula should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
@@ -700,7 +700,7 @@ void applySPlot(
 * @param fitformula The asymmetry formula in ROOT TFormula format
 * @param initparams List of initial values for asymmetry parameters
 * @param initparamlims List of initial asymmetry parameter minimum and maximum bounds
-* @param use_sumw2error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_binned_fit Option to use a binned fit to the data
@@ -952,7 +952,7 @@ std::vector<double> fitAsym(
 /**
 * @brief Loop kinematic bins and fit an asymmetry, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
 *
-* Loop bins cuts and fit an asymmetry with the analysis::fitAsym() method.  Optionally apply an invariant mass fit and background correction using the
+* Loop bins cuts and fit an asymmetry with the `analysis::fitAsym()` method.  Optionally apply an invariant mass fit and background correction using the
 * sideband subtraction method or the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
 * Results will be saved in a csv file.
 *
@@ -985,7 +985,7 @@ std::vector<double> fitAsym(
 * @param asymfit_formula The asymmetry formula in ROOT TFormula format
 * @param asymfitpar_inits List of initial values for asymmetry fit variables
 * @param asymfitpar_initlims List of initial asymmetry fit variables minimum and maximum bounds
-* @param use_sumw2error Option to use RooFit::SumW2Error(true) option when fitting to dataset which is necessary if using a weighted dataset
+* @param use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_binned_fit Option to use a binned fit to the data
