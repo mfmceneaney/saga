@@ -6,6 +6,7 @@
 import uproot as ur
 import numpy as np
 import pandas as pd
+from matplotlib import colors
 import matplotlib.pyplot as plt
 import seaborn as sbn
 
@@ -2026,6 +2027,169 @@ def get_bin_kinematics_title(
             for idx, col in enumerate(cols)
         ]
     )
+
+def get_lims_coords(
+        node,
+        outer_xlims,
+        outer_ylims,
+        var_keys=[],
+        nested_key='nested',
+        lims_key='lims',
+        swap_axes=False,
+    ):
+    """
+    Parameters
+    ----------
+    node : dict, required
+        Bin scheme node
+    outer_xlims : list, required
+        List of outer limits for the x-axis variable
+    outer_ylims : list, required
+        List of outer limits for the y-axis variable
+    var_keys : list, optional
+        List names of x and y axis variables for a grid bin scheme
+        Default : []
+    nested_key : str, optional
+        Key for nested bins
+    lims_key : str, optional
+        Key for bin limits
+    swap_axes : Boolean, optional
+        Swap the default x and y axes order
+        Default : False
+
+    Raises
+    ------
+    ValueError
+        Raises error if no acceptable bin scheme is found.
+
+    Returns
+    -------
+    list
+        List of line coordinates in the form `((x1,x2),(y1,y1))`
+
+    Description
+    -----------
+    Get a list of line coordinates delineating the bin limits for a nested 2D binning scheme.
+    """
+
+    # Initialize coordinates list
+    lims_coords = []
+
+    # Check node
+    if (type(node)==dict and nested_key in node and type(node[nested_key])==list and type(node[nested_key][0])==dict):
+
+        # Get first level nested node and get horizontal limits coordinates
+        binvar_x = list(node[nested_key][0].keys())[0]
+        node_nested = node[nested_key][0][binvar_x]
+        horizontal_lims = [
+            [outer_xlims,[y0,y0]] for y0 in node_nested[lims_key][1:-1]
+        ]
+        ylims = node_nested[lims_key]
+
+        # Check nested node and get limits list
+        xlims = []
+        if (type(node_nested)==dict and nested_key in node_nested and type(node_nested[nested_key])==list and type(node_nested[nested_key][0])==dict):
+
+            # Loop nested nodes and get limits lists
+            for el in node_nested[nested_key]:
+                binvar_y = list(el.keys())[0]
+                if lims_key in el[binvar_y]: xlims.append(el[binvar_y][lims_key])
+
+            # Loop xlims and set vertical limit coordinates
+            vertical_lims = []
+            for yidx, xlim in enumerate(xlims):
+                for xidx, x in enumerate(xlim[1:-1]):
+                    el = [[xlims[yidx][xidx+1],xlims[yidx][xidx+1]],[ylims[yidx] if yidx>0 else outer_ylims[0],ylims[yidx+1] if yidx<len(xlims)-1 else outer_ylims[-1]]]
+                    vertical_lims.append(el)
+
+
+            # Add to coordinates list
+            lims_coords.extend(vertical_lims)
+        lims_coords.extend(horizontal_lims)
+    
+    # Grid scheme case
+    elif type(node)==dict and len(var_keys)==2:
+
+        # Get limits from node
+        xvar, yvar = var_keys
+        xlims = node[xvar]
+        ylims = node[yvar]
+        
+        # Get line coordinates
+        horizontal_lims = [
+            [outer_xlims,[y0,y0]] for y0 in ylims[1:-1]
+        ]
+        vertical_lims = [
+            [[x0,x0],outer_ylims] for x0 in xlims[1:-1]
+        ]
+
+        # Add to coordinates list
+        lims_coords.extend(vertical_lims)
+        lims_coords.extend(horizontal_lims)
+
+    # Default to raising value error
+    else:
+        raise ValueError(f'Could not identify a 2D nested or grid bin scheme in `node`:\n{node}')
+
+    # Swap axes if needed
+    if swap_axes:
+        lims_coords = [[el[1],el[0]] for el in lims_coords] 
+
+    return lims_coords
+
+def plot_lines(ax, coordinates, linecolor='red', linewidth=1):
+    """
+    Parameters
+    ----------
+    ax : matplotlib.pyplot.axis, required
+    coordinates : list of lists, required
+        List of coordinate pairs each with structure `((x1,y1),(x2,y2))`
+    color : str, optional
+        Line color
+    linewidth : int, optional
+        Line width
+
+    Description
+    -----------
+    Plot a set of lines from a list of coordinates.
+    """
+
+    # Check coordinates shape
+    if len(np.shape(coordinates))==3 and np.shape(coordinates)[1:]!=(2,2):
+        raise ValueError(f'Expected shape (2,2) but got {np.shape(coordinates)}')
+
+    # Plot lines
+    for coords in coordinates:
+        ax.plot(*coords, color=linecolor, linewidth=linewidth, marker = 'o', markersize=0)
+
+def plot_TH2(h2, ax, norm=colors.LogNorm()):
+    """
+    Parameters
+    ----------
+    h2 : list, required
+        List of histogram data with structure `[weights, xbins, ybins]`
+    ax : matplotlib.pyplot.axis, required
+        Axis to plot on
+    norm : string or matplotlib.colors.Normalize, optional
+        Normalization used to scale data to `[0,1]` range before mapping to a color map
+
+    Description
+    -----------
+    Easily plot a `TH2` histogram loaded from ROOT.
+    """
+
+    # Get the middle values of each bin
+    x = np.ravel([[np.average([h2[1][i],h2[1][i+1]]) for j in range(len(h2[2])-1) ] for i in range(len(h2[1])-1)])
+    y = np.ravel([[np.average([h2[2][j],h2[2][j+1]]) for j in range(len(h2[2])-1) ] for i in range(len(h2[1])-1)])
+
+    # Get the counts in each bin
+    weights = np.ravel(h2[0])
+
+    # Get the bin sizes
+    bins = (len(h2[1])-1, len(h2[2])-1)
+
+    # Plot the histogram
+    ax.hist2d(x,y,weights=weights,bins=bins, norm=norm)
 
 def plot_systematics(
         x_means,
