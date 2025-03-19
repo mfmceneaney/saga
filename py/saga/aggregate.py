@@ -2188,6 +2188,82 @@ def plot_lines(
     for coords in coordinates:
         ax.plot(*coords, color=linecolor, linewidth=linewidth, marker = 'o', markersize=0)
 
+def get_bin_centers(
+        cuts,
+        swap_axes=False
+    ):
+    """
+    Parameters
+    ----------
+    cuts : dict, required
+        Dictionary of bin ids to bin cuts
+    swap_axes : bool, optional
+        Swap the default x and y axes order
+        Default : False
+
+    Returns
+    -------
+    tuple
+        Tuple of maps of bin ids to bin centers and bin widths respectively
+
+    Description
+    -----------
+    Get the bin center coordinates from a list of (rectangular 2D) bin cuts.
+    Note that bin cuts are assumed to be of the form
+    `(binvar_x>=xmin && binvar_x<=xmax) && (binvar_y>=ymin && binvar_y<=ymax)`.
+    """
+
+    # Convert dictionary to lists
+    new_cuts = [cuts[idx] for idx in cuts]
+    bin_ids = [idx for idx in cuts]
+
+    # Convert 2D bin cuts into bin widths and centers
+    bin_centers = [cut.replace('=','').split(") && (") for cut in new_cuts]
+    bin_centers = [[el[0].replace('(','').split(' && '),el[1].replace(')','').split(' && ')] for el in bin_centers]
+    bin_centers = [[[float(el[idx][0].split('>')[1]),float(el[idx][1].split('<')[1])] for idx, _ in enumerate(el)] for el in bin_centers]
+    bin_widths  = [[el[0][1]-el[0][0],el[1][1]-el[1][0]] for el in bin_centers] #NOTE: ORDERING IS IMPORTANT HERE
+    bin_centers = [[np.average(el[0]).item(),np.average(el[1]).item()] for el in bin_centers]
+
+    # Swap axes if needed
+    if swap_axes:
+        bin_centers = [[el[1],el[0]] for el in bin_centers]
+        bin_widths = [[el[1],el[0]] for el in bin_widths]
+
+    # Convert back to dictionaries
+    bin_centers = {bin_ids[idx]:bin_centers[idx] for idx in range(len(bin_centers))}
+    bin_widths  = {bin_ids[idx]:bin_widths[idx]  for idx in range(len(bin_widths))}
+
+    return bin_centers, bin_widths
+
+def plot_bin_ids(
+        ax,
+        bin_centers,
+        bin_widths=None,
+        size=25,
+        color='red',
+        alpha=1.0,
+    ):
+    """
+    Parameters
+    ----------
+    ax : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot axis to plot on
+    bin_centers : dict, required
+        Dictionary of bin ids to bin centers
+    bin_widths : dict, optional
+        Dictionary of bin ids to bin widths each of the form `(width_x, width_y)`
+    size : int, optional
+        Font size for bin id text
+    color : str, optional
+        Text color
+    alpha : float, optional
+        Text alpha value
+    """
+
+    # Plot bin ids on bin centers
+    for bin_id in bin_centers:
+        ax.text(*bin_centers[bin_id], f'{bin_id}', size=size, color=color, alpha=alpha, horizontalalignment='center', verticalalignment='center')
+
 def plot_th2(
         h2,
         ax,
