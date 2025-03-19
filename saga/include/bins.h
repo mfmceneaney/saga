@@ -602,14 +602,14 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
 * @brief Compute bin migration fractions and save to a CSV file.
 *
 * Compute bin migration fraction and save to a CSV file.  Note that
-* the Monte Carlo truth bin cuts will be inferred from the provided cuts
+* the truth bin cuts will be inferred from the provided cuts
 * assuming they follow the form `(binvar>=binmin && binvar<=binmax)`.
 *
 * @param frame ROOT RDataframe from which to compute bin migration fraction
 * @param scheme_name Bin scheme name
 * @param bincuts Map of unique integer bin identifiers to bin cuts
 * @param binvars List of bin variable names
-* @param mc_suffix Suffix for forming Monte Carlo truth variable names
+* @param mc_suffix Suffix for forming the truth variable names
 */
 void getBinMigration(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -687,7 +687,7 @@ void getBinMigration(
 * @brief Compute bin statistics and kinematics and save to a CSV file.
 *
 * @param frame ROOT RDataframe from which to compute bin migration fraction
-* @param scheme_name Bin scheme name
+* @param scheme_name Bin scheme name, csv file will be named `<scheme_name>_kinematics.csv`
 * @param bincuts Map of unique integer bin identifiers to bin cuts
 * @param kinvars List of kinematic variable names
 */
@@ -752,7 +752,7 @@ void getBinKinematics(
 * @brief Create 1D kinematics histograms for each bin and save to a ROOT file.
 *
 * @param frame ROOT RDataframe from which to compute bin migration fraction
-* @param scheme_name Bin scheme name
+* @param scheme_name Bin scheme name, ROOT file will be named `<scheme_name>_kinematics.root`
 * @param bincuts Map of unique integer bin identifiers to bin cuts
 * @param kinvars List of kinematic variable names
 * @param kinvar_lims List of outer bin limits for each kinematic variable
