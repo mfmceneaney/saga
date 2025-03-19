@@ -795,6 +795,54 @@ void getBinKinematicsTH1Ds(
 
 } // void getBinKinematicsTH1Ds()
 
+/**
+* @brief Create 2D kinematics histograms for each bin and save to a ROOT file.
+*
+* @param frame ROOT RDataframe from which to compute bin migration fraction
+* @param scheme_name Bin scheme name, ROOT file will be named `<scheme_name>_kinematics.root`
+* @param bincuts Map of unique integer bin identifiers to bin cuts
+* @param kinvars List of kinematic variable pairs (x-axis,y-axis) names
+* @param kinvar_lims List of outer bin limits for each kinematic variable pair (x-axis,y-axis)
+* @param kinvar_bins List of number of bins in each kinematic variable pair (x-axis,y-axis)
+*/
+void getBinKinematicsTH2Ds(
+        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+        std::string                                                   scheme_name,
+        std::map<int,std::string>                                     bincuts,
+        std::vector<std::vector<std::string>>                         kinvars,
+        std::vector<std::vector<std::vector<double>>>                 kinvar_lims,
+        std::vector<std::vector<int>>                                 kinvar_bins
+    ) {
+
+    // Open output ROOT file
+    std::string path = Form("%s_kinematics.root",scheme_name.c_str());
+    TFile *f = new TFile(path.c_str(),"RECREATE");
+
+    // Loop bin cut maps, get kinematics histograms, and write to ROOT
+    for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+        // Get generated bin id and cut
+        int bin = it->first;
+        std::string bincut = it->second;
+
+        // Apply bin cut
+        auto frame_filtered = frame.Filter(bincut.c_str());
+
+        // Create 2D histograms for each kinematic variable
+        for (int idx=0; idx<kinvars.size(); idx++) {
+            std::string hist_name = Form("h2_bin%d_%s_%s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+            std::string hist_title = Form("Bin %d : %s vs. %s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+            TH2D h2 = (TH2D) *frame_filtered.Histo2D({hist_name.c_str(),hist_title.c_str(),kinvar_bins[idx][0],kinvar_lims[idx][0][0],kinvar_lims[idx][0][1],kinvar_bins[idx][1],kinvar_lims[idx][1][0],kinvar_lims[idx][1][1]},kinvars[idx][0].c_str(),kinvars[idx][1].c_str());
+            f->WriteObject(&h2, hist_name.c_str());
+        }
+
+    } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+    // Close ROOT file
+    f->Close();
+
+} // void getBinKinematicsTH2Ds()
+
 } // namespace bins {
 
 } // namespace saga {
