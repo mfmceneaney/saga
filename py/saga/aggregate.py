@@ -357,7 +357,7 @@ def set_nested_bin_cuts(
         varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
         varids  = [i for i in range(nbins)]
         varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
-        varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+        varcut_titles = [f"${varlims[idx][0]} \\leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
 
         # Expand bin cuts and cut titles and projection ids maps
         old_cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in old_cuts] if len(old_cuts)>0 else varcuts
@@ -609,7 +609,7 @@ def get_binscheme_cuts_and_ids(
             varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
             varids  = [i for i in range(nbins)]
             varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
-            varcut_titles = [f"${varlims[idx][0]} \leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+            varcut_titles = [f"${varlims[idx][0]} \\leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
 
             # Expand bin cuts and cut titles and projection ids maps
             cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
@@ -1932,7 +1932,7 @@ def get_bin_kinematics_title(
 
     return sep.join(
         [
-            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\pm{df.iloc[bin_id].loc[cols[idx]+err_ext]:.2f}$"
+            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[cols[idx]+err_ext]:.2f}$"
             for idx, col in enumerate(cols)
         ]
     )
@@ -2202,7 +2202,7 @@ def plot_systematics(
         xvar    = 'x',
         title   = 'Systematic Errors',
         xtitle  = '$Q^{2} (GeV^{2})$',
-        ytitle  = '$\Delta \mathcal{A}$',
+        ytitle  = '$\\Delta \\mathcal{A}$',
         outpath = 'systematics.pdf',
         watermark = 'CLAS12 Preliminary',
         use_default_plt_settings = True,
@@ -2354,9 +2354,9 @@ def plot_results(
         title = 'Asymmetry Results',
         xvar  = 'x',
         xlabel = '$x$',
-        ylabel = '$\mathcal{A}$',
-        sgasym_labels = ['$\mathcal{A}$'],
-        bgasym_labels = ['$\mathcal{A}$'],
+        ylabel = '$\\mathcal{A}$',
+        sgasym_labels = ['$\\mathcal{A}$'],
+        bgasym_labels = ['$\\mathcal{A}$'],
         sgasym_idx = 0,
         sgasyms = [0.10],
         bgasyms = [0.00],
@@ -2619,7 +2619,7 @@ def plot_results(
 
     # Plot standard deviation of aggregated injected values
     if y_std is not None:
-        fb = ax1.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\pm1\sigma$ Band', color=fill_color)
+        fb = ax1.fill_between(x_mean, np.add(y_mean,y_std), np.add(y_mean,-y_std), alpha=0.2, label='$\\pm1\\sigma$ Band', color=fill_color)
 
     # Plot results
     if yerr_mean is not None:
