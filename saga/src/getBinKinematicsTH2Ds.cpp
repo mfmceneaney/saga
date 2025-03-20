@@ -80,13 +80,13 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
 
     // VAR_FORMULAS
-    std::map<std::string,std::string> var_formulas;
+    std::vector<std::vector<std::string>> var_formulas;
     if (node["var_formulas"]) {
-        var_formulas = node["var_formulas"].as<std::map<std::string,std::string>>();
+        var_formulas = node["var_formulas"].as<std::vector<std::vector<std::string>>>();
     }
     std::cout << "INFO: var_formulas: { \n";
-    for (auto it = var_formulas.begin(); it != var_formulas.end(); ++it) {
-        std::cout << "\t[ " << it->first.c_str() << " : " << it->second.c_str() << " ],\n";
+    for (int idx=0; idx<var_formulas.size(); idx++) {
+        std::cout << "\t[ " << var_formulas[idx][0].c_str() << " : " << var_formulas[idx][1].c_str() << " ],\n";
     }
     std::cout << " }" << std::endl;
 
@@ -307,9 +307,9 @@ void execute(const YAML::Node& node) {
 
     // Define variables from formulas
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
-    for (auto it = var_formulas.begin(); it != var_formulas.end(); ++it) {
-        d2 = d2.Define(it->first.c_str(),it->second.c_str());
-        std::cout<<"INFO: Defined branch "<<it->first.c_str()<<std::endl;
+    for (int idx=0; idx<var_formulas.size(); idx++) {
+        d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
+        std::cout<<"INFO: Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
 
     // Apply overall cuts AFTER defining depolarization and fit variables
