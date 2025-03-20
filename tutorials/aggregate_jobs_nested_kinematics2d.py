@@ -12,7 +12,7 @@ csv_path = os.path.abspath('results_kinematics_hists_2D/out_binscheme_kinematics
 hist_path = os.path.abspath('results_kinematics_hists_2D/out_binscheme_kinematics_2d.root')
 grid_shape = (3,2)
 kinvars = [['z_pipim', 'phperp_pipim']]
-xlabels = {'mass_pipim':'$M_{\pi^{+}\pi^{-}}$ (GeV)','phperp_pipim':'$P_{\perp, \pi^{+}\pi^{-}}$ (GeV)','z_pipim':'$z_{\pi^{+}\pi^{-}}$'}
+xlabels = {'mass_pipim':'$M_{\\pi^{+}\\pi^{-}}$ (GeV)','phperp_pipim':'$P_{\\perp, \\pi^{+}\\pi^{-}}$ (GeV)','z_pipim':'$z_{\\pi^{+}\\pi^{-}}$'}
 xlims = {'mass_pipim':[0.0,3.0],'phperp_pipim':[0.0,1.25],'z_pipim':[0.0,1.0]}
 hist_colors = {'mass_pipim':['tab:blue'],'phperp_pipim':['tab:red'],'z_pipim':['tab:orange']}
 
@@ -46,6 +46,7 @@ plot_results_kwargs_base = {
     'hist_density':False,
     'axlinewidth':0,
     'hist_dim':2,
+    'legend_loc':None #NOTE: Do not plot a legend since you are using 2d hists.
 }
 
 # Set additional kwargs
