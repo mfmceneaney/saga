@@ -374,7 +374,7 @@ std::vector<double> applyLambdaMassFit(
     legend->Draw();
 
     // Save Canvas
-    c_massfit->SaveAs(Form("%s_%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),bin_id.c_str(),bin_id.c_str()));
+    c_massfit->SaveAs(Form("%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),bin_id.c_str()));
 
     // Add yield variables to workspace
     w->import(sgYield);
