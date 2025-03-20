@@ -23,11 +23,11 @@ helicity_states:
   plus: 1
   zero: 0
   minus: -1
-var_formulas:
-  depol0: "(float)(y*(1.0-0.5*y)/(1.0-y+0.5*y*y))"
-  depol1: "(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"
-  depol0_mc: "(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"
-  depol1_mc: "(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"
+var_formulas: #NOTE: Variable definitions will be applied in order in case of dependencies, and they should follow the form [variable_name,formula].
+  - ["depol0","(float)(y*(1.0-0.5*y)/(1.0-y+0.5*y*y))"]
+  - ["depol1","(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"]
+  - ["depol0_mc","(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]
+  - ["depol1_mc","(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]
 binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
   run:
     run: [1, 100]
