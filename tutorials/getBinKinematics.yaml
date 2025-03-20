@@ -5,11 +5,11 @@ nthreads: 1
 cuts: "mass_ppim>1.1104 && mass_ppim<1.12959 && Q2>1 && W>2 && y<0.8 && xF_ppim>0.0 && z_ppim<1.0 && detector_p==6 && detector_pim==6" #NOTE: Only look at your signal region.
 mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
 particle_suffixes: ["_p","_pim"]
-var_formulas:
-  depol0: "(float)(y*(1.0-0.5*y)/(1.0-y+0.5*y*y))"
-  depol1: "(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"
-  depol0_mc: "(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"
-  depol1_mc: "(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"
+var_formulas: #NOTE: Variable definitions will be applied in order in case of dependencies, and they should follow the form [variable_name,formula].
+  - ["depol0","(float)(y*(1.0-0.5*y)/(1.0-y+0.5*y*y))"]
+  - ["depol1","(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"]
+  - ["depol0_mc","(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]
+  - ["depol1_mc","(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]
 binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
   run:
     run: [1, 100]
