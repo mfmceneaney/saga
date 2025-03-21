@@ -313,7 +313,8 @@ void execute(const YAML::Node& node) {
     }
 
     // Apply overall cuts AFTER defining depolarization and fit variables
-    auto d2_filtered = d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
+    std::string all_cuts = (mc_cuts.size()>0) ? Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()) : cuts;
+    auto d2_filtered = d2.Filter(all_cuts.c_str());
 
     // Define MC matching variable names
     std::vector<std::string> theta_vars;
