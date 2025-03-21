@@ -1080,8 +1080,8 @@ void getKinBinnedAsym(
     out << " }\n";
 
     // Filter frames for signal and sideband
-    auto frame_sg = frame.Filter(massfit_sgcut.c_str());
-    auto frame_sb = frame.Filter(massfit_bgcut.c_str());
+    auto frame_sg = (massfit_sgcut.size()>0) ? frame.Filter(massfit_sgcut.c_str()) : frame;
+    auto frame_sb = (massfit_bgcut.size()>0) ? frame.Filter(massfit_bgcut.c_str()) : frame;
 
     // Open output CSV
     std::string csvpath = Form("%s.csv",scheme_name.c_str());
