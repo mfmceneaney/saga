@@ -2513,7 +2513,7 @@ def plot_results(
         Alpha plotting paramater for histograms
     hist_linewidth : int, optional
         Line width for plotting histograms
-    density : bool, optional
+    hist_density : bool, optional
         Option to normalize histograms
     hist_log : bool, optional
         Option to plot y-axis on a log scale
