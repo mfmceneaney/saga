@@ -1787,6 +1787,7 @@ def plot_hists(
         alpha=0.5,
         linewidth=2,
         density=True,
+        log=False,
         hist_labels = None,
         binlims = [],
         vlinestyle = 'dotted',
@@ -1815,6 +1816,8 @@ def plot_hists(
         Line width for plotting histograms
     density : bool, optional
         Option to normalize histograms
+    log : bool, optional
+        Option to plot y-axis on a log scale
     hist_labels : list, optional
         List of histogram labels
     binlims : list, optional
@@ -1870,7 +1873,8 @@ def plot_hists(
                 alpha=alpha,
                 linewidth=linewidth,
                 label=hist_labels[idx],
-                density=False
+                density=False,
+                log=log,
             )
 
             # Plot bin limits if supplied and we are on the last histogram
@@ -2218,6 +2222,7 @@ def plot_systematics(
         linewidth = 0.0,
         gridlinewidth = 0.5,
         axlinewidth = 1.0,
+        log = False,
         figsize = (16,10),
     ):
     """
@@ -2275,6 +2280,8 @@ def plot_systematics(
         Grid line width
     axlinewidth : float, optional
         Axis line and injected asymmetries line width
+    log : bool, optional
+        Option to plot y-axis on a log scale
     figsize : tuple, optional
         Figure size
 
@@ -2301,7 +2308,7 @@ def plot_systematics(
     # Plot systematics by source for each x point
     nbins = len(x_means)
     xbins = np.moveaxis(np.array([x_means for el in range(np.shape(yerr_syst)[1])]),(0,1),(1,0))
-    s1 = plt.hist(xbins, weights=yerr_syst, bins=nbins, alpha=0.5, label=syst_labels, stacked=stacked)
+    s1 = plt.hist(xbins, weights=yerr_syst, bins=nbins, alpha=0.5, label=syst_labels, stacked=stacked, log=log)
 
     # Plot zero line
     ax1.axhline(0, color='black',linestyle='-',linewidth=axlinewidth)
@@ -2388,6 +2395,7 @@ def plot_results(
         hist_alpha=0.5,
         hist_linewidth=2,
         hist_density=True,
+        hist_log=False,
         hist_labels = None,
         binlims = [],
         vlinestyle = 'dotted',
@@ -2507,6 +2515,8 @@ def plot_results(
         Line width for plotting histograms
     density : bool, optional
         Option to normalize histograms
+    hist_log : bool, optional
+        Option to plot y-axis on a log scale
     hist_labels : list, optional
         List of histogram labels
     binlims : list, optional
@@ -2603,6 +2613,7 @@ def plot_results(
             alpha=hist_alpha,
             linewidth=hist_linewidth,
             density=hist_density,
+            log=hist_log,
             hist_labels = hist_labels,
             binlims = binlims,
             vlinestyle = vlinestyle,
