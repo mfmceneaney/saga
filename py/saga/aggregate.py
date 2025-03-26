@@ -2679,7 +2679,7 @@ def plot_results(
 
     # Save plot data
     save_graph_to_csv(
-            outpath+'.csv',
+            outpath+'.csv' if not rescale else outpath+'_rescaled.csv',
             ct_mean,
             x_mean,
             y_mean,
@@ -2696,7 +2696,7 @@ def plot_results(
     # Save ydiffs for MC asym injection systematics
     if ydiff_mean is not None:
         save_graph_to_csv(
-            outpath+'_ydiff.csv',
+            outpath+'_ydiff.csv' if not rescale else outpath+'_rescaled_ydiff.csv',
             ct_mean,
             x_mean,
             ydiff_mean,
@@ -2808,4 +2808,6 @@ def plot_results_array(
                 plot_results(ax[i,j],**graph_array[i][j],**plot_results_kwargs)
 
     # Save figure
+    rescale = plot_results_kwargs_base['lumi_ratio']>0.0 if 'lumi_ratio' in plot_results_kwargs_base else False
+    if rescale: outpath = outpath.replace('.pdf','_rescaled.pdf')
     f.savefig(outpath)
