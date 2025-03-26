@@ -699,7 +699,8 @@ def get_projection_ids(
         proj_vars,
         arr_vars = [],
         id_key='bin_id',
-        arr_var_bins={}
+        arr_var_bins={},
+        nested_grid_shape=None,
     ):
     """
     Parameters
