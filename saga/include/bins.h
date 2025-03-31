@@ -567,11 +567,11 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
                     // Get bin variable name and add to list
                     std::string binvar = it->first.as<std::string>();
                     binvars.push_back(binvar);
+
+                    // Reset the node
+                    node_nested = node_nested[0][binvar.c_str()]["nested"];
                     break;
                 }
-
-                // Reset the node
-                node_nested = node_nested[0]["nested"];
 
             } // while (node_nested && node_nested.IsSequence()) {
 
