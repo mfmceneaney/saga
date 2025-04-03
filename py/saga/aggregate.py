@@ -2412,6 +2412,7 @@ def plot_results(
         tpol_factor = 1.0,
         tdil_factor = 1.0,
         graph_yvalue = -100.0,
+        plot_xerrors = False,
     ):
     """
     Parameters
@@ -2552,6 +2553,8 @@ def plot_results(
         Target dilution factor for rescaling
     graph_yvalue : float, optional
         Constant asymmetry value to be plotted for showing rescaled errors
+    plot_xerrors : bool, optional
+        Option to plot x errors on asymmetry graph
 
     Description
     -----------
@@ -2648,7 +2651,7 @@ def plot_results(
 
     # Plot results
     if yerr_mean is not None:
-        g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean,yerr=yerr_mean,
+        g2 = ax1.errorbar(x_mean,y_mean,xerr=xerr_mean if plot_xerrors else None,yerr=yerr_mean,
                             ecolor=ecolor, elinewidth=elinewidth, capsize=capsize,
                             color=sg_colors[sgasym_idx], marker='o', linestyle=linestyle,
                             linewidth=linewidth, markersize=markersize,label=sgasym_labels[sgasym_idx])
