@@ -96,6 +96,9 @@ if rescale:
             'yerr_key':'',
             'xs_ratio':1.0,
             'lumi_ratio':1.0,
+            'graph_yvalue':0.2,
+            'tpol_factor':1.0,
+            'tdil_factor':1.0,
         },
     )
 

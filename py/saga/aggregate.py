@@ -2409,6 +2409,9 @@ def plot_results(
         yerr_key = '',
         xs_ratio = 1.0,
         lumi_ratio = 0.0,
+        tpol_factor = 1.0,
+        tdil_factor = 1.0,
+        graph_yvalue = -100.0,
     ):
     """
     Parameters
@@ -2543,13 +2546,22 @@ def plot_results(
         Cross-section ratio (new/old) for scaling
     lumi_ratio : float, optional
         Luminosity ratio (new/old) for scaling
+    tpol_factor : float, optional
+        Target polarization factor for rescaling
+    tdil_factor : float, optional
+        Target dilution factor for rescaling
+    graph_yvalue : float, optional
+        Constant asymmetry value to be plotted for showing rescaled errors
 
     Description
     -----------
     Plot asymmetry results for each bin in a 1D binning scheme showing projection variable histograms, bin limits, systematic errors,
     a standard deviation band for aggregate graphs, injected asymmetries, watermark, and legend if desired.  Save results
     and differences from the injected signal to CSV in :obj:`<outpath>.csv` and :obj:`<outpath>_ydiff.csv`.
-    Optionally, rescale the input graph using :meth:`rescale_graph_data`.
+    Optionally, rescale the input graph using :meth:`rescale_graph_data`.  Note that the graph y values can be
+    set to a constant with :obj:`graph_yvalue` if you only wish to show the rescaled errors, and that here, the rescaled asymmetry
+    errors will be further scaled to account for target polarization and dilution factors like
+    :math:`\\sigma_{A} = \\frac{1}{P_{Target} \\cdot D_{Target}}\\cdot\\sqrt{\\frac{1-(A \\cdot P_{Target})^{2}}{N_{Rescaled}}}`.
     """
 
     # Rescale graph
@@ -2579,9 +2591,10 @@ def plot_results(
         # Reset graph data
         ct_mean = rescaled_graph['ct_mean']
         x_mean = rescaled_graph['x_mean']
-        y_mean = rescaled_graph['y_mean']
+        y_mean = rescaled_graph['y_mean'] if graph_yvalue<-1 else [graph_yvalue for i in range(len(rescaled_graph['y_mean']))]
         xerr_mean = rescaled_graph['xerr_mean']
-        yerr_mean = rescaled_graph['yerr_mean']
+        yerr_mean = rescaled_graph['yerr_mean'] * 1.0/(tpol_factor * tdil_factor)
+        if graph_yvalue>=-1: yerr_mean *= np.sqrt(1-np.square(graph_yvalue*tpol_factor))
         y_min = rescaled_graph['y_min']
         y_max = rescaled_graph['y_max']
         y_std = rescaled_graph['y_std']
