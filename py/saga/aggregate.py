@@ -947,9 +947,9 @@ def get_aggregate_graph(
     graph['ct_mean']      = np.mean(graph_list[ct_idx],axis=0)
     graph['y_mean']     = np.mean(graph_list[y_idx],axis=0)
     graph['yerr_mean']  = np.sqrt(np.mean(np.square(graph_list[yerr_idx]),axis=0))
-    graph['y_std']      = np.std(graph_list[y_idx],axis=0)
-    graph['y_min']      = np.min(graph_list[y_idx],axis=0)
-    graph['y_max']      = np.max(graph_list[y_idx],axis=0)
+    graph['y_std']      = np.std(graph_list[y_idx],axis=0) if len(graph_list[y_idx])>1 else None
+    graph['y_min']      = np.min(graph_list[y_idx],axis=0) if len(graph_list[y_idx])>1 else None
+    graph['y_max']      = np.max(graph_list[y_idx],axis=0) if len(graph_list[y_idx])>1 else None
     graph['ydiff_mean'] = np.mean(graph_list[y_idx]-sgasym,axis=0)
     graph['ydiff_std']  = np.std(graph_list[y_idx]-sgasym,axis=0)
     graph['ydiff_min']  = np.min(graph_list[y_idx]-sgasym,axis=0)
