@@ -1169,7 +1169,7 @@ def rescale_csv_data(
         old_sim_path = 'old_sim_path.csv',
         count_key = 'count',
         y_key = 'a0',
-        yerr_key = '',
+        yerr_key = 'a0err',
         xs_ratio = 1.0,
         lumi_ratio = 1.0,
         tpol_factor = 1.0,
@@ -1210,13 +1210,12 @@ def rescale_csv_data(
     Description
     -----------
     Rescale a set of results from data (:obj:`old_dat`) loading new and old simulation results (:obj:`new_sim` and :obj:`old_sim`)
-    from file to compute the bin dependent acceptance ratio.  Start from either the ratio (:obj:`new_sim`/:obj:`old_sim`)
-    of counts in that bin or the ratio counts estimated from asymmetry errors loaded from :obj:`yerr_key` and assuming poissonian statistics.
+    from file to compute the bin dependent acceptance ratio.  Start from the ratio (:obj:`new_sim`/:obj:`old_sim`) of counts in that bin.
     The rescaling ratio is then computed by multiplying by :obj:`lumi_ratio / xs_ratio`.  This ratio is used to rescale the counts, but
     the errors are further multiplied by a factor :math:`\\frac{1}{P_{Target} \\cdot D_{Target}}` to account for the target polarization
     and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors,
     and that if you do so, the rescaled asymmetry errors will be further scaled as
-    :math:`\\sigma_{A} = \sqrt{\\frac{1-(A \\cdot P_{Target})^{2}}{N_{Rescaled}}}`.
+    :math:`\\sigma_{A} = \\sqrt{\\frac{1-(A \\cdot P_{Target})^{2}}{N_{Rescaled}}}`.
     """
 
     # Load results from csv
@@ -1225,9 +1224,9 @@ def rescale_csv_data(
     old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
 
     # Get counts OR y errors from csv
-    new_sim_df_count = new_sim_df[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_df[yerr_key])
-    old_sim_df_count = old_sim_df[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_df[yerr_key])
-    old_dat_df_count = old_dat_df[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(old_dat_df[yerr_key])
+    new_sim_df_count = new_sim_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_df[yerr_key])
+    old_sim_df_count = old_sim_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_df[yerr_key])
+    old_dat_df_count = old_dat_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(old_dat_df[yerr_key])
 
     # Compute scaled quantities
     yerrs            = old_dat_df[yerr_key]
