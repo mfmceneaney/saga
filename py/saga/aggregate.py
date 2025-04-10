@@ -2695,6 +2695,9 @@ def plot_results(
             yerr_key = yerr_key,
             xs_ratio = xs_ratio,
             lumi_ratio = lumi_ratio,
+            tpol_factor = tpol_factor,
+            tdil_factor = tdil_factor,
+            yvalue = graph_yvalue,
             xvar_keys = [xvar],
             sgasym = sgasyms[sgasym_idx],
         )
