@@ -1082,6 +1082,9 @@ def rescale_graph_data(
         yerr_key = '',
         xs_ratio = 1.0,
         lumi_ratio = 1.0,
+        tpol_factor = 1.0,
+        tdil_factor = 1.0,
+        yvalue = -100.0,
         xvar_keys = ['x'],
         sgasym = 0.0,
     ):
@@ -1114,6 +1117,12 @@ def rescale_graph_data(
         Cross-section ratio (new/old) for scaling
     lumi_ratio : str, optional
         Luminosity ratio (new/old) for scaling
+    tpol_factor : float, optional
+        Target polarization factor for rescaling
+    tdil_factor : float, optional
+        Target dilution factor for rescaling
+    yvalue : float, optional
+        Constant asymmetry value to be used for computing rescaled errors
     xvar_keys : list, optional
         List of binning variables for which to return mean values
     sgasym : float or list, optional
@@ -1127,9 +1136,12 @@ def rescale_graph_data(
     Description
     -----------
     Rescale a graph from data (:obj:`old_dat`) loading new and old simulation graphs (:obj:`new_sim` and :obj:`old_sim`)
-    from file to compute the bin dependent acceptance ratio.  Start from from either the ratio (:obj:`new_sim`/:obj:`old_sim`)
-    of counts in that bin or the ratio counts estimated from asymmetry errors loaded from :obj:`yerr_key` and assuming poissonian statistics.
-    The rescaling ratio is then computed by multiplying by :obj:`lumi_ratio / xs_ratio`.
+    from file to compute the bin dependent acceptance ratio.  Start from the ratio (:obj:`new_sim`/:obj:`old_sim`) of counts in each bin.
+    The rescaling ratio is then computed by multiplying by :obj:`lumi_ratio / xs_ratio`.  This ratio is used to rescale the counts, but
+    the errors are further multiplied by a factor :math:`\\frac{1}{P_{Target} \\cdot D_{Target}}` to account for the target polarization
+    and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors,
+    and that if you do so, the rescaled asymmetry errors will be further scaled as
+    :math:`\\sigma_{A} = \\sqrt{\\frac{1-(A \\cdot P_{Target})^{2}}{N_{Rescaled}}}`.
     """
 
     # Load other graphs from csv
@@ -1145,10 +1157,14 @@ def rescale_graph_data(
     scaling          = acceptanceratio * lumi_ratio / xs_ratio
     scaled_ct_mean   = np.multiply(scaling,ct_mean)
     err_scaling      = np.sqrt(np.divide(ct_mean,scaled_ct_mean)) #NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
-    scaled_yerr_mean = np.multiply(err_scaling,yerr_mean)
+    scaled_yerr_mean = np.multiply(err_scaling,yerr_mean) * 1.0/(tpol_factor * tdil_factor)
+
+    # Set y values to constant and update scaled y errors if requested
+    scaled_y_mean = y_mean if yvalue<-1 else [yvalue for i in range(len(y_mean))]
+    if yvalue>=-1: scaled_yerr_mean *= np.sqrt(1-np.square(yvalue*tpol_factor))
 
     # Create a length 1 list of graph data with scaled graph results
-    graph_list = np.array([[scaled_ct_mean,y_mean,scaled_yerr_mean,x_mean,xerr_mean]])
+    graph_list = np.array([[scaled_ct_mean,scaled_y_mean,scaled_yerr_mean,x_mean,xerr_mean]])
 
     graph = get_aggregate_graph(
             graph_list,
@@ -1210,7 +1226,7 @@ def rescale_csv_data(
     Description
     -----------
     Rescale a set of results from data (:obj:`old_dat`) loading new and old simulation results (:obj:`new_sim` and :obj:`old_sim`)
-    from file to compute the bin dependent acceptance ratio.  Start from the ratio (:obj:`new_sim`/:obj:`old_sim`) of counts in that bin.
+    from file to compute the bin dependent acceptance ratio.  Start from the ratio (:obj:`new_sim`/:obj:`old_sim`) of counts in each bin.
     The rescaling ratio is then computed by multiplying by :obj:`lumi_ratio / xs_ratio`.  This ratio is used to rescale the counts, but
     the errors are further multiplied by a factor :math:`\\frac{1}{P_{Target} \\cdot D_{Target}}` to account for the target polarization
     and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors,
@@ -2686,10 +2702,9 @@ def plot_results(
         # Reset graph data
         ct_mean = rescaled_graph['ct_mean']
         x_mean = rescaled_graph['x_mean']
-        y_mean = rescaled_graph['y_mean'] if graph_yvalue<-1 else [graph_yvalue for i in range(len(rescaled_graph['y_mean']))]
+        y_mean = rescaled_graph['y_mean']
         xerr_mean = rescaled_graph['xerr_mean']
-        yerr_mean = rescaled_graph['yerr_mean'] * 1.0/(tpol_factor * tdil_factor)
-        if graph_yvalue>=-1: yerr_mean *= np.sqrt(1-np.square(graph_yvalue*tpol_factor))
+        yerr_mean = rescaled_graph['yerr_mean']
         y_min = rescaled_graph['y_min']
         y_max = rescaled_graph['y_max']
         y_std = rescaled_graph['y_std']
