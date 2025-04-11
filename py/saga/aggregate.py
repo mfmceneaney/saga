@@ -1238,6 +1238,8 @@ def rescale_csv_data(
         tdil_factor = 1.0,
         yvalue = -100.0,
         float_format = "%.3g",
+        config = {},
+        chain_configs = {},
     ):
     """
     Parameters
@@ -1268,6 +1270,10 @@ def rescale_csv_data(
         Constant asymmetry value to be used for computing rescaled errors
     float_format : str or Callable, optional
         Format string for floating point numbers passed to :meth:`pd.DataFrame.to_csv()`
+    config : dict, required
+        Map of configuration option names to option values for chaining across :obj:`old_dat_path` CSVs
+    chain_configs : dict, optional
+        Map of configuration option names to lists of values across which to chain for :obj:`old_dat_path` CSVs
 
     Description
     -----------
@@ -1281,8 +1287,8 @@ def rescale_csv_data(
     """
 
     # Load results from csv
-    old_dat_df = load_csv(path)
-    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)
+    old_dat_df = load_csv(path,config=config,chain_configs=chain_configs)
+    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)#TODO: Could add other arguments for chaining over MC but at present this is not needed.
     old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
 
     # Get counts OR y errors from csv
