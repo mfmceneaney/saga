@@ -598,6 +598,61 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
     return binschemes_vars;
 } // std::vector<std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
+
+/**
+* @brief Reduce a bin cuts map to a smaller batched version
+*
+* Reduce a bin cuts map to a smaller batched version given the
+* total number of batches and the index of the batch.  This is useful for
+* parallelizing results computed on a large bin cuts map.
+*
+* @param bincuts_map ROOT RDataframe from which to compute bin migration fraction
+* @param nbatches Total number of batches
+* @param ibatch Index of the batch \f$i\in[0,N_{batches}-1)\f$
+*/
+std::map<std::string,std::map<int,std::string>> getBinCutsMapBatch(
+    std::map<std::string,std::map<int,std::string>> bincuts_map,
+    int nbatches,
+    int ibatch
+    ) {
+
+    // Initialize output map
+    std::map<std::string,std::map<int,std::string>> bincuts_map_batch;
+
+    // Loop bin schemes
+    for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
+
+        // Get bin scheme name and cuts
+        std::string binscheme_name = it->first;
+        std::map<int,std::string> bincuts = it->second;
+
+        // Initialize output map
+        std::map<int,std::string> bincuts_batch;
+
+        // Loop bin cuts
+        int n_bin_ids = bincuts.size();
+        int idx = 0;
+        int batch_size = n_bin_ids/nbatches;
+        for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
+
+            // Get bin id and cut
+            int binid = it->first;
+            std::string bincut = it->second;
+
+            // Check if bin id is in batch
+            if (idx>=batch_size*ibatch && idx<batch_size*(ibatch+1)) {
+                bincuts_batch[binid] = bincut;
+            }
+            idx++;
+        }
+
+        // Add to output map
+        bincuts_map_batch[binscheme_name] = bincuts_batch;
+    }
+
+    return bincuts_map_batch;
+}
+
 /**
 * @brief Compute bin migration fractions and save to a CSV file.
 *
