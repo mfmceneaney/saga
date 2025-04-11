@@ -269,7 +269,9 @@ def load_yaml(
 def load_csv(
         path,
         old_path=None,
-        new_path=None
+        new_path=None,
+        configs={},
+        chain_keys=[]
     ):
     """
     Parameters
@@ -280,6 +282,10 @@ def load_csv(
         Directory name to replace
     new_path : str, optional
         Directory name to insert if not None
+    configs : dict, required
+        Map of configuration option names to option values
+    chain_keys : list, optional
+        List of keys in :obj:`configs` across which to chain
 
     Returns
     -------
@@ -292,7 +298,40 @@ def load_csv(
     part of the path, for example, a directory name, with another value.
     """
     inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
-    return pd.read_csv(inpath)
+
+    # Chain CSVs across the given keys
+    if len(configs)>0 and len(chain_keys)>0:
+
+        # Get a list of all possible option value combinations from configs
+        config_list = get_config_list(configs,aggregate_keys=[])
+
+        # Set csv list
+        csv_list = []
+
+        # Loop resulting list
+        for config_list_i in config_list:
+
+            # Get job directory
+            config_str = get_config_str(config_list_i)
+
+            # Get base job directory
+            base_config = {}
+            for key in config_list_i:
+                if key not in chain_keys: base_config[key] = config_list_i[key]
+            base_config_str = get_config_str(base_config)
+
+            # Modify path for chain element
+            inpath_i = inpath.replace(base_config_str, config_str)
+
+            # Open csv
+            csv_i = pd.read_csv(inpath_i)
+            csv_list.append(csv_i)
+
+        # Merge csvs and return
+        return pd.concat(csv_list, ignore_index=True)
+
+    # Return csv
+    else: return pd.read_csv(inpath)
 
 def set_nested_bin_cuts(
         cuts,
