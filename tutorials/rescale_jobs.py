@@ -16,6 +16,16 @@ configs = dict(
     **seeds,
 )
 
+# Set up chaining for batched data (specifically `old_dat_path`)
+nbatch = 1
+nbatches = {"nbatches":[nbatch]}
+ibatches = {"ibatch":[i for i in range(nbatch)]}
+chain_keys = ["nbatches", "ibatch"]
+chain_configs = dict(
+    nbatches,
+    **ibatches,
+) if nbatch > 1 else {}
+
 # Setup input paths
 base_dir     = os.path.abspath("results/")
 submit_path  = os.path.join(base_dir,"submit.sh")
@@ -85,5 +95,7 @@ for config_idx in range(len(config_list)):
     for out_file_name in out_file_names:
         sagas.rescale_csv_data(
             out_file_name,
+            config=config_list[config_idx],
+            chain_configs=chain_configs,
             **rescale_csv_data_kwargs_base,
         )

@@ -17,6 +17,16 @@ configs = dict(
     **seeds,
 )
 
+# Set up chaining for batched data
+nbatch = 1
+nbatches = {"nbatches":[nbatch]}
+ibatches = {"ibatch":[i for i in range(nbatch)]}
+chain_keys = ["nbatches", "ibatch"]
+chain_configs = dict(
+    nbatches,
+    **ibatches,
+) if nbatch > 1 else {}
+
 # Setup input paths
 base_dir     = os.path.abspath("results_1D/")
 submit_path  = os.path.join(base_dir,"submit.sh")
@@ -188,7 +198,7 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
             ) for outdir in out_dirs]
 
         # Load pandas dataframes from the files
-        dfs = [sagas.load_csv(out_file_name) for out_file_name in out_file_names]
+        dfs = [sagas.load_csv(out_file_name,config=config,chain_configs=chain_configs) for out_file_name in out_file_names]
 
         # Apply bin migration correction
         if use_bin_mig:
