@@ -304,7 +304,7 @@ def load_csv(
 
         # Get the full batch config
         configs = dict(
-            config,
+            {key:[config[key]] for key in config},
             **chain_configs,
         )
 
@@ -321,10 +321,7 @@ def load_csv(
             config_str = get_config_str(config_list_i)
 
             # Get base job directory
-            base_config = {}
-            for key in config_list_i:
-                if key not in chain_keys: base_config[key] = config_list_i[key]
-            base_config_str = get_config_str(base_config)
+            base_config_str = get_config_str(config)
 
             # Modify path for chain element
             inpath_i = inpath.replace(base_config_str, config_str)
