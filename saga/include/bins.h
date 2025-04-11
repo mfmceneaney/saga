@@ -608,7 +608,7 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
 *
 * @param bincuts_map ROOT RDataframe from which to compute bin migration fraction
 * @param nbatches Total number of batches
-* @param ibatch Index of the batch \f$i\in[0,N_{batches}-1)\f$
+* @param ibatch Index of the batch \f$i\in[0,N_{batches}-1]\f$
 */
 std::map<std::string,std::map<int,std::string>> getBinCutsMapBatch(
     std::map<std::string,std::map<int,std::string>> bincuts_map,
