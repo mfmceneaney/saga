@@ -270,8 +270,8 @@ def load_csv(
         path,
         old_path=None,
         new_path=None,
-        configs={},
-        chain_keys=[]
+        config={},
+        chain_configs={},
     ):
     """
     Parameters
@@ -282,10 +282,10 @@ def load_csv(
         Directory name to replace
     new_path : str, optional
         Directory name to insert if not None
-    configs : dict, required
+    config : dict, required
         Map of configuration option names to option values
-    chain_keys : list, optional
-        List of keys in :obj:`configs` across which to chain
+    chain_configs : dict, optional
+        Map of configuration option names to lists of values across which to chain
 
     Returns
     -------
@@ -300,7 +300,13 @@ def load_csv(
     inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
 
     # Chain CSVs across the given keys
-    if len(configs)>0 and len(chain_keys)>0:
+    if len(config)>0 and len(chain_configs)>0:
+
+        # Get the full batch config
+        configs = dict(
+            config,
+            **chain_configs,
+        )
 
         # Get a list of all possible option value combinations from configs
         config_list = get_config_list(configs,aggregate_keys=[])
