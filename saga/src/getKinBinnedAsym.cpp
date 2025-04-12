@@ -259,6 +259,15 @@ void execute(const YAML::Node& node) {
         // Reduce bin cuts map into a single batch for parallelization
         if (nbatches>1 && ibatch>=0 && ibatch<nbatches) bincuts_map = saga::bins::getBinCutsMapBatch(bincuts_map, nbatches, ibatch);
     }
+
+    // Show bin cuts map
+    for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
+        std::cout << "INFO: bincuts_map["<<it->first<<"]: { ";
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            std::cout <<"\t\t"<< it2->first<<": "<<it2->second<<", \n";
+        }
+        std::cout << "}" << std::endl;
+    }
     // END BINNING SCHEME ARGUMENTS
     //----------------------------------------------------------------------//
 
