@@ -640,7 +640,8 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMapBatch(
             std::string bincut = it->second;
 
             // Check if bin id is in batch
-            if (idx>=batch_size*ibatch && idx<batch_size*(ibatch+1)) {
+            if ((                   idx>=batch_size*ibatch && idx<batch_size*(ibatch+1)) ||
+                (idx==nbatches-1 && idx>=batch_size*ibatch && idx<batch_size*(ibatch+2))) { //NOTE: PUT REMAINDER IN LAST BATCH
                 bincuts_batch[binid] = bincut;
             }
             idx++;
