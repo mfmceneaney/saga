@@ -96,6 +96,7 @@ for config_idx in range(len(config_list)):
     for out_file_name in out_file_names:
         sagas.rescale_csv_data(
             out_file_name,
+            outpath = '', #NOTE: Output path will be first argument with `_rescaled` inserted before the file extension if this is empty
             config=config_list[config_idx],
             aggregate_config=aggregate_config,
             chain_configs=chain_configs,
