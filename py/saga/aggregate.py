@@ -271,6 +271,7 @@ def load_csv(
         old_path=None,
         new_path=None,
         config={},
+        aggregate_config={},
         chain_configs={},
     ):
     """
@@ -282,8 +283,10 @@ def load_csv(
         Directory name to replace
     new_path : str, optional
         Directory name to insert if not None
-    config : dict, required
+    config : dict, optional
         Map of configuration option names to option values
+    aggregate_config : dict, optional
+        Map of aggregate configuration option names to option values, used for determining correct directory names
     chain_configs : dict, optional
         Map of configuration option names to lists of values across which to chain
 
@@ -303,9 +306,11 @@ def load_csv(
     if len(config)>0 and len(chain_configs)>0:
 
         # Get the full batch config
+        aggregate_configs = {key:[aggregate_config[key]] for key in aggregate_config}
         configs = dict(
             {key:[config[key]] for key in config},
             **chain_configs,
+            **aggregate_configs
         )
 
         # Get a list of all possible option value combinations from configs
@@ -1239,6 +1244,7 @@ def rescale_csv_data(
         yvalue = -100.0,
         float_format = "%.3g",
         config = {},
+        aggregate_config = {},
         chain_configs = {},
     ):
     """
@@ -1270,8 +1276,10 @@ def rescale_csv_data(
         Constant asymmetry value to be used for computing rescaled errors
     float_format : str or Callable, optional
         Format string for floating point numbers passed to :meth:`pd.DataFrame.to_csv()`
-    config : dict, required
+    config : dict, optional
         Map of configuration option names to option values for chaining across :obj:`old_dat_path` CSVs
+    aggregate_config : dict, optional
+        Map of aggregate configuration option names to option values for chaining across :obj:`old_dat_path` CSVs
     chain_configs : dict, optional
         Map of configuration option names to lists of values across which to chain for :obj:`old_dat_path` CSVs
 
@@ -1287,7 +1295,7 @@ def rescale_csv_data(
     """
 
     # Load results from csv
-    old_dat_df = load_csv(path,config=config,chain_configs=chain_configs)
+    old_dat_df = load_csv(path,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs)
     new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)#TODO: Could add other arguments for chaining over MC but at present this is not needed.
     old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
 
