@@ -25,6 +25,7 @@ chain_configs = dict(
     nbatches,
     **ibatches,
 ) if nbatch > 1 else {}
+aggregate_config = {"inject_seed":1} if nbatch > 1 else {} #NOTE: You must set this to correctly determine the path when chaining and aggregating.
 
 # Setup input paths
 base_dir     = os.path.abspath("results/")
@@ -96,6 +97,7 @@ for config_idx in range(len(config_list)):
         sagas.rescale_csv_data(
             out_file_name,
             config=config_list[config_idx],
+            aggregate_config=aggregate_config,
             chain_configs=chain_configs,
             **rescale_csv_data_kwargs_base,
         )

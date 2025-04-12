@@ -25,6 +25,7 @@ chain_configs = dict(
     nbatches,
     **ibatches,
 ) if nbatch > 1 else {}
+aggregate_config = {"inject_seed":1} if nbatch > 1 else {} #NOTE: You must set this to correctly determine the path when chaining and aggregating.
 
 # Setup input paths
 base_dir     = os.path.abspath("results/")
@@ -182,7 +183,7 @@ for config_idx in range(len(config_list)):
         ) for outdir in out_dirs]
 
     # Load pandas dataframes from the files
-    dfs = [sagas.load_csv(out_file_name,config=config,chain_configs=chain_configs) for out_file_name in out_file_names]
+    dfs = [sagas.load_csv(out_file_name,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs) for out_file_name in out_file_names]
 
     # Apply bin migration correction
     if use_bin_mig:
