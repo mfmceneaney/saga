@@ -1231,6 +1231,7 @@ def rescale_graph_data(
 
 def rescale_csv_data(
         path,
+        outpath = '',
         old_dat_path = 'old_dat_path.csv',
         new_sim_path = 'new_sim_path.csv',
         old_sim_path = 'old_sim_path.csv',
@@ -1252,6 +1253,8 @@ def rescale_csv_data(
     ----------
     path : str, required
         Path where the given graph data will be stored
+    outfile_name : str, optional
+        Output path, if empty the :obj:`path` argument will be used with :obj:`_rescaled` inserted before the :obj:`.csv` extension
     old_dat_path : str, optional
         Part of :obj:`path` to replace
     new_sim_path : str, optional
@@ -1331,7 +1334,7 @@ def rescale_csv_data(
     new_dat_df['acceptanceratio'] = acceptanceratio
 
     # Save the new dataframe to CSV
-    outpath = path.replace('.csv','_rescaled.csv')
+    outpath = path.replace('.csv','_rescaled.csv') if len(outpath)==0 else outpath
     new_dat_df.to_csv(outpath, float_format=float_format, index=False)
 
 def get_cut_array(
