@@ -38,6 +38,8 @@ binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name:
   z_ppim:
     z_ppim: [0.0000, 0.5928, 0.6856, 0.7698, 0.8597, 1.0]
 binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
+nbatches: 1 #NOTE: You can batch all bin schemes if they are large to allow for parellelization
+ibatch: 0 #NOTE: Specify the bin scheme batch index here
 binvars: ["run","x","xF_ppim","z_ppim"]
 binvar_titles: ["run","x","x_{F p#pi^{-}}","z_{p#pi^{-}}"]
 binvar_lims: [[1,100],[0,1],[0,1],[0,1]]

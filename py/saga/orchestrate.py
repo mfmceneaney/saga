@@ -114,7 +114,7 @@ def create_jobs(configs,base_dir,submit_path,yaml_path):
     for data_list_i in data_list:
 
         # Make job directory name and directory
-        job_dir = os.path.join(base_dir,"__".join(["_".join([key,"_".join([str(ele) for ele in data_list_i[key]]) if type(data_list_i[key])==list else str(data_list_i[key]) ]) for key in sorted(data_list_i)]))
+        job_dir = os.path.join(base_dir, get_config_str(data_list_i))
         data_list_i["outdir"] = os.path.abspath(job_dir) #NOTE: Since dictionary is not copied this should just edit the original entry in data_list.
         try:
             os.mkdir(job_dir)
@@ -172,7 +172,7 @@ def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dum
     for data_list_i in data_list:
 
         # Get job directory name
-        job_dir = os.path.join(base_dir,"__".join(["_".join([key,"_".join([str(ele) for ele in data_list_i[key]]) if type(data_list_i[key])==list else str(data_list_i[key]) ]) for key in sorted(data_list_i)]))
+        job_dir = os.path.join(base_dir, get_config_str(data_list_i))
         data_list_i["outdir"] = os.path.abspath(job_dir) #NOTE: Since dictionary is not copied this should just edit the original entry in data_list.
 
         # Get submit script name

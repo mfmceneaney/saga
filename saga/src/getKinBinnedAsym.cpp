@@ -248,6 +248,26 @@ void execute(const YAML::Node& node) {
             binschemes_vars.insert(new_binschemes_vars.begin(), new_binschemes_vars.end());
         }
     }
+
+    // NBATCHES AND IBATCH
+    if (node["nbatches"] && node["ibatch"]) {
+        int nbatches = node["nbatches"].as<int>();
+        std::cout << "INFO: nbatches: " << nbatches << std::endl;
+        int ibatch   = node["ibatch"].as<int>();
+        std::cout << "INFO: ibatch: " << ibatch << std::endl;
+
+        // Reduce bin cuts map into a single batch for parallelization
+        if (nbatches>1 && ibatch>=0 && ibatch<nbatches) bincuts_map = saga::bins::getBinCutsMapBatch(bincuts_map, nbatches, ibatch);
+    }
+
+    // Show bin cuts map
+    for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
+        std::cout << "INFO: bincuts_map["<<it->first<<"]: { ";
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            std::cout <<"\t\t"<< it2->first<<": "<<it2->second<<", \n";
+        }
+        std::cout << "}" << std::endl;
+    }
     // END BINNING SCHEME ARGUMENTS
     //----------------------------------------------------------------------//
 

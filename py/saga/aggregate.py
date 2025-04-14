@@ -269,7 +269,10 @@ def load_yaml(
 def load_csv(
         path,
         old_path=None,
-        new_path=None
+        new_path=None,
+        config={},
+        aggregate_config={},
+        chain_configs={},
     ):
     """
     Parameters
@@ -280,6 +283,12 @@ def load_csv(
         Directory name to replace
     new_path : str, optional
         Directory name to insert if not None
+    config : dict, optional
+        Map of configuration option names to option values
+    aggregate_config : dict, optional
+        Map of aggregate configuration option names to option values, used for determining correct directory names
+    chain_configs : dict, optional
+        Map of configuration option names to lists of values across which to chain
 
     Returns
     -------
@@ -292,7 +301,45 @@ def load_csv(
     part of the path, for example, a directory name, with another value.
     """
     inpath = path.replace(old_path,new_path) if old_path is not None and new_path is not None else path
-    return pd.read_csv(inpath)
+
+    # Chain CSVs across the given keys
+    if len(config)>0 and len(chain_configs)>0:
+
+        # Get the full batch config
+        aggregate_configs = {key:[aggregate_config[key]] for key in aggregate_config}
+        configs = dict(
+            {key:[config[key]] for key in config},
+            **chain_configs,
+            **aggregate_configs
+        )
+
+        # Get a list of all possible option value combinations from configs
+        config_list = get_config_list(configs,aggregate_keys=[])
+
+        # Set csv list
+        csv_list = []
+
+        # Loop resulting list
+        for config_list_i in config_list:
+
+            # Get job directory
+            config_str = get_config_str(config_list_i)
+
+            # Get base job directory
+            base_config_str = get_config_str(config)
+
+            # Modify path for chain element
+            inpath_i = inpath.replace(base_config_str, config_str)
+
+            # Open csv
+            csv_i = pd.read_csv(inpath_i)
+            csv_list.append(csv_i)
+
+        # Merge csvs and return
+        return pd.concat(csv_list, ignore_index=True)
+
+    # Return csv
+    else: return pd.read_csv(inpath)
 
 def set_nested_bin_cuts(
         cuts,
@@ -1184,6 +1231,7 @@ def rescale_graph_data(
 
 def rescale_csv_data(
         path,
+        outpath = '',
         old_dat_path = 'old_dat_path.csv',
         new_sim_path = 'new_sim_path.csv',
         old_sim_path = 'old_sim_path.csv',
@@ -1196,12 +1244,17 @@ def rescale_csv_data(
         tdil_factor = 1.0,
         yvalue = -100.0,
         float_format = "%.3g",
+        config = {},
+        aggregate_config = {},
+        chain_configs = {},
     ):
     """
     Parameters
     ----------
     path : str, required
         Path where the given graph data will be stored
+    outfile_name : str, optional
+        Output path, if empty the :obj:`path` argument will be used with :obj:`_rescaled` inserted before the :obj:`.csv` extension
     old_dat_path : str, optional
         Part of :obj:`path` to replace
     new_sim_path : str, optional
@@ -1226,6 +1279,12 @@ def rescale_csv_data(
         Constant asymmetry value to be used for computing rescaled errors
     float_format : str or Callable, optional
         Format string for floating point numbers passed to :meth:`pd.DataFrame.to_csv()`
+    config : dict, optional
+        Map of configuration option names to option values for chaining across :obj:`old_dat_path` CSVs
+    aggregate_config : dict, optional
+        Map of aggregate configuration option names to option values for chaining across :obj:`old_dat_path` CSVs
+    chain_configs : dict, optional
+        Map of configuration option names to lists of values across which to chain for :obj:`old_dat_path` CSVs
 
     Description
     -----------
@@ -1239,8 +1298,8 @@ def rescale_csv_data(
     """
 
     # Load results from csv
-    old_dat_df = load_csv(path)
-    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)
+    old_dat_df = load_csv(path,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs)
+    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)#TODO: Could add other arguments for chaining over MC but at present this is not needed.
     old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
 
     # Get counts OR y errors from csv
@@ -1275,7 +1334,7 @@ def rescale_csv_data(
     new_dat_df['acceptanceratio'] = acceptanceratio
 
     # Save the new dataframe to CSV
-    outpath = path.replace('.csv','_rescaled.csv')
+    outpath = path.replace('.csv','_rescaled.csv') if len(outpath)==0 else outpath
     new_dat_df.to_csv(outpath, float_format=float_format, index=False)
 
 def get_cut_array(
