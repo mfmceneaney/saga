@@ -1200,10 +1200,10 @@ def rescale_graph_data(
     old_sim_graph_count = old_sim_graph[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_graph[yerr_key])
 
     # Compute scaled quantities
-    acceptanceratio  = np.divide(new_sim_graph_count,old_sim_graph_count)
+    acceptanceratio  = np.divide(new_sim_graph_count,old_sim_graph_count) / xs_ratio
     acceptanceratio[np.isinf(acceptanceratio)] = 0
     acceptanceratio[np.isnan(acceptanceratio)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
-    scaling          = acceptanceratio * lumi_ratio / xs_ratio
+    scaling          = acceptanceratio * lumi_ratio
     scaled_ct_mean   = np.multiply(scaling,ct_mean)
     err_scaling      = np.sqrt(np.divide(ct_mean,scaled_ct_mean)) #NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
     err_scaling[np.isinf(err_scaling)] = 0
@@ -1309,10 +1309,10 @@ def rescale_csv_data(
 
     # Compute scaled quantities
     yerrs            = old_dat_df[yerr_key]
-    acceptanceratio  = np.divide(new_sim_df_count,old_sim_df_count)
+    acceptanceratio  = np.divide(new_sim_df_count,old_sim_df_count) / xs_ratio
     acceptanceratio[np.isinf(acceptanceratio)] = 0
     acceptanceratio[np.isnan(acceptanceratio)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
-    scaling          = acceptanceratio * lumi_ratio / xs_ratio
+    scaling          = acceptanceratio * lumi_ratio
     new_dat_df_count = np.multiply(scaling,old_dat_df_count)
     err_scaling      = np.sqrt(np.divide(old_dat_df_count,new_dat_df_count)) #NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
     err_scaling[np.isinf(err_scaling)] = 0
