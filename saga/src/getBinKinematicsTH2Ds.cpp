@@ -47,6 +47,13 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: nthreads: " << nthreads << std::endl;
 
+    // SAVE_PDFS
+    bool save_pdfs = false;
+    if (node["save_pdfs"]) {
+        save_pdfs = node["save_pdfs"].as<bool>();
+    }
+    std::cout << "INFO: save_pdfs: " << save_pdfs << std::endl;
+
     // CUTS
     std::string cuts = "";
     if (node["cuts"]) {
@@ -357,7 +364,8 @@ void execute(const YAML::Node& node) {
             bincuts, // std::map<int,std::string>                                     bincuts,
             kinvars, // std::vector<std::vector<std::string>>                         kinvars,
             kinvar_lims, // std::vector<std::vector<std::vector<double>>>                 kinvar_lims,
-            kinvar_bins // std::vector<std::vector<int>>                                 kinvar_bins
+            kinvar_bins, // std::vector<std::vector<int>>                                 kinvar_bins,
+            save_pdfs // bool                                                          save_pdfs = false
         );
     } // for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
