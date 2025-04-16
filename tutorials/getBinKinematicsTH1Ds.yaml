@@ -2,6 +2,7 @@ baseoutpath: "out_" #NOTE: This will be prepended to the default output path lik
 inpath: "/path/to/*.root"
 tree: "t"
 nthreads: 1
+save_pdfs: false
 cuts: "Q2>1 && W>2 && y<0.8 && sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0 && mx_pipim>1.5 && xF_pi>0.0 && xF_pim>0.0 && TMath::Abs(TMath::ATan2(px_pi,pz_pi))<30.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(py_pi,pz_pi))<25.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(px_pim,pz_pim))<30.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(py_pim,pz_pim))<25.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(px_e,pz_e))<30.0*TMath::Pi()/180.0 && TMath::Abs(TMath::ATan2(py_e,pz_e))<25.0*TMath::Pi()/180.0"
 mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
 particle_suffixes: ["_pi","_pim"]
