@@ -813,6 +813,7 @@ void getBinKinematics(
 * @param kinvars List of kinematic variable names
 * @param kinvar_lims List of outer bin limits for each kinematic variable
 * @param kinvar_bins List of number of bins in each kinematic variable
+* @param save_pdfs Option to save 1D histograms as PDFs, files will be names `c1_<scheme_name>_bin<bin_id>_<kinvar>.pdf`
 */
 void getBinKinematicsTH1Ds(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -820,7 +821,8 @@ void getBinKinematicsTH1Ds(
         std::map<int,std::string>                                     bincuts,
         std::vector<std::string>                                      kinvars,
         std::vector<std::vector<double>>                              kinvar_lims,
-        std::vector<int>                                              kinvar_bins
+        std::vector<int>                                              kinvar_bins,
+        bool                                                          save_pdfs = false
     ) {
 
     // Open output ROOT file
@@ -842,6 +844,13 @@ void getBinKinematicsTH1Ds(
             std::string hist_name = Form("h1_bin%d_%s", bin, kinvars[idx].c_str());
             TH1D h1 = (TH1D) *frame_filtered.Histo1D({hist_name.c_str(),kinvars[idx].c_str(),kinvar_bins[idx],kinvar_lims[idx][0],kinvar_lims[idx][1]},kinvars[idx].c_str());
             f->WriteObject(&h1, hist_name.c_str());
+            if (save_pdfs) {
+                std::string canvas_name = Form("c1_%s_bin%d_%s", scheme_name.c_str(), bin, kinvars[idx].c_str());
+                TCanvas *c1 = new TCanvas(canvas_name.c_str());
+                c1->cd();
+                h1.Draw("COLZ");
+                c1->Print(Form("%s.pdf", canvas_name.c_str()));
+            }
         }
 
     } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
@@ -860,6 +869,7 @@ void getBinKinematicsTH1Ds(
 * @param kinvars List of kinematic variable pairs (x-axis,y-axis) names
 * @param kinvar_lims List of outer bin limits for each kinematic variable pair (x-axis,y-axis)
 * @param kinvar_bins List of number of bins in each kinematic variable pair (x-axis,y-axis)
+* @param save_pdfs Option to save 2D histograms as PDFs, files will be names `c2_<scheme_name>_bin<bin_id>_<kinvar_x>_<kinvar_y>.pdf`
 */
 void getBinKinematicsTH2Ds(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -867,7 +877,8 @@ void getBinKinematicsTH2Ds(
         std::map<int,std::string>                                     bincuts,
         std::vector<std::vector<std::string>>                         kinvars,
         std::vector<std::vector<std::vector<double>>>                 kinvar_lims,
-        std::vector<std::vector<int>>                                 kinvar_bins
+        std::vector<std::vector<int>>                                 kinvar_bins,
+        bool                                                          save_pdfs = false
     ) {
 
     // Open output ROOT file
@@ -890,6 +901,13 @@ void getBinKinematicsTH2Ds(
             std::string hist_title = Form("Bin %d : %s vs. %s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
             TH2D h2 = (TH2D) *frame_filtered.Histo2D({hist_name.c_str(),hist_title.c_str(),kinvar_bins[idx][0],kinvar_lims[idx][0][0],kinvar_lims[idx][0][1],kinvar_bins[idx][1],kinvar_lims[idx][1][0],kinvar_lims[idx][1][1]},kinvars[idx][0].c_str(),kinvars[idx][1].c_str());
             f->WriteObject(&h2, hist_name.c_str());
+            if (save_pdfs) {
+                std::string canvas_name = Form("c2_%s_bin%d_%s_%s", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+                TCanvas *c1 = new TCanvas(canvas_name.c_str());
+                c1->cd();
+                h2.Draw("COLZ");
+                c1->Print(Form("%s.pdf", canvas_name.c_str()));
+            }
         }
 
     } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
