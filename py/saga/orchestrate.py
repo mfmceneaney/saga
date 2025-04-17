@@ -88,7 +88,7 @@ def write_file_from_config(outdir):
         comments='',
     )
 
-def create_jobs(configs,base_dir,submit_path,yaml_path):
+def create_jobs(configs,base_dir,submit_path,yaml_path,aliases={}):
     """
     Parameters
     ----------
@@ -100,6 +100,8 @@ def create_jobs(configs,base_dir,submit_path,yaml_path):
         Path to base version of SLURM job submission script
     yaml_path : str, required
         Path to base version of yaml file containing arguments for the executable run in the SLURM job submission script
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
 
     Description
     -----------
@@ -114,7 +116,7 @@ def create_jobs(configs,base_dir,submit_path,yaml_path):
     for data_list_i in data_list:
 
         # Make job directory name and directory
-        job_dir = os.path.join(base_dir, get_config_str(data_list_i))
+        job_dir = os.path.join(base_dir, get_config_str(data_list_i,aliases=aliases))
         data_list_i["outdir"] = os.path.abspath(job_dir) #NOTE: Since dictionary is not copied this should just edit the original entry in data_list.
         try:
             os.mkdir(job_dir)
@@ -142,7 +144,7 @@ def create_jobs(configs,base_dir,submit_path,yaml_path):
         with open(submit_path_i, 'w') as submit_i:
             submit_i.write(doc)
 
-def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dummy_data=False):
+def submit_jobs(configs,base_dir,submit_path,out_path,aliases={},dry_run=False,generate_dummy_data=False):
     """
     Parameters
     ----------
@@ -154,6 +156,8 @@ def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dum
         Path to base version of SLURM job submission script
     yaml_path : str, required
         Path to base version of yaml file containing arguments for the executable run in the SLURM job submission script
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
     dry_run : bool, optional
         Option to just print commands to text file and not submit jobs via sbatch
     generate_dummy_data : bool, optional
@@ -172,7 +176,7 @@ def submit_jobs(configs,base_dir,submit_path,out_path,dry_run=False,generate_dum
     for data_list_i in data_list:
 
         # Get job directory name
-        job_dir = os.path.join(base_dir, get_config_str(data_list_i))
+        job_dir = os.path.join(base_dir, get_config_str(data_list_i,aliases=aliases))
         data_list_i["outdir"] = os.path.abspath(job_dir) #NOTE: Since dictionary is not copied this should just edit the original entry in data_list.
 
         # Get submit script name

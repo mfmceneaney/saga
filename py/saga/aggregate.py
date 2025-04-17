@@ -18,7 +18,8 @@ import sys
 
 def get_config_str(
         config,
-        sep='_'
+        sep='_',
+        aliases={}
     ):
     """
     Parameters
@@ -27,6 +28,8 @@ def get_config_str(
         Configuration mapping option names to option values
     sep : str, optional
         String separator
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
 
     Returns
     -------
@@ -38,7 +41,7 @@ def get_config_str(
     Create a string representation of a configuration.
     """
 
-    return (sep+sep).join([sep.join([key,sep.join([str(ele) for ele in config[key]]) if type(config[key])==list else str(config[key]) ]) for key in sorted(config)])
+    return (sep+sep).join([aliases[key][config[key]] if (key in aliases and config[key] in aliases[key]) else sep.join([key,sep.join([str(ele) for ele in config[key]]) if type(config[key])==list else str(config[key]) ]) for key in sorted(config)])
 
 def get_config_out_path(
         base_dir,
@@ -46,6 +49,7 @@ def get_config_out_path(
         result_name,
         config,
         sep='_',
+        aliases={},
         ext='.pdf',
     ):
     """
@@ -61,7 +65,9 @@ def get_config_out_path(
         Job configuration map
     sep : str, optional
         String separator
-    sep : str, optional
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
+    ext : str, optional
         File extension
 
     Returns
@@ -75,7 +81,7 @@ def get_config_out_path(
     """
 
     job_config_name  = 'aggregate'+sep+sep+sep+(sep+sep).join([str(key) for key in sorted(aggregate_keys)])+(sep+sep+sep)
-    job_config_name += get_config_str(config,sep=sep)
+    job_config_name += get_config_str(config,sep=sep,aliases=aliases)
     job_config_name += (sep+sep+sep)+result_name+ext
     outpath = os.path.abspath(os.path.join(base_dir,job_config_name))
 
@@ -148,7 +154,8 @@ def get_config_list(
 def get_out_dirs_list(
         configs,
         base_dir,
-        aggregate_keys=[]
+        aggregate_keys=[],
+        aliases={}
     ):
     """
     Parameters
@@ -159,6 +166,8 @@ def get_out_dirs_list(
         Path to directory in which to create job directories
     aggregate_keys : list, optional
         List of keys over which to group configurations
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
 
     Returns
     -------
@@ -187,7 +196,7 @@ def get_out_dirs_list(
         if len(aggregate_keys)==0:
 
             # Get job directory
-            config_str = get_config_str(config_list_i)
+            config_str = get_config_str(config_list_i,aliases=aliases)
             job_dir = os.path.abspath(os.path.join(base_dir,config_str))
             output_dirs.append(job_dir)
             
@@ -200,7 +209,7 @@ def get_out_dirs_list(
                 config_list_i_val[key] = value
 
                 # Get job directory
-                config_str = get_config_str(config_list_i_val)
+                config_str = get_config_str(config_list_i_val,aliases=aliases)
                 job_dir = os.path.abspath(os.path.join(base_dir,config_str))
                 output_dirs.append(job_dir)
 
@@ -273,6 +282,7 @@ def load_csv(
         config={},
         aggregate_config={},
         chain_configs={},
+        aliases={},
     ):
     """
     Parameters
@@ -289,6 +299,8 @@ def load_csv(
         Map of aggregate configuration option names to option values, used for determining correct directory names
     chain_configs : dict, optional
         Map of configuration option names to lists of values across which to chain
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
 
     Returns
     -------
@@ -323,10 +335,10 @@ def load_csv(
         for config_list_i in config_list:
 
             # Get job directory
-            config_str = get_config_str(config_list_i)
+            config_str = get_config_str(config_list_i,aliases=aliases)
 
             # Get base job directory
-            base_config_str = get_config_str(config)
+            base_config_str = get_config_str(config,aliases=aliases)
 
             # Modify path for chain element
             inpath_i = inpath.replace(base_config_str, config_str)
@@ -1134,6 +1146,7 @@ def rescale_graph_data(
         yvalue = -100.0,
         xvar_keys = ['x'],
         sgasym = 0.0,
+        aliases={},
     ):
     """
     Parameters
@@ -1174,6 +1187,8 @@ def rescale_graph_data(
         List of binning variables for which to return mean values
     sgasym : float or list, optional
         Injected signal asymmetry for computing difference of measured and injected values
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
 
     Returns
     -------
@@ -1192,8 +1207,8 @@ def rescale_graph_data(
     """
 
     # Load other graphs from csv
-    new_sim_graph = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)
-    old_sim_graph = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
+    new_sim_graph = load_csv(path,old_path=old_dat_path,new_path=new_sim_path,aliases=aliases)
+    old_sim_graph = load_csv(path,old_path=old_dat_path,new_path=old_sim_path,aliases=aliases)
 
     # Get counts OR y errors from csv
     new_sim_graph_count = new_sim_graph[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_graph[yerr_key])
@@ -1247,6 +1262,7 @@ def rescale_csv_data(
         config = {},
         aggregate_config = {},
         chain_configs = {},
+        aliases={},
     ):
     """
     Parameters
@@ -1285,6 +1301,8 @@ def rescale_csv_data(
         Map of aggregate configuration option names to option values for chaining across :obj:`old_dat_path` CSVs
     chain_configs : dict, optional
         Map of configuration option names to lists of values across which to chain for :obj:`old_dat_path` CSVs
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases
 
     Description
     -----------
@@ -1298,9 +1316,9 @@ def rescale_csv_data(
     """
 
     # Load results from csv
-    old_dat_df = load_csv(path,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs)
-    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path)#TODO: Could add other arguments for chaining over MC but at present this is not needed.
-    old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path)
+    old_dat_df = load_csv(path,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs,aliases=aliases)
+    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path,aliases=aliases)#TODO: Could add other arguments for chaining over MC but at present this is not needed.
+    old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path,aliases=aliases)
 
     # Get counts OR y errors from csv
     new_sim_df_count = new_sim_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_df[yerr_key])
@@ -2587,6 +2605,7 @@ def plot_results(
         tpol_factor = 1.0,
         tdil_factor = 1.0,
         graph_yvalue = -100.0,
+        aliases = {},
         plot_xerrors = False,
     ):
     """
@@ -2728,6 +2747,8 @@ def plot_results(
         Target dilution factor for rescaling
     graph_yvalue : float, optional
         Constant asymmetry value to be plotted for showing rescaled errors
+    aliases : dict, optional
+        Map of configuration option names to maps of option values to string aliases for chained CSVs when rescaling
     plot_xerrors : bool, optional
         Option to plot x errors on asymmetry graph
 
@@ -2767,6 +2788,7 @@ def plot_results(
             yvalue = graph_yvalue,
             xvar_keys = [xvar],
             sgasym = sgasyms[sgasym_idx],
+            aliases = aliases,
         )
 
         # Reset graph data
