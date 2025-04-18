@@ -805,6 +805,86 @@ void getBinKinematics(
 } // void getBinKinematics()
 
 /**
+* @brief Save a TH1 or TH2 ROOT histogram to a CSV file.
+*
+* Save a TH1 or TH2 ROOT histogram to a CSV file.  The CSV file will be named
+* have columns `bin`, `llimx`, `count` if it is 1D, or `binx`, `biny`, `llimx`,
+* `llimy`, `count` if it is 2D.  Note that the lower bin limits are written for
+* each bin so there are \f$N_{bins}+1\f$ rows in the CSV file for 1D histograms
+* and \f$(N_{bins,x}+1)\times(N_{bins,y}+1)\f$ rows in the CSV file for 2D histograms.
+*
+* @param h1 ROOT histogram to save to CSV
+* @param csv_name Path to CSV file
+*/
+void saveTH1ToCSV(
+    const TH1& h1,
+    std::string csv_name
+    ) {
+
+    // Check histogram dimensions
+    int nbinsx = h1.GetNbinsX();
+    int nbinsy = h1.GetNbinsY();
+
+    // Open output CSV
+    std::ofstream csvoutf; csvoutf.open(csv_name.c_str());
+    std::ostream &csvout = csvoutf;
+    std::string csv_separator = ",";
+
+    // Write CSV data
+    if (nbinsx>0 && nbinsy<=1) { //TH1 case
+        // Write column headers
+        csvout << "bin" << csv_separator.c_str() << "llimx" << csv_separator.c_str() << "count" << csv_separator.c_str();
+        
+        // Loop x bins
+        for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
+            
+            // Get bin lower limit and count
+            double llimx = h1.GetXaxis()->GetBinLowEdge(idx);
+            int    count = (idx<nbinsx+1) ? h1.GetBinContent(idx) : 0;
+
+            // Write data
+            csvout << idx-1 << csv_separator.c_str(); //NOTE: WRITE PYTHON INDEX
+            csvout << llimx << csv_separator.c_str();
+            csvout << count << csv_separator.c_str() << std::endl;
+        }
+    } else if (nbinsx>0 && nbinsy>1) { //TH2 case
+
+        // Write column headers
+        csvout << "binx" << csv_separator.c_str() << "biny" << csv_separator.c_str();
+        csvout << "llimx" << csv_separator.c_str() << "llimy" << csv_separator.c_str() << "count" << csv_separator.c_str();
+        
+        // Loop x bin
+        for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
+            
+            // Get bin lower limit
+            double llimx = h1.GetXaxis()->GetBinLowEdge(idx);
+
+            // Loop y bins
+            for (int idy=1; idy<=nbinsy+1; idy++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
+                
+                // Get bin lower limit and count
+                double llimy = h1.GetYaxis()->GetBinLowEdge(idy);
+                int    count = (idx<nbinsx+1 && idy<nbinsy+1) ? h1.GetBinContent(idx,idy) : 0;
+
+                // Write data
+                csvout << idx-1 << csv_separator.c_str(); //NOTE: WRITE PYTHON INDEX
+                csvout << idy-1 << csv_separator.c_str();
+                csvout << llimx << csv_separator.c_str();
+                csvout << llimy << csv_separator.c_str();
+                csvout << count << csv_separator.c_str() << std::endl;
+            }
+        }
+    } else {
+        std::cout << "ERROR: Unknown histogram type!" << std::endl;
+        throw std::runtime_error("Unknown histogram type!");
+    }
+    
+    // Close output CSV
+    csvoutf.close();
+
+} // void saveTH1ToCSV()
+
+/**
 * @brief Create 1D kinematics histograms for each bin and save to a ROOT file.
 *
 * @param frame ROOT RDataframe from which to compute bin migration fraction
@@ -814,6 +894,7 @@ void getBinKinematics(
 * @param kinvar_lims List of outer bin limits for each kinematic variable
 * @param kinvar_bins List of number of bins in each kinematic variable
 * @param save_pdfs Option to save 1D histograms as PDFs, files will be names `c1_<scheme_name>_bin<bin_id>_<kinvar>.pdf`
+* @param save_csvs Option to save 1D histograms as CSVs, files will be names `<scheme_name>_bin<bin_id>_<kinvar>.csv`
 */
 void getBinKinematicsTH1Ds(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -822,7 +903,8 @@ void getBinKinematicsTH1Ds(
         std::vector<std::string>                                      kinvars,
         std::vector<std::vector<double>>                              kinvar_lims,
         std::vector<int>                                              kinvar_bins,
-        bool                                                          save_pdfs = false
+        bool                                                          save_pdfs = false,
+        bool                                                          save_csvs = false
     ) {
 
     // Open output ROOT file
@@ -851,6 +933,10 @@ void getBinKinematicsTH1Ds(
                 h1.Draw("COLZ");
                 c1->Print(Form("%s.pdf", canvas_name.c_str()));
             }
+            if (save_csvs) {
+                std::string csv_name = Form("%s_bin%d_%s.csv", scheme_name.c_str(), bin, kinvars[idx].c_str());
+                saveTH1ToCSV(h1, csv_name);
+            }
         }
 
     } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
@@ -870,6 +956,7 @@ void getBinKinematicsTH1Ds(
 * @param kinvar_lims List of outer bin limits for each kinematic variable pair (x-axis,y-axis)
 * @param kinvar_bins List of number of bins in each kinematic variable pair (x-axis,y-axis)
 * @param save_pdfs Option to save 2D histograms as PDFs, files will be names `c2_<scheme_name>_bin<bin_id>_<kinvar_x>_<kinvar_y>.pdf`
+* @param save_csvs Option to save 2D histograms as CSVs, files will be names `<scheme_name>_bin<bin_id>_<kinvar_x>_<kinvar_y>.csv`
 */
 void getBinKinematicsTH2Ds(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
@@ -878,7 +965,8 @@ void getBinKinematicsTH2Ds(
         std::vector<std::vector<std::string>>                         kinvars,
         std::vector<std::vector<std::vector<double>>>                 kinvar_lims,
         std::vector<std::vector<int>>                                 kinvar_bins,
-        bool                                                          save_pdfs = false
+        bool                                                          save_pdfs = false,
+        bool                                                          save_csvs = false
     ) {
 
     // Open output ROOT file
@@ -907,6 +995,10 @@ void getBinKinematicsTH2Ds(
                 c1->cd();
                 h2.Draw("COLZ");
                 c1->Print(Form("%s.pdf", canvas_name.c_str()));
+            }
+            if (save_csvs) {
+                std::string csv_name = Form("%s_bin%d_%s_%s.csv", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+                saveTH1ToCSV(h2, csv_name);
             }
         }
 
