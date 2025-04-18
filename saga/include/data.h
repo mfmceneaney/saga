@@ -5,6 +5,7 @@
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
+#include <ROOT/RCsvDS.hxx>
 
 // RooFit Includes
 #include <RooCategory.h>
@@ -309,7 +310,7 @@ ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> loadRunDataFromCSV
     ) {
 
     // Load the CSV
-    auto df = ROOT::RDF::RCsvDS(csv_path.c_str(), readHeaders, delimiter);
+    auto df = ROOT::RDF::FromCSV(csv_path.c_str(), readHeaders, delimiter);
 
     // Define a new variable in the RDataFrame
     auto new_frame = frame;
