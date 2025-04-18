@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <map>
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
@@ -277,6 +278,66 @@ void createDataset(
     w->import(*rooDataSetResult);
 
     return;
+}
+
+/**
+* @brief Load run dependent values from a CSV file into an existing RDataFrame.
+*
+* Load a CSV file containing run dependent values with `ROOT::RDataFrame::FromCSV`.
+* Then, add the data from the requested column names to an existing RDataFrame
+* based on the run number variable already in the RDataFrame.  Note that column
+* values will automatically be cast to float in the RDataFrame.
+*
+* @param frame RDataFrame in which to load data from CSV
+* @param run_name Name of the run number variable in `frame`
+* @param csv_path Path to the CSV file
+* @param col_names List of column names in the CSV file
+* @param col_aliases Map of column names to aliases for defining branches in the RDataFrame
+* @param readHeaders Whether to read the headers from the CSV file
+* @param delimiter Delimiter used in the CSV file
+*
+* @return RDataFrame with run dependent values loaded from the CSV file
+*/
+ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> loadRunDataFromCSV(
+        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
+        std::string run_name,
+        std::string csv_path,
+        std::vector<std::string> col_names,
+        std::map<std::string,std::string> col_aliases,
+        bool readHeaders=true,
+        char delimiter=','
+    ) {
+
+    // Load the CSV
+    auto df = ROOT::RDF::RCsvDS(csv_path.c_str(), readHeaders, delimiter);
+
+    // Define a new variable in the RDataFrame
+    auto new_frame = frame;
+    for (int cc=0; cc<col_names.size(); cc++) {
+
+        // Set column name using alias if available
+        std::string col_name = col_names[cc];
+        for (auto it = col_aliases.begin(); it != col_aliases.end(); it++) {
+            if (it->first == col_name) {
+                col_name = it->second;
+                break;
+            }
+        }
+
+        // Create a map of run numbers to column values
+        std::map<float,float> col_map;
+        df.Foreach(
+            [&col_map,run_name,col_name](float run_num, float col_val){
+                col_map[run_num] = (float)col_val;
+            },
+            {run_name.c_str(),col_name.c_str()}
+        );
+
+        // Add the column to the RDataFrame
+        new_frame = new_frame.Define(col_name.c_str(),[&col_map](float run_num){ return col_map[run_num]; },{run_name.c_str()});
+    }
+
+    return new_frame;
 }
 
 } // namespace data
