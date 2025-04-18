@@ -54,6 +54,13 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: save_pdfs: " << save_pdfs << std::endl;
 
+    // SAVE_CSVS
+    bool save_csvs = false;
+    if (node["save_csvs"]) {
+        save_csvs = node["save_csvs"].as<bool>();
+    }
+    std::cout << "INFO: save_csvs: " << save_csvs << std::endl;
+
     // CUTS
     std::string cuts = "";
     if (node["cuts"]) {
@@ -365,7 +372,8 @@ void execute(const YAML::Node& node) {
             kinvars, //std::vector<std::string>                                      kinvars,
             kinvar_lims, // std::vector<std::vector<double>>                              kinvar_lims,
             kinvar_bins, // std::vector<std::string>                                      kinvars,
-            save_pdfs // bool                                                          save_pdfs = false
+            save_pdfs, // bool                                                          save_pdfs = false,
+            save_csvs // bool                                                          save_csvs = false
         );
     } // for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
