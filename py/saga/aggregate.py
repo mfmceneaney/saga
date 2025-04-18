@@ -38,10 +38,17 @@ def get_config_str(
 
     Description
     -----------
-    Create a string representation of a configuration.
+    Create a string representation of a configuration.  Note that aliases of nonhashable types, e.g., :obj:`list` or :obj:`dict`
+    will be accessed by the string representation of the aliased object :obj:`str(<object>)`.
     """
 
-    return (sep+sep).join([aliases[key][config[key]] if (key in aliases and config[key] in aliases[key]) else sep.join([key,sep.join([str(ele) for ele in config[key]]) if type(config[key])==list else str(config[key]) ]) for key in sorted(config)])
+    return (sep+sep).join([
+                aliases[key][config[key]] if (key in aliases and (type(config[key]) in (str,float,int)) and config[key] in aliases[key])
+                else aliases[key][str(config[key])] if (key in aliases and (type(config[key]) not in (str,float,int)) and str(config[key]) in aliases[key])
+                else sep.join([
+                    key,sep.join([str(ele) for ele in config[key]]) if type(config[key])==list else str(config[key])
+                ]) for key in sorted(config)
+                ])
 
 def get_config_out_path(
         base_dir,
