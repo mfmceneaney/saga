@@ -833,7 +833,7 @@ void saveTH1ToCSV(
     // Write CSV data
     if (nbinsx>0 && nbinsy<=1) { //TH1 case
         // Write column headers
-        csvout << "bin" << csv_separator.c_str() << "llimx" << csv_separator.c_str() << "count" << csv_separator.c_str();
+        csvout << "bin" << csv_separator.c_str() << "llimx" << csv_separator.c_str() << "count" << std::endl;
         
         // Loop x bins
         for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
@@ -845,13 +845,13 @@ void saveTH1ToCSV(
             // Write data
             csvout << idx-1 << csv_separator.c_str(); //NOTE: WRITE PYTHON INDEX
             csvout << llimx << csv_separator.c_str();
-            csvout << count << csv_separator.c_str() << std::endl;
+            csvout << count << std::endl;
         }
     } else if (nbinsx>0 && nbinsy>1) { //TH2 case
 
         // Write column headers
         csvout << "binx" << csv_separator.c_str() << "biny" << csv_separator.c_str();
-        csvout << "llimx" << csv_separator.c_str() << "llimy" << csv_separator.c_str() << "count" << csv_separator.c_str();
+        csvout << "llimx" << csv_separator.c_str() << "llimy" << csv_separator.c_str() << "count" << std::endl;
         
         // Loop x bin
         for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
@@ -871,7 +871,7 @@ void saveTH1ToCSV(
                 csvout << idy-1 << csv_separator.c_str();
                 csvout << llimx << csv_separator.c_str();
                 csvout << llimy << csv_separator.c_str();
-                csvout << count << csv_separator.c_str() << std::endl;
+                csvout << count << std::endl;
             }
         }
     } else {
