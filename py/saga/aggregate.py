@@ -1232,6 +1232,11 @@ def rescale_graph_data(
     err_scaling[np.isnan(err_scaling)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
     scaled_yerr_mean = np.multiply(err_scaling,yerr_mean) * 1.0/(tpol_factor * tdil_factor)
 
+    # Set other graph quantities to new_sim values
+    x_mean = new_sim_graph['x']
+    xerr_mean = new_sim_graph['xerr']
+    y_mean = new_sim_graph['y']
+
     # Set y values to constant and update scaled y errors if requested
     scaled_y_mean = y_mean if yvalue<-1 else [yvalue for i in range(len(y_mean))]
     if yvalue>=-1: scaled_yerr_mean *= np.sqrt(1-np.square(yvalue*tpol_factor))
