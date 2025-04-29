@@ -327,11 +327,13 @@ ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> loadRunDataFromCSV
 
         // Create a map of run numbers to column values
         std::map<float,float> col_map;
-        df.Foreach(
-            [&col_map,run_name,col_name](float run_num, float col_val){
+        std::string run_alias = Form("__%s__",run_name.c_str());
+        std::string run_float_formula = Form("(float)%s",run_name.c_str());
+        df.Define(run_alias.c_str(),run_float_formula.c_str()).Foreach(
+            [&col_map](float run_num, float col_val){
                 col_map[run_num] = (float)col_val;
             },
-            {run_name.c_str(),col_name.c_str()}
+            {run_alias.c_str(),col_name.c_str()}
         );
 
         // Add the column to the RDataFrame
