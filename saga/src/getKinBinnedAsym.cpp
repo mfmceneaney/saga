@@ -3,13 +3,14 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <functional>
 
 // YAML Includes
 #include <yaml-cpp/yaml.h>
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
-#include <TRandom.h>
+#include <TRandom3.h>
 #include <TMath.h>
 
 // Project Includes
@@ -860,11 +861,11 @@ void execute(const YAML::Node& node) {
     }
     //TODO: Add output messages about defined branches
 
-    // Define a lambda to get static random numbers for each rdf entry
-    std::map<ULong64_t,float> randvar_map;
-    if (inject_asym) d2_filtered.Foreach([&randvar_map,&gRandom](ULong64_t iEntry){ randvar_map[iEntry] = (float)gRandom->Rndm(); },{"rdfentry_"});
-    auto getEntrySlot = [&randvar_map](ULong64_t iEntry) {
-      return randvar_map[iEntry];
+    // Define a lambda to get deterministic random numbers for each rdf entry
+    auto getEntrySlot = [&seed](ULong64_t iEntry) -> float{
+        // Combine global seed and row index for determinism
+        TRandom3 rng(seed + static_cast<UInt_t>(iEntry));
+        return rng.Uniform();  // Value in [0, 1)
     };
 
     // Define helicity variable, injecting and applying MC matching cuts if requested
