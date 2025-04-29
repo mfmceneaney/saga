@@ -179,15 +179,15 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN RUN-DEPENDENT CSV VARIABLE ARGUMENTS
 
-    // RUN_NAMES
-    std::vector<std::string> run_names;
-    if (node["run_names"]) {
-        run_names = node["run_names"].as<std::vector<std::string>>();
+    // RDF_KEY_COLS
+    std::vector<std::string> rdf_key_cols;
+    if (node["rdf_key_cols"]) {
+        rdf_key_cols = node["rdf_key_cols"].as<std::vector<std::string>>();
     }
-    std::cout << "INFO: run_names: [ ";
-    for (int idx=0; idx<run_names.size(); idx++) {
-        if (idx!=run_names.size()-1) { std::cout << run_names[idx]<<", "; }
-        else { std::cout << run_names[idx]; }
+    std::cout << "INFO: rdf_key_cols: [ ";
+    for (int idx=0; idx<rdf_key_cols.size(); idx++) {
+        if (idx!=rdf_key_cols.size()-1) { std::cout << rdf_key_cols[idx]<<", "; }
+        else { std::cout << rdf_key_cols[idx]; }
     }
     std::cout << " ]" << std::endl;
 
@@ -200,6 +200,18 @@ void execute(const YAML::Node& node) {
     for (int idx=0; idx<csv_paths.size(); idx++) {
         if (idx!=csv_paths.size()-1) { std::cout << csv_paths[idx]<<", "; }
         else { std::cout << csv_paths[idx]; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // CSV_KEY_COLS
+    std::vector<std::string> csv_key_cols;
+    if (node["csv_key_cols"]) {
+        csv_key_cols = node["csv_key_cols"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: csv_key_cols: [ ";
+    for (int idx=0; idx<csv_key_cols.size(); idx++) {
+        if (idx!=csv_key_cols.size()-1) { std::cout << csv_key_cols[idx]<<", "; }
+        else { std::cout << csv_key_cols[idx]; }
     }
     std::cout << " ]" << std::endl;
 
@@ -835,10 +847,11 @@ void execute(const YAML::Node& node) {
 
     // Define run-dependent columns from CSV
     for (int idx=0; idx<csv_paths.size(); idx++) {
-        d2_filtered = saga::data::loadRunDataFromCSV(
+        d2_filtered = saga::data::mapDataFromCSV<ULong64_t,double>(
             d2_filtered,
-            run_names[idx],
+            rdf_key_cols[idx],
             csv_paths[idx],
+            csv_key_cols[idx],
             col_names[idx],
             col_aliases,
             true,

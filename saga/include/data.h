@@ -6,6 +6,8 @@
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
 #include <ROOT/RCsvDS.hxx>
+#include <thread>
+#include <functional>
 
 // RooFit Includes
 #include <RooCategory.h>
@@ -29,6 +31,8 @@
 namespace saga {
 
 namespace data {
+
+using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
 /**
 * @brief Create a dataset for an asymmetry fit.
@@ -61,7 +65,7 @@ namespace data {
 * @param massfitvar_bins List of invariant mass fit variables bins
 */
 void createDataset(
-        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
+        RNode frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
         RooWorkspace *w,
         std::string name,
         std::string title,
@@ -282,71 +286,86 @@ void createDataset(
 }
 
 /**
-* @brief Load run dependent values from a CSV file into an existing RDataFrame.
+* @brief Map values from a CSV file into an existing RDataFrame.
 *
-* Load a CSV file containing run dependent values with `ROOT::RDataFrame::FromCSV`.
+* Load a CSV file containing, e.g., run-dependent values, with `ROOT::RDataFrame::FromCSV`.
 * Then, add the data from the requested column names to an existing RDataFrame
-* based on the run number variable already in the RDataFrame.  Note that column
-* values will automatically be cast to float in the RDataFrame.
+* by matching entries for `csv_key_col` in the CSV to entries for `rdf_key_col`
+* in the RDataFrame.  Note that column values will automatically be cast to float in the RDataFrame.
 *
-* @param frame RDataFrame in which to load data from CSV
-* @param run_name Name of the run number variable in `frame`
+* @param filtered_df RDataFrame in which to load data from CSV
+* @param rdf_key_col Name of the key column in the RDataFrame
 * @param csv_path Path to the CSV file
-* @param col_names List of column names in the CSV file
+* @param csv_key_col Name of the key column in the CSV
+* @param col_names List of column names for values to map from the CSV file
 * @param col_aliases Map of column names to aliases for defining branches in the RDataFrame
-* @param readHeaders Whether to read the headers from the CSV file
+* @param readHeaders Option to read the headers from the CSV file
 * @param delimiter Delimiter used in the CSV file
 *
 * @return RDataFrame with run dependent values loaded from the CSV file
 */
-ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> loadRunDataFromCSV(
-        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-        std::string run_name,
-        std::string csv_path,
-        std::vector<std::string> col_names,
-        std::map<std::string,std::string> col_aliases,
-        bool readHeaders=true,
-        char delimiter=','
+template<typename CsvKeyType, typename CsvValueType>
+RNode mapDataFromCSV(RNode filtered_df,
+                            std::string rdf_key_col,
+                            std::string csv_path,
+                            std::string csv_key_col,
+                            std::vector<std::string> col_names,
+                            std::map<std::string,std::string> col_aliases,
+                            bool readHeaders=true,
+                            char delimiter=','
     ) {
 
-    // Load the CSV
-    auto df = ROOT::RDF::FromCSV(csv_path.c_str(), readHeaders, delimiter);
+    // Read CSV once
+    ROOT::RDataFrame csv_df = ROOT::RDF::FromCSV(csv_path, readHeaders, delimiter);
 
-    // Define a new variable in the RDataFrame
-    auto new_frame = frame;
+    // Get keys from csv
+    auto keys = csv_df.Take<CsvKeyType>(csv_key_col);
+
+    // Loop the column names and define variables from a CSV map
+    auto df_with_new_column = filtered_df;
     for (int cc=0; cc<col_names.size(); cc++) {
-
-        // Get the column name
-        std::string col_name = col_names[cc];
-
-        // Create a map of run numbers to column values
-        std::map<float,float> col_map;
-        std::string run_alias = Form("__%s__",run_name.c_str());
-        std::string run_float_formula = Form("(float)%s",run_name.c_str());
-        std::string col_alias = Form("__%s__",col_name.c_str());
-        std::string col_float_formula = Form("(float)%s",col_name.c_str());
-        df.Define(run_alias.c_str(),run_float_formula.c_str())
-        .Define(col_alias.c_str(),col_float_formula.c_str())
-        .Foreach(
-            [&col_map](float run_num, float col_val){
-                col_map[run_num] = (float)col_val;
-            },
-            {run_alias.c_str(),col_alias.c_str()}
-        );
-
+        
         // Set column name using alias if available
+        const std::string& csv_value_col = col_names[cc];
+        std::string new_column_name = col_names[cc];
         for (auto it = col_aliases.begin(); it != col_aliases.end(); it++) {
-            if (it->first == col_name) {
-                col_name = it->second;
+            if (it->first == new_column_name) {
+                new_column_name = it->second;
                 break;
             }
         }
 
-        // Add the column to the RDataFrame
-        new_frame = new_frame.Define(col_name.c_str(),[&col_map](float run_num){ return col_map[run_num]; },{run_name.c_str()});
-    }
+        // Get values from csv
+        auto values = csv_df.Take<CsvValueType>(csv_value_col);
 
-    return new_frame;
+        // Capture data as simple vectors to share across threads
+        std::vector<CsvKeyType> keys_vec = *keys;
+        std::vector<CsvValueType> values_vec = *values;
+
+        // Define column
+        df_with_new_column = filtered_df.Define(new_column_name,
+            [keys_vec, values_vec](float key_in) -> float {
+                // Build map thread-local, initialized on first use
+                static thread_local std::map<float, float> map;
+                static thread_local bool initialized = false;
+
+                if (!initialized) {
+                    for (size_t i = 0; i < keys_vec.size(); ++i) {
+                        float k = static_cast<float>(keys_vec[i]);
+                        float v = static_cast<float>(values_vec[i]);
+                        map[k] = v;
+                    }
+                    initialized = true;
+                }
+
+                auto it = map.find(key_in);
+                return it != map.end() ? it->second : 0.0f;
+            },
+            {rdf_key_col});
+
+    } // for (int cc=0; cc<col_names.size(); cc++) {
+
+    return df_with_new_column;
 }
 
 } // namespace data
