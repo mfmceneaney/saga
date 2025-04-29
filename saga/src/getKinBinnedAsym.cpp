@@ -15,6 +15,7 @@
 // Project Includes
 #include <analysis.h>
 #include <bins.h>
+#include <data.h>
 #include <util.h>
 
 void execute(const YAML::Node& node) {
@@ -173,6 +174,72 @@ void execute(const YAML::Node& node) {
     std::cout << "INFO: xs_name: " << xs_name << std::endl;
 
     // END MC ASYMMETRY INJECTION ARGUMENTS
+    //----------------------------------------------------------------------//
+
+    //----------------------------------------------------------------------//
+    // BEGIN RUN-DEPENDENT CSV VARIABLE ARGUMENTS
+
+    // RDF_KEY_COLS
+    std::vector<std::string> rdf_key_cols;
+    if (node["rdf_key_cols"]) {
+        rdf_key_cols = node["rdf_key_cols"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: rdf_key_cols: [ ";
+    for (int idx=0; idx<rdf_key_cols.size(); idx++) {
+        if (idx!=rdf_key_cols.size()-1) { std::cout << rdf_key_cols[idx]<<", "; }
+        else { std::cout << rdf_key_cols[idx]; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // CSV_PATHS
+    std::vector<std::string> csv_paths;
+    if (node["csv_paths"]) {
+        csv_paths = node["csv_paths"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: csv_paths: [ ";
+    for (int idx=0; idx<csv_paths.size(); idx++) {
+        if (idx!=csv_paths.size()-1) { std::cout << csv_paths[idx]<<", "; }
+        else { std::cout << csv_paths[idx]; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // CSV_KEY_COLS
+    std::vector<std::string> csv_key_cols;
+    if (node["csv_key_cols"]) {
+        csv_key_cols = node["csv_key_cols"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: csv_key_cols: [ ";
+    for (int idx=0; idx<csv_key_cols.size(); idx++) {
+        if (idx!=csv_key_cols.size()-1) { std::cout << csv_key_cols[idx]<<", "; }
+        else { std::cout << csv_key_cols[idx]; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // COL_NAMES
+    std::vector<std::vector<std::string>> col_names;
+    if (node["col_names"]) {
+        col_names = node["col_names"].as<std::vector<std::vector<std::string>>>();
+    }
+    std::cout << "INFO: col_names: [ \n";
+    for (int idx=0; idx<col_names.size(); idx++) {
+        std::cout << "\t[ ";
+        for (int j=0; j<col_names[idx].size()-1; j++) { std::cout << col_names[idx][j].c_str() << " , "; }
+        std::cout << col_names[idx][col_names[idx].size()-1].c_str() << " ],\n";
+    }
+    std::cout << " ]" << std::endl;
+
+    // COL_ALIASES
+    std::map<std::string,std::string> col_aliases;
+    if (node["col_aliases"]) {
+        col_aliases = node["col_aliases"].as<std::map<std::string,std::string>>();
+    }
+    std::cout << "INFO: col_aliases: { ";
+    for (auto it = col_aliases.begin(); it != col_aliases.end(); ++it) {
+        std::cout << it->first.c_str()<<" : "<<it->second.c_str()<<", ";
+    }
+    std::cout << " }" << std::endl;
+
+    // END RUN-DEPENDENT CSV VARIABLE ARGUMENTS
     //----------------------------------------------------------------------//
 
     // VAR_FORMULAS
@@ -777,6 +844,21 @@ void execute(const YAML::Node& node) {
         d2_filtered = d2_filtered.Define(fbgasyms_xs_name.c_str(),fbgasyms_xs_formula.c_str());
     }
     //TODO: Add output message about defined branches
+
+    // Define run-dependent columns from CSV
+    for (int idx=0; idx<csv_paths.size(); idx++) {
+        d2_filtered = saga::data::mapDataFromCSV<Long64_t,double>(
+            d2_filtered,
+            rdf_key_cols[idx],
+            csv_paths[idx],
+            csv_key_cols[idx],
+            col_names[idx],
+            col_aliases,
+            true,
+            ','
+        );
+    }
+    //TODO: Add output messages about defined branches
 
     // Define a lambda to get static random numbers for each rdf entry
     std::map<ULong64_t,float> randvar_map;
