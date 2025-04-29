@@ -17,9 +17,9 @@ fbgasyms_xs_name: "fbgasyms_xs"
 fbgasyms_xs_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
 randvar_name: "randvar"
 xs_name: "XS"
-rdf_key_cols: ["runnum"] #NOTE: These are the variable name used as keys in the RDataFrame for matching CSV column values to events in the ROOT files from `inpath`.
+rdf_key_cols: ["run"] #NOTE: These are the variable name used as keys in the RDataFrame for matching CSV column values to events in the ROOT files from `inpath`.
 csv_paths: [] #NOTE: You can load additional data, e.g., run depedent target polarizations, from CSV.  These will only be loaded if you specify the CSV paths here.  The length of `run_names` and `col_names` must exactly match the length of this argument if any csv paths are specified.
-csv_key_cols: ["runnum"] #NOTE: These are the variable name used as keys in the CSV for matching CSV column values to events in the ROOT files from `inpath`.
+csv_key_cols: ["Run"] #NOTE: These are the variable name used as keys in the CSV for matching CSV column values to events in the ROOT files from `inpath`.
 col_names: [["PbPt"]] #NOTE: You must specify the data to take from the CSV
 col_aliases: #NOTE: You can optionally specify aliases for the column names in the CSV to avoid potential naming conflicts with existing columns in the `ROOT::RDataFrame`.
   PbPt: "PbPt"
