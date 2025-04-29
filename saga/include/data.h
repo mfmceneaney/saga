@@ -316,25 +316,31 @@ ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> loadRunDataFromCSV
     auto new_frame = frame;
     for (int cc=0; cc<col_names.size(); cc++) {
 
-        // Set column name using alias if available
+        // Get the column name
         std::string col_name = col_names[cc];
+
+        // Create a map of run numbers to column values
+        std::map<float,float> col_map;
+        std::string run_alias = Form("__%s__",run_name.c_str());
+        std::string run_float_formula = Form("(float)%s",run_name.c_str());
+        std::string col_alias = Form("__%s__",col_name.c_str());
+        std::string col_float_formula = Form("(float)%s",col_name.c_str());
+        df.Define(run_alias.c_str(),run_float_formula.c_str())
+        .Define(col_alias.c_str(),col_float_formula.c_str())
+        .Foreach(
+            [&col_map](float run_num, float col_val){
+                col_map[run_num] = (float)col_val;
+            },
+            {run_alias.c_str(),col_alias.c_str()}
+        );
+
+        // Set column name using alias if available
         for (auto it = col_aliases.begin(); it != col_aliases.end(); it++) {
             if (it->first == col_name) {
                 col_name = it->second;
                 break;
             }
         }
-
-        // Create a map of run numbers to column values
-        std::map<float,float> col_map;
-        std::string run_alias = Form("__%s__",run_name.c_str());
-        std::string run_float_formula = Form("(float)%s",run_name.c_str());
-        df.Define(run_alias.c_str(),run_float_formula.c_str()).Foreach(
-            [&col_map](float run_num, float col_val){
-                col_map[run_num] = (float)col_val;
-            },
-            {run_alias.c_str(),col_name.c_str()}
-        );
 
         // Add the column to the RDataFrame
         new_frame = new_frame.Define(col_name.c_str(),[&col_map](float run_num){ return col_map[run_num]; },{run_name.c_str()});
