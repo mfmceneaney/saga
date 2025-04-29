@@ -847,7 +847,7 @@ void execute(const YAML::Node& node) {
 
     // Define run-dependent columns from CSV
     for (int idx=0; idx<csv_paths.size(); idx++) {
-        d2_filtered = saga::data::mapDataFromCSV<ULong64_t,double>(
+        d2_filtered = saga::data::mapDataFromCSV<Long64_t,double>(
             d2_filtered,
             rdf_key_cols[idx],
             csv_paths[idx],
