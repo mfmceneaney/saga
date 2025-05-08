@@ -737,6 +737,25 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: logpath: " << logpath << std::endl;
 
+    // DUMP_VARS
+    std::vector<std::string> dump_vars; //NOTE: If empty ALL variables from dataset will be dumped if dump_dataset==true.
+    if (node["dump_vars"]) {
+        dump_vars = node["dump_vars"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: dump_vars: [ ";
+    for (int idx=0; idx<dump_vars.size(); idx++) {
+        if (idx!=dump_vars.size()-1) { std::cout << dump_vars[idx].c_str()<<", "; }
+        else { std::cout << dump_vars[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // DUMP_DATASET
+    bool dump_dataset = false;
+    if (node["dump_dataset"]) {
+        dump_dataset = node["dump_dataset"].as<bool>();
+    }
+    std::cout << "INFO: dump_dataset: " << dump_dataset << std::endl;
+
     //----------------------------------------------------------------------------------------------------//
     // ANALYSIS
     //----------------------------------------------------------------------------------------------------//
@@ -888,6 +907,16 @@ void execute(const YAML::Node& node) {
         double my_testvar  = (double)*frame.Mean(randvar_name.c_str());
         double my_testvar1 = (double)*frame.Mean(xs_name.c_str());
         double my_testvar2 = (double)*frame.Mean(helicity_name.c_str());
+    }
+
+    // Dump dataset to ROOT file and exit
+    if (dump_dataset) {
+        std::string out_ds_path = Form("%sdataset.root", baseoutpath.c_str());
+        std::cout<<"INFO: Dumping dataset to: "<<out_ds_path.c_str()<<std::endl;
+        if (dump_vars.size()==0) frame.Snapshot(tree.c_str(), out_ds_path.c_str());
+        else frame.Snapshot(tree.c_str(), out_ds_path.c_str(), dump_vars);
+
+        return;
     }
 
     // Create output log
