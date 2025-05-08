@@ -111,3 +111,5 @@ asymfitvar_binschemes: #NOTE: Structure for asymmetry fit variable bin schemes i
       nbins: 4
       lims: [0.0,6.28]
 logpath: "out.txt"
+dump_vars: [] #NOTE: Specify which branches you want to save here
+dump_dataset: false #NOTE: Specify whether you want to save the filtered dataset and exit. Filename will be: `baseoutpath`+'dataset.root'.
