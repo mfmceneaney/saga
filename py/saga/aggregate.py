@@ -2394,7 +2394,7 @@ def plot_th2(
     weights = np.ravel(h2[0])
 
     # Get the bin sizes
-    bins = (len(h2[1])-1, len(h2[2])-1)
+    bins = (h2[1], h2[2])
 
     # Plot the histogram
     hist2d = ax.hist2d(x,y,weights=weights,bins=bins, norm=norm, **kwargs)
