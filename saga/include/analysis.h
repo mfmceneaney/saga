@@ -964,6 +964,10 @@ std::vector<double> fitAsym(
 * @param dataset_title Dataset title
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
+* @param tspin Name of target spin variable
+* @param tspin_states Map of state names to target spin values
+* @param htspin Name of helicity times target spin variable
+* @param htspin_states Map of state names to helicity times target spin values
 * @param bincuts Map of unique bin id ints to bin variable cuts for bin
 * @param binvars List of kinematic binning variables names
 * @param binvar_titles List of kinematic binning variables titles
@@ -1015,6 +1019,10 @@ void getKinBinnedAsym(
         std::string                      dataset_title,
         std::string                      helicity,
         std::map<std::string,int>        helicity_states,
+        std::string                      tspin,
+        std::map<std::string,int>        tspin_states,
+        std::string                      htspin,
+        std::map<std::string,int>        htspin_states,
         std::map<int,std::string>        bincuts,
         std::vector<std::string>         binvars,
         std::vector<std::string>         binvar_titles,
@@ -1135,6 +1143,10 @@ void getKinBinnedAsym(
             dataset_title,
             helicity,
             helicity_states,
+            tspin,
+            tspin_states,
+            htspin,
+            htspin_states,
             binvars,
             binvar_titles,
             binvar_lims,
@@ -1229,6 +1241,10 @@ void getKinBinnedAsym(
                 dataset_title,
                 helicity,
                 helicity_states,
+                tspin,
+                tspin_states,
+                htspin,
+                htspin_states,
                 binvars,
                 binvar_titles,
                 binvar_lims,
@@ -1285,6 +1301,10 @@ void getKinBinnedAsym(
                 dataset_title,
                 helicity,
                 helicity_states,
+                tspin,
+                tspin_states,
+                htspin,
+                htspin_states,
                 binvars,
                 binvar_titles,
                 binvar_lims,

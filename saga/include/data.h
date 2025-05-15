@@ -6,6 +6,7 @@
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
 #include <ROOT/RCsvDS.hxx>
+#include <TRandom3.h>
 #include <thread>
 #include <functional>
 
@@ -47,6 +48,10 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @param title Dataset title
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
+* @param tspin Name of target spin variable
+* @param tspin_states Map of state names to target spin values
+* @param htspin Name of helicity times target spin variable
+* @param htspin_states Map of state names to helicity times target spin values
 * @param binvars List of kinematic binning variables names
 * @param binvar_titles List of kinematic binning variables titles
 * @param binvar_lims List kinematic binning variable minimum and maximum bounds 
@@ -71,6 +76,10 @@ void createDataset(
         std::string title,
         std::string helicity,
         std::map<std::string,int> helicity_states,
+        std::string tspin,
+        std::map<std::string,int> tspin_states,
+        std::string htspin,
+        std::map<std::string,int> htspin_states,
         std::vector<std::string> binvars,
         std::vector<std::string> binvar_titles,
         std::vector<std::vector<double>> binvar_lims,
@@ -93,6 +102,18 @@ void createDataset(
     RooCategory h(helicity.c_str(), helicity.c_str());
     for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
         h.defineType(it->first.c_str(), it->second);
+    }
+
+    // Define the target spin variable
+    RooCategory t(tspin.c_str(), tspin.c_str());
+    for (auto it = tspin_states.begin(); it != tspin_states.end(); it++) {
+        t.defineType(it->first.c_str(), it->second);
+    }
+
+    // Define the target spin variable
+    RooCategory ht(htspin.c_str(), htspin.c_str());
+    for (auto it = htspin_states.begin(); it != htspin_states.end(); it++) {
+        ht.defineType(it->first.c_str(), it->second);
     }
 
     // Define the full variables and limits lists
@@ -242,7 +263,7 @@ void createDataset(
     }
 
     // Manually create dataset containing helicity as a RooCategory variable
-    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h));
+    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h,t,ht));
 
     // Set cuts for variable limits so that new dataset will have same length as old dataset
     std::string varlims_cuts = "";
@@ -256,20 +277,40 @@ void createDataset(
 
     // Loop RDataFrame and fill helicity dataset
     frame.Filter(varlims_cuts.c_str()).Foreach(
-                  [&h,&ds_h](float val){
+                  [&h,&t,&ht,&ds_h](float h_val, float tspin_val){
 
-                    // Assign the state for the categorical variable (assuming 1 or -1 as the states)
-                    if (val > 0) {
+                    // Assign the state for the beam helicity (assuming 1 or -1 as the states)
+                    if (h_val > 0) {
                       h.setIndex(1);
-                    } else if (val < 0) {
+                    } else if (h_val < 0) {
                       h.setIndex(-1);
                     } else {
                       h.setIndex(0);
                     }
+
+                    // Assign the state for the target spin (assuming 1 or -1 as the states)
+                    if (tspin_val > 0) {
+                      t.setIndex(1);
+                    } else if (tspin_val < 0) {
+                      t.setIndex(-1);
+                    } else {
+                      t.setIndex(0);
+                    }
+
+                    // Assign the state for the helicity times target spin (assuming 1 or -1 as the states)
+                    float htspin_val = h_val * tspin_val;
+                    if (htspin_val > 0) {
+                      ht.setIndex(1);
+                    } else if (htspin_val < 0) {
+                      ht.setIndex(-1);
+                    } else {
+                      ht.setIndex(0);
+                    }
+
                     // Add the event to the RooDataSet
-                    ds_h->add(RooArgSet(h));
+                    ds_h->add(RooArgSet(h,t,ht));
                   },
-                  {h.GetName()}
+                  {h.GetName(),t.GetName()}
                   );
 
     // Merge datasets
@@ -277,6 +318,8 @@ void createDataset(
 
     // Import variables into workspace
     w->import(h);
+    w->import(tspin);
+    w->import(htspin);
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
 
     // Import data into the workspace
@@ -367,6 +410,99 @@ RNode mapDataFromCSV(RNode filtered_df,
 
     return df_with_new_column;
 }
+
+/**
+*
+*
+*/
+RNode injectAsym(
+    RNode df,
+    int seed,
+    float bpol,
+    float tpol,
+    std::string mc_sg_match_name,
+    std::string fsgasyms_xs_pu_name,
+    std::string fsgasyms_xs_up_name,
+    std::string fsgasyms_xs_pp_name,
+    std::string fbgasyms_xs_pu_name,
+    std::string fbgasyms_xs_up_name,
+    std::string fbgasyms_xs_pp_name,
+    std::string randvar_name,
+    std::string helicity_name,
+    std::string tspin_name
+    ) {
+
+    // Define a lambda to inject an asymmetry for each rdf entry
+    auto getEntrySlot = [&seed,&bpol,&tpol](
+                        ULong64_t iEntry,
+                        bool mc_sg_match,
+                        float fsgasyms_xs_pu, float fsgasyms_xs_up, float fsgasyms_xs_pp,
+                        float fbgasyms_xs_pu, float fbgasyms_xs_up, float fbgasyms_xs_pp) -> int {
+
+        // Combine global seed and row index for determinism
+        TRandom3 rng(seed + static_cast<UInt_t>(iEntry));
+
+        // Randomly generate random variable, beam helicity, and target spin
+        int bhelicity    = 0;
+        int tspin        = 0;
+        float random_var = 0.0;
+        float xs_val     = 0.0;
+
+        // Reassign helicity and target spin based on XS value
+        while (bhelicity==0 || random_var<=xs_val) {
+
+            // Regenerate random variables
+            random_var = rng.Uniform();
+            float b_rand_var = rng.Uniform();
+            float t_rand_var = rng.Uniform();
+
+            // Assign helicity with probabilities given by polarization
+            if (b_rand_var>bpol || t_rand_var>tpol) break;
+
+            // Assign beam helicity and target spin
+            bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
+            tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
+
+            // Compute the XS value
+            float xs_val;
+            if (mc_sg_match) {
+                xs_val = 0.5*(1.0 + bhelicity*fsgasyms_xs_pu + tspin*fsgasyms_xs_up + bhelicity*tspin*fsgasyms_xs_pp);
+            } else {
+                xs_val = 0.5*(1.0 + bhelicity*fbgasyms_xs_pu + tspin*fbgasyms_xs_up + bhelicity*tspin*fbgasyms_xs_pp);
+            }
+
+        } //  while (bhelicity==0.0 || random_var<=xs_val) {
+
+        // Once helicity and target spin satisfy XS(h,tspin)>random_var
+        return (int)((bhelicity+1)*10 + (tspin+1)); //NOTE: ENCODE AS A 2 DIGIT NUMBER ASSUMING 3 STATES FOR BEAM HELICITY AND TARGET SPIN EACH.
+    };
+
+    // Define random variable
+    auto frame = df.Define(
+                        randvar_name.c_str(),
+                        getEntrySlot,
+                        {
+                            "rdfentry_", mc_sg_match_name.c_str(),
+                            fsgasyms_xs_pu_name.c_str(), fsgasyms_xs_up_name.c_str(), fsgasyms_xs_pp_name.c_str(),
+                            fbgasyms_xs_pu_name.c_str(), fbgasyms_xs_up_name.c_str(), fbgasyms_xs_pp_name.c_str()
+                        }
+                    )
+                    .Define(helicity_name.c_str(), [](int my_rand_var) -> float {
+                        if (my_rand_var % 10 == 2) return (float) 1.0;
+                        if (my_rand_var % 10 == 0) return (float)-1.0;
+                        return (float)0.0;
+                    },
+                    {randvar_name.c_str()})
+                    .Define(tspin_name.c_str(), [](int my_rand_var) -> float {
+                        if (my_rand_var % 1 == 2) return (float) 1.0;
+                        if (my_rand_var % 1 == 0) return (float)-1.0;
+                        return (float)0.0;
+                    },
+                    {randvar_name.c_str()});
+
+    return frame;
+
+}// RNode injectAsym()
 
 } // namespace data
 

@@ -254,7 +254,7 @@ void execute(const YAML::Node& node) {
     std::cout << " }" << std::endl;
 
     //----------------------------------------------------------------------//
-    // BEGIN HELICITY VARIABLES
+    // BEGIN HELICITY AND SPIN VARIABLES
     
     // HELICITY_NAME
     std::string helicity_name = "heli";
@@ -280,7 +280,52 @@ void execute(const YAML::Node& node) {
         std::cout << it->first<<" : "<<it->second<<", ";
     }
     std::cout << " }" << std::endl;
-    // END HELICITY VARIABLES
+
+    // TSPIN_NAME
+    std::string tspin_name = "heli";
+    if (node["tspin_name"]) {
+        tspin_name = node["tspin_name"].as<std::string>();
+    }
+    std::cout << "INFO: tspin_name: " << tspin_name << std::endl;
+
+    // TSPIN_FORMULA
+    std::string tspin_formula = "-tspin"; //NOTE: Make sure to flip tspin for RGA fall 2018 data and check if needed for other datasets.
+    if (node["tspin_formula"]) {
+        tspin_formula = node["tspin_formula"].as<std::string>();
+    }
+    std::cout << "INFO: tspin_formula: " << tspin_formula << std::endl;
+
+    // TSPIN_STATES
+    std::map<std::string,int> tspin_states = {{"plus",1}, {"zero",0}, {"minus",-1}};
+    if (node["tspin_states"]) {
+        tspin_states = node["tspin_states"].as<std::map<std::string,int>>();
+    }
+    std::cout << "INFO: tspin_states: { ";
+    for (auto it = tspin_states.begin(); it != tspin_states.end(); ++it) {
+        std::cout << it->first<<" : "<<it->second<<", ";
+    }
+    std::cout << " }" << std::endl;
+
+    // HTSPIN_NAME
+    std::string htspin_name = "heli";
+    if (node["htspin_name"]) {
+        htspin_name = node["htspin_name"].as<std::string>();
+    }
+    std::cout << "INFO: htspin_name: " << htspin_name << std::endl;
+
+    // HTSPIN_STATES
+    std::map<std::string,int> htspin_states = {{"plus",1}, {"zero",0}, {"minus",-1}};
+    if (node["htspin_states"]) {
+        htspin_states = node["htspin_states"].as<std::map<std::string,int>>();
+    }
+    std::cout << "INFO: htspin_states: { ";
+    for (auto it = htspin_states.begin(); it != htspin_states.end(); ++it) {
+        std::cout << it->first<<" : "<<it->second<<", ";
+    }
+    std::cout << " }" << std::endl;
+
+
+    // END HELICITY AND SPIN VARIABLES
     //----------------------------------------------------------------------//
 
     //----------------------------------------------------------------------//
@@ -557,11 +602,17 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN FIT PARAMETERS
 
-    double pol = 0.8922; // Average Polarization for Fall 2018 Outbending data runs >= 5331
+    double pol = 0.8922; // Average Beam Polarization \overline{P_B^2} for Fall 2018 Outbending data runs >= 5331 is 0.8922
     if (node["pol"]) {
         pol = node["pol"].as<double>();
     }
     std::cout << "INFO: pol: " << pol << std::endl;
+
+    double tpol = 1.0; // Target polarization
+    if (node["tpol"]) {
+        tpol = node["tpol"].as<double>();
+    }
+    std::cout << "INFO: tpol: " << tpol << std::endl;
 
     // Define fit / injection function formulas
     std::string asymfit_formula = "";
@@ -900,6 +951,13 @@ void execute(const YAML::Node& node) {
                         return (float)(my_rand_var<XS ? 1.0 : -1.0);
                     },
                     {randvar_name.c_str(),xs_name.c_str()});
+
+
+    // Define the helicity variable
+
+    // Define the target spin variable
+
+
     //TODO: Add output message about defined branches
 
     // Make sure injection values are all computed before running analysis
@@ -965,6 +1023,10 @@ void execute(const YAML::Node& node) {
             "dataset", //std::string                      dataset_title,
             helicity_name, // std::string                      helicity,
             helicity_states, //std::map<std::string,int>        helicity_states,
+            tspin_name, // std::string                         tspin,
+            tspin_states, //std::map<std::string,int>           tspin_states,
+            htspin_name, // std::string                         htspin,
+            htspin_states, //std::map<std::string,int>           htspin_states,
             bincuts, //std::map<int,std::string>        bincuts,
             scheme_binvars, //std::vector<std::string>         binvars,
             scheme_binvar_titles, //std::vector<std::string>         binvar_titles,
