@@ -318,8 +318,8 @@ void createDataset(
 
     // Import variables into workspace
     w->import(h);
-    w->import(tspin);
-    w->import(htspin);
+    w->import(t);
+    w->import(ht);
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
 
     // Import data into the workspace
