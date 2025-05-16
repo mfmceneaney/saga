@@ -670,34 +670,327 @@ void applySPlot(
 }
 
 /**
+* @brief Create a simultaneous PDF for fitting a generic asymmetry with a maximum likelihood fit.
+* 
+* Create a simultaneous PDF given the formulas for the asymmetries coupling to each combination of beam helicity
+* and target spin states.  The PDF will be constructed internally using <a href="https://root.cern.ch/doc/master/classRooGenericPdf.html">RooGenericPdf</a>
+* in the form:
+*
+* @f[
+* \begin{aligned}
+* PDF(h_b, h_t, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h_b \cdot \overline{P^2_b} \cdot A_{PU}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + h_t \cdot \overline{P^2_t} \cdot A_{UP}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + h_b \cdot \overline{P^2_b} \cdot h_t \cdot \overline{P^2_t} \cdot A_{PP}(\vec{x}, \vec{a}, \vec{d}), \\
+* \end{aligned}
+* @f]
+* where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
+* The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
+*
+* The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
+* `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
+* 
+* @param h Beam helicity \f$h_b\in(-1,0,1)\f$
+* @param t Target spin \f$h_t\in(-1,0,1)\f$
+* @param ht Beam helicity times target spin \f$h_b \cdot h_t\in(-1,0,1)\f$
+* @param ss Combined beam helicity and target spin state \f$ss = (h_b+1)*10 + (h_t+1)\f$
+* @param argset Argument set for PDF
+* @param method_name Method name, used to name PDF
+* @param binid Unique bin id, used to name PDF
+* @param fitformula_pu Fit formula for the beam helicity dependent asymmetry terms \f$A_{PU}\f$
+* @param fitformula_up Fit formula for the target spin dependent asymmetry terms \f$A_{UP}\f$
+* @param fitformula_pp Fit formula for the beam helicity and target spin dependent asymmetry terms \f$A_{PP}\f$
+* @param bpol Average beam polarization
+* @param tpol Average target polarization
+* @param count Bin count
+* @param use_extended_nll Option to use an extended likelihood term
+* 
+* @return RooAbsPdf*
+*/
+RooSimultaneous * getSimGenAsymPdf(
+    RooCategory *h,
+    RooCategory *t,
+    RooCategory *ht,
+    RooCategory *ss,
+    RooArgSet *argset,
+    std::string method_name,
+    std::string binid,
+    std::string fitformula_pu,
+    std::string fitformula_up,
+    std::string fitformula_pp,
+    double bpol,
+    double tpol,
+    int count,
+    bool use_extended_nll
+) {
+
+    // Get the total number of states and set the starting count for the extended case
+    int nstates = 0;
+    if (fitformula_pu!="") nstates += 1;
+    if (fitformula_up!="") nstates += 1;
+    if (fitformula_pp!="") nstates += 1;
+    nstates *= 3;
+    double ninit = count / nstates;
+
+    // Create simultaneous pdf
+    RooSimultaneous * model;
+    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
+
+    //NOTE: `_<int><int>` on the variables below correspond to beam helicity and target spin states (+1) respectively, i.e., (-1,0,1) -> (0,1,2).
+
+    // Create pdf helicity==0
+    std::string fitformula_11 = "1.0";
+    RooGenericPdf _model_11("_model_11", fitformula_up.c_str(), *argset);
+
+    // Create extended pdf helicity==0
+    RooRealVar nsig_11("nsig_11", "number of signal events", ninit, 0.0, count);
+    RooExtendPdf model_11("model_11", "extended signal pdf", _model_11, nsig_11);
+
+    // Construct helicity dependent pdf
+    if (fitformula_pu!="" && fitformula_up=="" && fitformula_pp=="") {
+
+        // Create pdf helicity==+1
+        std::string fitformula_21 = Form("1.0+%.3f*%s",bpol,fitformula_pu.c_str());
+        RooGenericPdf _model_21("_model_21", fitformula_pu.c_str(), *argset);
+
+        // Create extended pdf helicity==+1
+        RooRealVar nsig_21("nsig_21", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_21("model_21", "extended signal pdf", _model_21, nsig_21);
+
+        // Create pdf helicity==-1
+        std::string fitformula_01 = Form("1.0-%.3f*%s",bpol,fitformula_pu.c_str());
+        RooGenericPdf _model_01("_model_01", fitformula_pu.c_str(), *argset);
+
+        // Create extended pdf helicity==-1
+        RooRealVar nsig_01("nsig_01", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_01("model_01", "extended signal pdf", _model_01, nsig_01);
+
+        // Create the simultaneous pdf
+        if (use_extended_nll) {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {h->lookupName(1), &model_21}, {h->lookupName(-1), &model_01}
+            },
+            *h);
+        }
+        else {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {h->lookupName(1), &_model_21}, {h->lookupName(-1), &_model_01}
+            },
+            *h);
+        }
+    }
+
+    // Construct target spin dependent pdf
+    if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp=="") {
+
+        // Create pdf tspin==+1
+        std::string fitformula_12 = Form("1.0+%.3f*%s",tpol,fitformula_up.c_str());
+        RooGenericPdf _model_12("_model_12", fitformula_up.c_str(), *argset);
+
+        // Create extended pdf tspin==+1
+        RooRealVar nsig_12("nsig_12", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_12("model_12", "extended signal pdf", _model_12, nsig_12);
+
+        // Create pdf tspin==-1
+        std::string fitformula_10 = Form("1.0-%.3f*%s",tpol,fitformula_up.c_str());
+        RooGenericPdf _model_10("_model_10", fitformula_up.c_str(), *argset);
+
+        // Create extended pdf tspin==-1
+        RooRealVar nsig_10("nsig_10", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_10("model_10", "extended signal pdf", _model_10, nsig_10);
+
+        // Create the simultaneous pdf
+        if (use_extended_nll) {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {t->lookupName(1), &model_12}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_10}
+            },
+            *t);
+        }
+        else {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {t->lookupName(1), &_model_12}, {t->lookupName(0), &_model_11}, {t->lookupName(-1), &_model_10}
+            },
+            *t);
+        }
+    }
+
+    // Construct beam helicity and target spin dependent pdf
+    if (fitformula_pu=="" && fitformula_up=="" && fitformula_pp!="") {
+
+        // Create pdf htspin==+1
+        std::string fitformula_22_00 = Form("1.0+%.3f*%s",bpol*tpol,fitformula_pp.c_str());
+        RooGenericPdf _model_22_00("_model_22_00", fitformula_pp.c_str(), *argset);
+
+        // Create extended pdf htspin==+1
+        RooRealVar nsig_22_00("nsig_22_00", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_22_00("model_22_00", "extended signal pdf", _model_22_00, nsig_22_00);
+
+        // Create pdf htspin==-1
+        std::string fitformula_20_02 = Form("1.0-%.3f*%s",bpol*tpol,fitformula_pp.c_str());
+        RooGenericPdf _model_20_02("_model_20_02", fitformula_pp.c_str(), *argset);
+
+        // Create extended pdf htspin==-1
+        RooRealVar nsig_20_02("nsig_", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_20_02("model_20_02", "extended signal pdf", _model_20_02, nsig_20_02);
+
+        // Create the simultaneous pdf
+        if (use_extended_nll) {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {ht->lookupName(1), &model_22_00}, {ht->lookupName(0), &model_11}, {ht->lookupName(-1), &model_20_02}
+            },
+            *ht);
+        }
+        else {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {ht->lookupName(1), &_model_22_00}, {ht->lookupName(0), &_model_11}, {ht->lookupName(-1), &_model_20_02}
+            },
+            *ht);
+        }
+    }
+
+    // Construct FULL beam helicity and target spin dependent pdf
+    if (fitformula_pu!="" && fitformula_up!="" && fitformula_pp!="") {
+
+        //----- Beam helicity dependent terms -----//
+        // Create pdf (h,t,ht) -> ( 1, 0, 0)
+        std::string fitformula_21 = Form("1.0+%.3f*%s",bpol,fitformula_pu.c_str());
+        RooGenericPdf _model_21("_model_21", fitformula_pu.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> ( 1, 0, 0)
+        RooRealVar nsig_21("nsig_21", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_21("model_21", "extended signal pdf", _model_21, nsig_21);
+
+        // Create pdf (h,t,ht) -> (-1, 0, 0)
+        std::string fitformula_01 = Form("1.0-%.3f*%s",bpol,fitformula_pu.c_str());
+        RooGenericPdf _model_01("_model_01", fitformula_pu.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> (-1, 0, 0)
+        RooRealVar nsig_01("nsig_01", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_01("model_01", "extended signal pdf", _model_01, nsig_01);
+
+        //----- Target spin dependent terms -----//
+        // Create pdf (h,t,ht) -> ( 0, 1, 0)
+        std::string fitformula_12 = Form("1.0+%.3f*%s",tpol,fitformula_up.c_str());
+        RooGenericPdf _model_12("_model_12", fitformula_up.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> ( 0, 1, 0)
+        RooRealVar nsig_12("nsig_12", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_12("model_12", "extended signal pdf", _model_12, nsig_12);
+
+        // Create pdf (h,t,ht) -> ( 0,-1, 0)
+        std::string fitformula_10 = Form("1.0-%.3f*%s",tpol,fitformula_up.c_str());
+        RooGenericPdf _model_10("_model_10", fitformula_up.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> ( 0,-1, 0)
+        RooRealVar nsig_10("nsig_10", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_10("model_10", "extended signal pdf", _model_10, nsig_10);
+
+        //----- Beam helicity and target spin dependent terms -----//
+        // Create pdf (h,t,ht) -> ( 1, 1, 1)
+        std::string fitformula_22 = Form("1.0+%.3f*%s+%.3f*%s+%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
+        RooGenericPdf _model_22("_model_22", fitformula_pp.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> ( 1, 1, 1)
+        RooRealVar nsig_22("nsig_22", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_22("model_22", "extended signal pdf", _model_22, nsig_22);
+
+        // Create pdf (h,t,ht) -> (-1,-1, 1)
+        std::string fitformula_00 = Form("1.0-%.3f*%s-%.3f*%s+%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
+        RooGenericPdf _model_00("_model_00", fitformula_pp.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> (-1,-1, 1)
+        RooRealVar nsig_00("nsig_00", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_00("model_00", "extended signal pdf", _model_00, nsig_00);
+
+        // Create pdf (h,t,ht) -> (-1, 1,-1)
+        std::string fitformula_02 = Form("1.0-%.3f*%s+%.3f*%s-%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
+        RooGenericPdf _model_02("_model_02", fitformula_pp.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> (-1, 1,-1)
+        RooRealVar nsig_02("nsig_02", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_02("model_02", "extended signal pdf", _model_02, nsig_02);
+
+        // Create pdf (h,t,ht) -> ( 1,-1,-1)
+        std::string fitformula_20 = Form("1.0+%.3f*%s-%.3f*%s-%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
+        RooGenericPdf _model_20("_model_20", fitformula_pp.c_str(), *argset);
+
+        // Create extended pdf (h,t,ht) -> ( 1,-1,-1)
+        RooRealVar nsig_20("nsig_20", "number of signal events", ninit, 0.0, count);
+        RooExtendPdf model_20("model_20", "extended signal pdf", _model_20, nsig_20);
+
+        // Create the simultaneous pdf
+        if (use_extended_nll) {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+                {
+                    {ss->lookupName(11), &model_11}, // Polarization states: UU
+                    {ss->lookupName(21), &model_21}, {ss->lookupName(1),  &model_01}, // Polarization states: PU
+                    {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
+                    {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: UP
+                    {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: UP
+                },
+                *ss);
+        }
+        else {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+                {
+                    {ss->lookupName(11), &_model_11}, // Polarization states: UU
+                    {ss->lookupName(21), &_model_21}, {ss->lookupName(1),  &_model_01}, // Polarization states: PU
+                    {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
+                    {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: UP
+                    {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: UP
+                },
+                *ss);
+        }
+    }
+
+    return model;
+
+} // RooAbsPdf * getSimGenAsymPdf()
+
+/**
 * @brief Fit an asymmetry.
 *
 * Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
 * and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood fit method with an optional extended likelihood term.
-* Note that for the maximum likelihood fit, the given asymmetry formula \f$ A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$ will be converted internally using
-* <a href="https://root.cern.ch/doc/master/classRooGenericPdf.html">RooGenericPdf</a> to a PDF of the form:
-*
+* Note that for the maximum likelihood fit, the given asymmetry formulas \f$ A_{(PU,UP,PP)}(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$
+* will be used internally by `getSimGenAsymPdf()` to construct a simultaneous PDF of the form:
 * @f[
 * \begin{aligned}
-* PDF(h, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
-* & 1 + h \cdot P \cdot A(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...),
+* PDF(h_b, h_t, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + h_b \cdot \overline{P^2_b} \cdot A_{PU}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + h_t \cdot \overline{P^2_t} \cdot A_{UP}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + h_b \cdot \overline{P^2_b} \cdot h_t \cdot \overline{P^2_t} \cdot A_{PP}(\vec{x}, \vec{a}, \vec{d}), \\
 * \end{aligned}
 * @f]
-* and a simultaneous fit will be applied over the data subsets distinguished by the helicity states.  The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
+* where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
+* A simultaneous fit will be applied over the data subsets distinguished by the beam helicity, target spin, and product of beam helicity and target spin.
+* The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
 *
-* The variable names in the fit formula should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
+* The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
 *
 * @param w RooWorkspace in which to work
 * @param dataset_name Dataset name
-* @param pol Luminosity averaged beam polarization
-* @param helicity Name of helicity variable
+* @param bpol Luminosity averaged beam polarization
+* @param tpol Luminosity averaged target polarization
+* @param helicity Name of the helicity variable
+* @param tspin Name of the target spin variable
+* @param htspin Name of the beam helicity times target spin variable
+* @param combined_spin_state Name of the combined spin state variable
 * @param binid Bin unique id
 * @param bincut Kinematic variable cut for bin
 * @param binvars List of kinematic binning variables
 * @param depolvars List of depolarization variables
 * @param fitvars List of asymmetry fit variables
-* @param fitformula The asymmetry formula in ROOT TFormula format
+* @param fitformula_pu The asymmetry formula in ROOT TFormula format for beam helicity dependent terms
+* @param fitformula_up The asymmetry formula in ROOT TFormula format for target spin dependent terms
+* @param fitformula_pp The asymmetry formula in ROOT TFormula format for beam helicity and target spin dependent terms
 * @param initparams List of initial values for asymmetry parameters
 * @param initparamlims List of initial asymmetry parameter minimum and maximum bounds
 * @param use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
@@ -711,14 +1004,20 @@ void applySPlot(
 std::vector<double> fitAsym(
         RooWorkspace                    *w,
         std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
-        double                           pol,
+        double                           bpol,
+        double                           tpol,
         std::string                      helicity,
+        std::string                      tspin,
+        std::string                      htspin,
+        std::string                      combined_spin_state,
         std::string                      binid,
         std::string                      bincut,
         std::vector<std::string>         binvars,
         std::vector<std::string>         depolvars,
         std::vector<std::string>         fitvars,
-        std::string                      fitformula,
+        std::string                      fitformula_pu,
+        std::string                      fitformula_up,
+        std::string                      fitformula_pp,
         std::vector<double>              initparams,
         std::vector<std::vector<double>> initparamlims,
         bool use_sumw2error              = true,
@@ -735,7 +1034,10 @@ std::vector<double> fitAsym(
     gStyle->SetOptStat(0);
 
     // Load helicity variable from workspace
-    RooCategory * h = w->cat(helicity.c_str());
+    RooCategory * h  = w->cat(helicity.c_str());
+    RooCategory * t  = w->cat(tspin.c_str());
+    RooCategory * ht = w->cat(htspin.c_str());
+    RooCategory * ss = w->cat(combined_spin_state.c_str());
 
     // Load fit variables from workspace
     RooRealVar * f[(const int)fitvars.size()];
@@ -800,27 +1102,23 @@ std::vector<double> fitAsym(
         }
     }
 
-    // Create pdf positive helicity
-    std::string fitformula_pos = Form("1.0+%.3f*%s",pol,fitformula.c_str());
-    RooGenericPdf _model_pos("_model_pos", fitformula_pos.c_str(), *argset);
-
-    // Create extended pdf positive helicity
-    RooRealVar nsig_pos("nsig_pos", "number of signal events", count/2, 0.0, count);
-    RooExtendPdf model_pos("model_pos", "extended signal pdf", _model_pos, nsig_pos);
-
-    // Create pdf negative helicity
-    std::string fitformula_neg = Form("1.0-%.3f*%s",pol,fitformula.c_str());
-    RooGenericPdf _model_neg("_model_neg", fitformula_neg.c_str(), *argset);
-
-    // Create extended pdf negative helicity
-    RooRealVar nsig_neg("nsig_neg", "number of signal events", count/2, 0.0, count);
-    RooExtendPdf model_neg("model_neg", "extended signal pdf", _model_neg, nsig_neg);
-
-    // Create simultaneous pdf
-    RooSimultaneous * model;
-    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
-    if (use_extended_nll) { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &model_pos}, {"minus", &model_neg}}, *h); } //TODO: Set these from helicity states...
-    else { model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf", {{"plus", &_model_pos}, {"minus", &_model_neg}}, *h); }
+    // Create the pdf
+    RooSimultaneous *model = getSimGenAsymPdf(
+        h,
+        t,
+        ht,
+        ss,
+        argset,
+        method_name,
+        binid,
+        fitformula_pu,
+        fitformula_up,
+        fitformula_pp,
+        bpol,
+        tpol,
+        count,
+        use_extended_nll
+    );
 
     // Fit the pdf to data
     std::unique_ptr<RooFitResult> r;
@@ -851,25 +1149,25 @@ std::vector<double> fitAsym(
     std::cout << "covariance matrix" << std::endl;
     covMat.Print();
 
-    // Define the asymmetry as a function
-    RooFormulaVar f_asym("f_asym","Asymmetry function",Form("%.3f*%s",pol,fitformula.c_str()), *argset);//NOTE: NEED TO CORRECT FOR POLARIZATION FACTOR.
+    // // Define the asymmetry as a function
+    // RooFormulaVar f_asym("f_asym","Asymmetry function",Form("%.3f*%s",bpol,fitformula.c_str()), *argset);//NOTE: NEED TO CORRECT FOR POLARIZATION FACTOR.
 
-    // Loop fit variables and plot fit projections
-    for (int idx=0; idx<fitvars.size(); idx++) {
+    // // Loop fit variables and plot fit projections
+    // for (int idx=0; idx<fitvars.size(); idx++) {
 
-        // Plot projection of fitted distribution in fit variable
-        RooPlot *xframe = f[idx]->frame(RooFit::Title(Form("%s Projection, Bin: %s",f[idx]->GetTitle(),bincut.c_str())));
-        bin_ds->plotOn(xframe, RooFit::Asymmetry(*h));
-        f_asym.plotOn(xframe, RooFit::LineColor(kRed));
+    //     // Plot projection of fitted distribution in fit variable
+    //     RooPlot *xframe = f[idx]->frame(RooFit::Title(Form("%s Projection, Bin: %s",f[idx]->GetTitle(),bincut.c_str())));
+    //     bin_ds->plotOn(xframe, RooFit::Asymmetry(*h));
+    //     f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
-        // Draw the frame on the canvas
-        std::string c1_x_name = Form("c1_%s__fitvar_%s",binid.c_str(),fitvars[idx].c_str());
-        TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
-        gPad->SetLeftMargin(0.15);
-        xframe->GetYaxis()->SetTitleOffset(1.4);
-        xframe->Draw();
-        c1_x->Print(Form("%s.pdf",c1_x_name.c_str()));
-    }
+    //     // Draw the frame on the canvas
+    //     std::string c1_x_name = Form("c1_%s__fitvar_%s",binid.c_str(),fitvars[idx].c_str());
+    //     TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
+    //     gPad->SetLeftMargin(0.15);
+    //     xframe->GetYaxis()->SetTitleOffset(1.4);
+    //     xframe->Draw();
+    //     c1_x->Print(Form("%s.pdf",c1_x_name.c_str()));
+    // }
 
     // Get fit parameter values and errors
     std::vector<double> params;
@@ -882,7 +1180,8 @@ std::vector<double> fitAsym(
     // Print out fit info
     out << "--------------------------------------------------" << std::endl;
     out << " "<<method_name.c_str()<<"():" << std::endl;
-    out << " pol        = " << pol << std::endl;
+    out << " bpol        = " << bpol << std::endl;
+    out << " tpol        = " << tpol << std::endl;
     out << " bincut     = " << bincut.c_str() << std::endl;
     out << " bincount   = " << count << std::endl;
     out << " binvar means = [" ;
@@ -909,8 +1208,10 @@ std::vector<double> fitAsym(
         if (idx<fitvars.size()-1) { out << " , "; }
     }
     out << "]" << std::endl;
-    out << " fitformula = " << fitformula.c_str() << std::endl;
-    out << " nparams    = " << nparams <<std::endl;
+    out << " fitformula_pu  = " << fitformula_pu.c_str() << std::endl;
+    out << " fitformula_up  = " << fitformula_up.c_str() << std::endl;
+    out << " fitformula_pp  = " << fitformula_pp.c_str() << std::endl;
+    out << " nparams        = " << nparams <<std::endl;
     out << " initial params = [" ;
     for (int idx=0; idx<nparams; idx++) {
         out << initparams[idx];
@@ -923,10 +1224,10 @@ std::vector<double> fitAsym(
         if (idx<nparams-1) { out << " , "; }
     }
     out << "]" << std::endl;
-    if (use_extended_nll) {
-        out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
-        out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
-    }
+    // if (use_extended_nll) {
+    //     out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
+    //     out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
+    // }
     out << "--------------------------------------------------" << std::endl;
 
     // Fill return array
@@ -968,6 +1269,7 @@ std::vector<double> fitAsym(
 * @param tspin_states Map of state names to target spin values
 * @param htspin Name of helicity times target spin variable
 * @param htspin_states Map of state names to helicity times target spin values
+* @param combined_spin_state Name of combined spin state variable
 * @param bincuts Map of unique bin id ints to bin variable cuts for bin
 * @param binvars List of kinematic binning variables names
 * @param binvar_titles List of kinematic binning variables titles
@@ -985,8 +1287,11 @@ std::vector<double> fitAsym(
 * @param massfitvar_titles List of invariant mass fit variables titles
 * @param massfitvar_lims List invariant mass fit variable minimum and maximum bounds 
 * @param massfitvar_bins List of invariant mass fit variables bins
-* @param pol Luminosity averaged beam polarization
-* @param asymfit_formula The asymmetry formula in ROOT TFormula format
+* @param bpol Luminosity averaged beam polarization
+* @param tpol Luminosity averaged target polarization
+* @param asymfit_formula_pu The asymmetry formula in ROOT TFormula format for the beam helicity dependent asymmetries
+* @param asymfit_formula_up The asymmetry formula in ROOT TFormula format for the target spin dependent asymmetries
+* @param asymfit_formula_pp The asymmetry formula in ROOT TFormula format for the beam helicity and target spin dependent asymmetries
 * @param asymfitpar_inits List of initial values for asymmetry fit variables
 * @param asymfitpar_initlims List of initial asymmetry fit variables minimum and maximum bounds
 * @param use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
@@ -1023,6 +1328,7 @@ void getKinBinnedAsym(
         std::map<std::string,int>        tspin_states,
         std::string                      htspin,
         std::map<std::string,int>        htspin_states,
+        std::string                      combined_spin_state,
         std::map<int,std::string>        bincuts,
         std::vector<std::string>         binvars,
         std::vector<std::string>         binvar_titles,
@@ -1042,8 +1348,11 @@ void getKinBinnedAsym(
         std::vector<int>                 massfitvar_bins,
 
         // parameterss passed to analysis::fitAsym()
-        double                           pol,
-        std::string                      asymfit_formula,
+        double                           bpol,
+        double                           tpol,
+        std::string                      asymfit_formula_pu,
+        std::string                      asymfit_formula_up,
+        std::string                      asymfit_formula_pp,
         std::vector<double>              asymfitpar_inits,
         std::vector<std::vector<double>> asymfitpar_initlims,
         bool                             use_sumw2error,
@@ -1268,14 +1577,20 @@ void getKinBinnedAsym(
         std::vector<double> asymfit_result = fitAsym(
                                 (use_sb_subtraction ? ws_sg : ws),
                                 fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
-                                pol,
+                                bpol,
+                                tpol,
                                 helicity,
+                                tspin,
+                                htspin,
+                                combined_spin_state,
                                 scheme_binid,
                                 bin_cut,
                                 binvars,
                                 depolvars,
                                 asymfitvars,
-                                asymfit_formula,
+                                asymfit_formula_pu,
+                                asymfit_formula_up,
+                                asymfit_formula_pp,
                                 asymfitpar_inits,
                                 asymfitpar_initlims,
                                 use_sumw2error,
@@ -1327,14 +1642,20 @@ void getKinBinnedAsym(
             asymfit_result_sb = fitAsym(
                                 ws_sb,
                                 dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
-                                pol,
+                                bpol,
+                                tpol,
                                 helicity,
+                                tspin,
+                                htspin,
+                                combined_spin_state,
                                 sb_scheme_binid,
                                 bin_cut,
                                 binvars,
                                 depolvars,
                                 asymfitvars,
-                                asymfit_formula,
+                                asymfit_formula_pu,
+                                asymfit_formula_up,
+                                asymfit_formula_pp,
                                 asymfitpar_inits,
                                 asymfitpar_initlims,
                                 use_sumw2error,

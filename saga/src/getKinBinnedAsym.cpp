@@ -221,12 +221,12 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: fbgasyms_xs_pp_formula: " << fbgasyms_xs_pp_formula << std::endl;
 
-    // RANDVAR_NAME
-    std::string randvar_name = "randvar"; //NOTE: This may not be empty!
-    if (node["randvar_name"]) {
-        randvar_name = node["randvar_name"].as<std::string>();
+    // COMBINED_SPIN_STATE
+    std::string combined_spin_state = "ss"; //NOTE: This may not be empty!
+    if (node["combined_spin_state"]) {
+        combined_spin_state = node["combined_spin_state"].as<std::string>();
     }
-    std::cout << "INFO: randvar_name: " << randvar_name << std::endl;
+    std::cout << "INFO: combined_spin_state: " << combined_spin_state << std::endl;
 
     // END MC ASYMMETRY INJECTION ARGUMENTS
     //----------------------------------------------------------------------//
@@ -657,24 +657,40 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN FIT PARAMETERS
 
-    double pol = 0.8922; // Average Beam Polarization \overline{P_B^2} for Fall 2018 Outbending data runs >= 5331 is 0.8922
-    if (node["pol"]) {
-        pol = node["pol"].as<double>();
+    // BPOL
+    double bpol = 0.8922; // Average Beam Polarization \overline{P_B^2} for Fall 2018 Outbending data runs >= 5331 is 0.8922
+    if (node["bpol"]) {
+        bpol = node["bpol"].as<double>();
     }
-    std::cout << "INFO: pol: " << pol << std::endl;
+    std::cout << "INFO: bpol: " << bpol << std::endl;
 
+    // TPOL
     double tpol = 1.0; // Target polarization
     if (node["tpol"]) {
         tpol = node["tpol"].as<double>();
     }
     std::cout << "INFO: tpol: " << tpol << std::endl;
 
-    // Define fit / injection function formulas
-    std::string asymfit_formula = "";
-    if (node["asymfit_formula"]) {
-        asymfit_formula = node["asymfit_formula"].as<std::string>();
+    // ASYMFIT_FORMULA_PU
+    std::string asymfit_formula_pu = "";
+    if (node["asymfit_formula_pu"]) {
+        asymfit_formula_pu = node["asymfit_formula_pu"].as<std::string>();
     }
-    std::cout << "INFO: asymfit_formula: " << asymfit_formula << std::endl;
+    std::cout << "INFO: asymfit_formula_pu: " << asymfit_formula_pu << std::endl;
+
+    // ASYMFIT_FORMULA_UP
+    std::string asymfit_formula_up = "";
+    if (node["asymfit_formula_up"]) {
+        asymfit_formula_up = node["asymfit_formula_up"].as<std::string>();
+    }
+    std::cout << "INFO: asymfit_formula_up: " << asymfit_formula_up << std::endl;
+
+    // ASYMFIT_FORMULA_PP
+    std::string asymfit_formula_pp = "";
+    if (node["asymfit_formula_pp"]) {
+        asymfit_formula_pp = node["asymfit_formula_pp"].as<std::string>();
+    }
+    std::cout << "INFO: asymfit_formula_pp: " << asymfit_formula_pp << std::endl;
 
     // ASYMFITPAR_INITS
     std::vector<double> asymfitpar_inits;
@@ -1012,7 +1028,7 @@ void execute(const YAML::Node& node) {
                     saga::data::injectAsym(
                         d2_filtered,
                         seed,
-                        pol,
+                        bpol,
                         tpol,
                         mc_sg_match_name,
                         fsgasyms_xs_pu_name,
@@ -1021,7 +1037,7 @@ void execute(const YAML::Node& node) {
                         fbgasyms_xs_pu_name,
                         fbgasyms_xs_up_name,
                         fbgasyms_xs_pp_name,
-                        randvar_name,
+                        combined_spin_state,
                         helicity_name,
                         tspin_name
                     );
@@ -1029,7 +1045,7 @@ void execute(const YAML::Node& node) {
 
     // Make sure injection values are all computed before running analysis
     if (inject_asym) {
-        double my_testvar  = (double)*frame.Mean(randvar_name.c_str());
+        double my_testvar  = (double)*frame.Mean(combined_spin_state.c_str());
         double my_testvar1 = (double)*frame.Mean(helicity_name.c_str());
         double my_testvar2 = (double)*frame.Mean(tspin_name.c_str());
     }
@@ -1094,6 +1110,7 @@ void execute(const YAML::Node& node) {
             tspin_states, //std::map<std::string,int>           tspin_states,
             htspin_name, // std::string                         htspin,
             htspin_states, //std::map<std::string,int>           htspin_states,
+            combined_spin_state, //std::string                      combined_spin_state,
             bincuts, //std::map<int,std::string>        bincuts,
             scheme_binvars, //std::vector<std::string>         binvars,
             scheme_binvar_titles, //std::vector<std::string>         binvar_titles,
@@ -1113,8 +1130,11 @@ void execute(const YAML::Node& node) {
             massfitvar_bins, //std::vector<int>                 massfitvar_bins,
 
             // parameterss passed to analysis::fitAsym()
-            pol, //double                           pol,
-            asymfit_formula, //std::string                      asymfit_formula,
+            bpol, //double                           bpol,
+            tpol, //double                           tpol,
+            asymfit_formula_pu, //std::string                      asymfit_formula_pu,
+            asymfit_formula_up, //std::string                      asymfit_formula_up,
+            asymfit_formula_pp, //std::string                      asymfit_formula_pp,
             asymfitpar_inits, //std::vector<double>              asymfitpar_inits,
             asymfitpar_initlims, //std::vector<std::vector<double>> asymfitpar_initlims,
             use_sumw2error, //bool                             use_sumw2error,
