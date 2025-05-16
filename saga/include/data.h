@@ -39,7 +39,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @brief Create a dataset for an asymmetry fit.
 *
 * Create a RooFit dataset for an asymmetry fit from a ROOT RDataFrame,
-* adding helicity, binning, depolarization, asymmetry fit, and invariant mass fit variables.
+* adding helicity, target spin, binning, depolarization, asymmetry fit, and invariant mass fit variables.
 * Store all variables and RooDataSet in a RooWorkspace.
 *
 * @param frame ROOT RDataframe from which to create a RooDataSet
@@ -52,6 +52,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @param tspin_states Map of state names to target spin values
 * @param htspin Name of helicity times target spin variable
 * @param htspin_states Map of state names to helicity times target spin values
+* @param combined_spin_state Name of combined spin state variable
 * @param binvars List of kinematic binning variables names
 * @param binvar_titles List of kinematic binning variables titles
 * @param binvar_lims List kinematic binning variable minimum and maximum bounds 
@@ -80,6 +81,7 @@ void createDataset(
         std::map<std::string,int> tspin_states,
         std::string htspin,
         std::map<std::string,int> htspin_states,
+        std::string combined_spin_state,
         std::vector<std::string> binvars,
         std::vector<std::string> binvar_titles,
         std::vector<std::vector<double>> binvar_lims,
@@ -114,6 +116,16 @@ void createDataset(
     RooCategory ht(htspin.c_str(), htspin.c_str());
     for (auto it = htspin_states.begin(); it != htspin_states.end(); it++) {
         ht.defineType(it->first.c_str(), it->second);
+    }
+
+    // Define the combined spin state variable
+    RooCategory ss(combined_spin_state.c_str(), combined_spin_state.c_str());
+    for (auto it_h = helicity_states.begin(); it_h != helicity_states.end(); it_h++) {
+        for (auto it_t = htspin_states.begin(); it_t != htspin_states.end(); it_t++) {
+            std::string state_name = Form("%s_%s",it_h->first.c_str(),it_t->first.c_str());
+            int state_value = (it_h->second + 1) * 10 + (it_t->second + 1);
+            ss.defineType(state_name.c_str(), state_value);
+        }
     }
 
     // Define the full variables and limits lists
@@ -263,7 +275,7 @@ void createDataset(
     }
 
     // Manually create dataset containing helicity as a RooCategory variable
-    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h,t,ht));
+    RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h,t,ht,ss));
 
     // Set cuts for variable limits so that new dataset will have same length as old dataset
     std::string varlims_cuts = "";
@@ -277,7 +289,7 @@ void createDataset(
 
     // Loop RDataFrame and fill helicity dataset
     frame.Filter(varlims_cuts.c_str()).Foreach(
-                  [&h,&t,&ht,&ds_h](float h_val, float tspin_val){
+                  [&h,&t,&ht,&ss,&ds_h](float h_val, float tspin_val, int ss_val){
 
                     // Assign the state for the beam helicity (assuming 1 or -1 as the states)
                     if (h_val > 0) {
@@ -307,10 +319,13 @@ void createDataset(
                       ht.setIndex(0);
                     }
 
+                    // Assign the state for the combined spin state
+                    ss.setIndex(ss_val);
+
                     // Add the event to the RooDataSet
-                    ds_h->add(RooArgSet(h,t,ht));
+                    ds_h->add(RooArgSet(h,t,ht,ss));
                   },
-                  {h.GetName(),t.GetName()}
+                  {h.GetName(),t.GetName(),ss.GetName()}
                   );
 
     // Merge datasets
