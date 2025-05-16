@@ -412,8 +412,43 @@ RNode mapDataFromCSV(RNode filtered_df,
 }
 
 /**
+* @brief Inject an asymmetry into an existing RDataFrame.
 *
+* Inject an asymmetry into an existing `ROOT::RDataFrame` given a random seed,
+* beam and target polarizations, and the relevant signal and background 
+* asymmetry formulas separated into terms dependent on beam helicity, target spin, or both.
+* The algorithm proceeds as follows.
+* For each event, a random number \f$r\in[0,1)\f$, beam helicity \f$h_b\in(-1,0,1)\f$, and target spin \f$h_t\in(-1,0,1)\f$ are all randomly generated.
+* A non-zero \f$h_b\f$ and \f$h_t\f$ are generated with probabilities taken from the beam and target polarizations respectively:
+* \f$P(h_b\neq0) = \overline{P^2_b}\f$ and
+* \f$P(h_t\neq0) = \overline{P^2_t}\f$.
+* The event weight \f$w\f$ is computed as:
+* \f[
+*   w = \frac{1}{2} (1 + h_b \cdot A_{PU} + h_b \cdot A_{UP} + h_b \cdot h_t \cdot A_{PP}),
+* \f]
+* where \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ are the asymmetry terms
+* dependent on beam helicity, target spin, or both.
+* Note that the asymmetry terms will taken from either the signal or background asymmetries
+* depending on whether the event has been marked as signal or background.
+* If \f$w>r\f$ the beam helicity and target spin values for that event are accepted,
+* otherwise all random values are regenerated and the process repeats until \f$w>r\f$.
 *
+* @param df `ROOT::RDataFrame` in which to inject asymmetry
+* @param seed Seed for random number generator
+* @param bpol Average beam polarization
+* @param tpol Average target polarization
+* @param mc_sg_match_name Name of boolean column indicating signal events
+* @param asyms_sg_pu_name Name of column containing the true signal asymmetries dependent on beam helicity
+* @param asyms_sg_up_name Name of column containing the true signal asymmetries dependent on target spin
+* @param asyms_sg_pp_name Name of column containing the true signal asymmetries dependent on beam helicity and target spin
+* @param asyms_bg_pu_name Name of column containing the true background asymmetries dependent on beam helicity
+* @param asyms_bg_up_name Name of column containing the true background asymmetries dependent on target spin
+* @param asyms_bg_pp_name Name of column containing the true background asymmetries dependent on beam helicity and target spin
+* @param randvar_name Name of column containing randomly generated values used to determine beam helicity and target spin
+* @param helicity_name Name of column containing the beam helicity
+* @param tspin_name Name of column containing the target spin
+*
+* @return `ROOT::RDataFrame` with helicity and target spin values injected
 */
 RNode injectAsym(
     RNode df,
@@ -421,12 +456,12 @@ RNode injectAsym(
     float bpol,
     float tpol,
     std::string mc_sg_match_name,
-    std::string fsgasyms_xs_pu_name,
-    std::string fsgasyms_xs_up_name,
-    std::string fsgasyms_xs_pp_name,
-    std::string fbgasyms_xs_pu_name,
-    std::string fbgasyms_xs_up_name,
-    std::string fbgasyms_xs_pp_name,
+    std::string asyms_sg_pu_name,
+    std::string asyms_sg_up_name,
+    std::string asyms_sg_pp_name,
+    std::string asyms_bg_pu_name,
+    std::string asyms_bg_up_name,
+    std::string asyms_bg_pp_name,
     std::string randvar_name,
     std::string helicity_name,
     std::string tspin_name
@@ -436,8 +471,8 @@ RNode injectAsym(
     auto getEntrySlot = [&seed,&bpol,&tpol](
                         ULong64_t iEntry,
                         bool mc_sg_match,
-                        float fsgasyms_xs_pu, float fsgasyms_xs_up, float fsgasyms_xs_pp,
-                        float fbgasyms_xs_pu, float fbgasyms_xs_up, float fbgasyms_xs_pp) -> int {
+                        float asyms_sg_pu, float asyms_sg_up, float asyms_sg_pp,
+                        float asyms_bg_pu, float asyms_bg_up, float asyms_bg_pp) -> int {
 
         // Combine global seed and row index for determinism
         TRandom3 rng(seed + static_cast<UInt_t>(iEntry));
@@ -466,9 +501,9 @@ RNode injectAsym(
             // Compute the XS value
             float xs_val;
             if (mc_sg_match) {
-                xs_val = 0.5*(1.0 + bhelicity*fsgasyms_xs_pu + tspin*fsgasyms_xs_up + bhelicity*tspin*fsgasyms_xs_pp);
+                xs_val = 0.5*(1.0 + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
             } else {
-                xs_val = 0.5*(1.0 + bhelicity*fbgasyms_xs_pu + tspin*fbgasyms_xs_up + bhelicity*tspin*fbgasyms_xs_pp);
+                xs_val = 0.5*(1.0 + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
             }
 
         } //  while (bhelicity==0.0 || random_var<=xs_val) {
@@ -483,8 +518,8 @@ RNode injectAsym(
                         getEntrySlot,
                         {
                             "rdfentry_", mc_sg_match_name.c_str(),
-                            fsgasyms_xs_pu_name.c_str(), fsgasyms_xs_up_name.c_str(), fsgasyms_xs_pp_name.c_str(),
-                            fbgasyms_xs_pu_name.c_str(), fbgasyms_xs_up_name.c_str(), fbgasyms_xs_pp_name.c_str()
+                            asyms_sg_pu_name.c_str(), asyms_sg_up_name.c_str(), asyms_sg_pp_name.c_str(),
+                            asyms_bg_pu_name.c_str(), asyms_bg_up_name.c_str(), asyms_bg_pp_name.c_str()
                         }
                     )
                     .Define(helicity_name.c_str(), [](int my_rand_var) -> float {
