@@ -131,33 +131,95 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: mc_sg_match_formula: " << mc_sg_match_formula << std::endl;
 
-    // FSGASYMS_XS_NAME
-    std::string fsgasyms_xs_name = "fsgasyms_xs"; //NOTE: This may not be empty!
-    if (node["fsgasyms_xs_name"]) {
-        fsgasyms_xs_name = node["fsgasyms_xs_name"].as<std::string>();
+    // FSGASYMS_XS_PU_NAME
+    std::string fsgasyms_xs_pu_name = "fsgasyms_xs_pu"; //NOTE: This may not be empty!
+    if (node["fsgasyms_xs_pu_name"]) {
+        fsgasyms_xs_pu_name = node["fsgasyms_xs_pu_name"].as<std::string>();
     }
-    std::cout << "INFO: fsgasyms_xs_name: " << fsgasyms_xs_name << std::endl;
+    std::cout << "INFO: fsgasyms_xs_pu_name: " << fsgasyms_xs_pu_name << std::endl;
 
-    // FSGASYMS_XS_FORMULA
-    std::string fsgasyms_xs_formula = "0.747*depol0mc*sgasym0*fitvar1_mc"; //NOTE: This may not be empty!
-    if (node["fsgasyms_xs_formula"]) {
-        fsgasyms_xs_formula = node["fsgasyms_xs_formula"].as<std::string>();
+    // FSGASYMS_XS_PU_FORMULA
+    std::string fsgasyms_xs_pu_formula = "(float)0.0"; //NOTE: This may not be empty!
+    if (node["fsgasyms_xs_pu_formula"]) {
+        fsgasyms_xs_pu_formula = node["fsgasyms_xs_pu_formula"].as<std::string>();
+        if (fsgasyms_xs_pu_formula=="") { fsgasyms_xs_pu_formula = "(float)0.0"; }
     }
-    std::cout << "INFO: fsgasyms_xs_formula: " << fsgasyms_xs_formula << std::endl;
+    std::cout << "INFO: fsgasyms_xs_pu_formula: " << fsgasyms_xs_pu_formula << std::endl;
 
-    // FBGASYMS_XS_NAME
-    std::string fbgasyms_xs_name = "fbgasyms_xs"; //NOTE: This may not be empty!
-    if (node["fbgasyms_xs_name"]) {
-        fbgasyms_xs_name = node["fbgasyms_xs_name"].as<std::string>();
+    // FSGASYMS_XS_UP_NAME
+    std::string fsgasyms_xs_up_name = "fsgasyms_xs_up"; //NOTE: This may not be empty!
+    if (node["fsgasyms_xs_up_name"]) {
+        fsgasyms_xs_up_name = node["fsgasyms_xs_up_name"].as<std::string>();
     }
-    std::cout << "INFO: fbgasyms_xs_name: " << fbgasyms_xs_name << std::endl;
+    std::cout << "INFO: fsgasyms_xs_up_name: " << fsgasyms_xs_up_name << std::endl;
 
-    // FBGASYMS_XS_FORMULA
-    std::string fbgasyms_xs_formula = "(float)0.0"; //NOTE: This may not be empty!
-    if (node["fbgasyms_xs_formula"]) {
-        fbgasyms_xs_formula = node["fbgasyms_xs_formula"].as<std::string>();
+    // FSGASYMS_XS_UP_FORMULA
+    std::string fsgasyms_xs_up_formula = "(float)0.0"; //NOTE: This may not be empty!
+    if (node["fsgasyms_xs_up_formula"]) {
+        fsgasyms_xs_up_formula = node["fsgasyms_xs_up_formula"].as<std::string>();
+        if (fsgasyms_xs_up_formula=="") { fsgasyms_xs_up_formula = "(float)0.0"; }
     }
-    std::cout << "INFO: fbgasyms_xs_formula: " << fbgasyms_xs_formula << std::endl;
+    std::cout << "INFO: fsgasyms_xs_up_formula: " << fsgasyms_xs_up_formula << std::endl;
+
+    // FSGASYMS_XS_PP_NAME
+    std::string fsgasyms_xs_pp_name = "fsgasyms_xs_pp"; //NOTE: This may not be empty!
+    if (node["fsgasyms_xs_pp_name"]) {
+        fsgasyms_xs_pp_name = node["fsgasyms_xs_pp_name"].as<std::string>();
+    }
+    std::cout << "INFO: fsgasyms_xs_pp_name: " << fsgasyms_xs_pp_name << std::endl;
+
+    // FSGASYMS_XS_PP_FORMULA
+    std::string fsgasyms_xs_pp_formula = "(float)0.0"; //NOTE: This may not be empty!
+    if (node["fsgasyms_xs_pp_formula"]) {
+        fsgasyms_xs_pp_formula = node["fsgasyms_xs_pp_formula"].as<std::string>();
+        if (fsgasyms_xs_pp_formula=="") { fsgasyms_xs_pp_formula = "(float)0.0"; }
+    }
+    std::cout << "INFO: fsgasyms_xs_pp_formula: " << fsgasyms_xs_pp_formula << std::endl;
+
+    // FBGASYMS_XS_PU_NAME
+    std::string fbgasyms_xs_pu_name = "fbgasyms_xs_pu"; //NOTE: This may not be empty!
+    if (node["fbgasyms_xs_pu_name"]) {
+        fbgasyms_xs_pu_name = node["fbgasyms_xs_pu_name"].as<std::string>();
+    }
+    std::cout << "INFO: fbgasyms_xs_pu_name: " << fbgasyms_xs_pu_name << std::endl;
+
+    // FBGASYMS_XS_PU_FORMULA
+    std::string fbgasyms_xs_pu_formula = "(float)0.0"; //NOTE: This may not be empty!
+    if (node["fbgasyms_xs_pu_formula"]) {
+        fbgasyms_xs_pu_formula = node["fbgasyms_xs_pu_formula"].as<std::string>();
+        if (fbgasyms_xs_pu_formula=="") { fbgasyms_xs_pu_formula = "(float)0.0"; }
+    }
+    std::cout << "INFO: fbgasyms_xs_pu_formula: " << fbgasyms_xs_pu_formula << std::endl;
+
+    // FBGASYMS_XS_UP_NAME
+    std::string fbgasyms_xs_up_name = "fbgasyms_xs_up"; //NOTE: This may not be empty!
+    if (node["fbgasyms_xs_up_name"]) {
+        fbgasyms_xs_up_name = node["fbgasyms_xs_up_name"].as<std::string>();
+    }
+    std::cout << "INFO: fbgasyms_xs_up_name: " << fbgasyms_xs_up_name << std::endl;
+
+    // FBGASYMS_XS_UP_FORMULA
+    std::string fbgasyms_xs_up_formula = "(float)0.0"; //NOTE: This may not be empty!
+    if (node["fbgasyms_xs_up_formula"]) {
+        fbgasyms_xs_up_formula = node["fbgasyms_xs_up_formula"].as<std::string>();
+        if (fbgasyms_xs_up_formula=="") { fbgasyms_xs_up_formula = "(float)0.0"; }
+    }
+    std::cout << "INFO: fbgasyms_xs_up_formula: " << fbgasyms_xs_up_formula << std::endl;
+
+    // FBGASYMS_XS_PP_NAME
+    std::string fbgasyms_xs_pp_name = "fbgasyms_xs_pp"; //NOTE: This may not be empty!
+    if (node["fbgasyms_xs_pp_name"]) {
+        fbgasyms_xs_pp_name = node["fbgasyms_xs_pp_name"].as<std::string>();
+    }
+    std::cout << "INFO: fbgasyms_xs_pp_name: " << fbgasyms_xs_pp_name << std::endl;
+
+    // FBGASYMS_XS_PP_FORMULA
+    std::string fbgasyms_xs_pp_formula = "(float)0.0"; //NOTE: This may not be empty!
+    if (node["fbgasyms_xs_pp_formula"]) {
+        fbgasyms_xs_pp_formula = node["fbgasyms_xs_pp_formula"].as<std::string>();
+        if (fbgasyms_xs_pp_formula=="") { fbgasyms_xs_pp_formula = "(float)0.0"; }
+    }
+    std::cout << "INFO: fbgasyms_xs_pp_formula: " << fbgasyms_xs_pp_formula << std::endl;
 
     // RANDVAR_NAME
     std::string randvar_name = "randvar"; //NOTE: This may not be empty!
@@ -165,13 +227,6 @@ void execute(const YAML::Node& node) {
         randvar_name = node["randvar_name"].as<std::string>();
     }
     std::cout << "INFO: randvar_name: " << randvar_name << std::endl;
-
-    // XS
-    std::string xs_name = "XS"; //NOTE: This may not be empty!
-    if (node["xs_name"]) {
-        xs_name = node["xs_name"].as<std::string>();
-    }
-    std::cout << "INFO: xs_name: " << xs_name << std::endl;
 
     // END MC ASYMMETRY INJECTION ARGUMENTS
     //----------------------------------------------------------------------//
@@ -843,27 +898,43 @@ void execute(const YAML::Node& node) {
     if (inject_asym) {
         // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_pu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_up_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_pp_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
         }
         for (int idx=0; idx<sgasyms.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fsgasyms_xs_up_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_pu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_up_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fsgasyms_xs_pp_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
         }
-        std::cout << "INFO: Updated " << fsgasyms_xs_name.c_str() << " = " << fsgasyms_xs_formula.c_str() << std::endl;
+        std::cout << "INFO: Updated " << fsgasyms_xs_pu_name.c_str() << " = " << fsgasyms_xs_pu_formula.c_str() << std::endl;
+        std::cout << "INFO: Updated " << fsgasyms_xs_up_name.c_str() << " = " << fsgasyms_xs_up_formula.c_str() << std::endl;
+        std::cout << "INFO: Updated " << fsgasyms_xs_pp_name.c_str() << " = " << fsgasyms_xs_pp_formula.c_str() << std::endl;
 
         // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_pu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_up_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_pp_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
         }
         for (int idx=0; idx<bgasyms.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fbgasyms_xs_up_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+            saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_pu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_up_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+            saga::util::replaceAll(fbgasyms_xs_pp_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
         }
-        std::cout << "INFO: Updated " << fbgasyms_xs_name.c_str() << " = " << fbgasyms_xs_formula.c_str() << std::endl;
+        std::cout << "INFO: Updated " << fbgasyms_xs_pu_name.c_str() << " = " << fbgasyms_xs_pu_formula.c_str() << std::endl;
+        std::cout << "INFO: Updated " << fbgasyms_xs_up_name.c_str() << " = " << fbgasyms_xs_up_formula.c_str() << std::endl;
+        std::cout << "INFO: Updated " << fbgasyms_xs_pp_name.c_str() << " = " << fbgasyms_xs_pp_formula.c_str() << std::endl;
     }
 
     // Define variables from formulas
@@ -910,8 +981,12 @@ void execute(const YAML::Node& node) {
     // Define signal matching condition, and XS values branches
     if (inject_asym) {
         d2_filtered = d2_filtered.Define(mc_sg_match_name.c_str(),mc_sg_match_formula.c_str()); //TODO: Throw error if formulas are empty
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_name.c_str(),fsgasyms_xs_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_name.c_str(),fbgasyms_xs_formula.c_str());
+        d2_filtered = d2_filtered.Define(fsgasyms_xs_pu_name.c_str(),fsgasyms_xs_pu_formula.c_str());
+        d2_filtered = d2_filtered.Define(fsgasyms_xs_up_name.c_str(),fsgasyms_xs_up_formula.c_str());
+        d2_filtered = d2_filtered.Define(fsgasyms_xs_pp_name.c_str(),fsgasyms_xs_pp_formula.c_str());
+        d2_filtered = d2_filtered.Define(fbgasyms_xs_pu_name.c_str(),fbgasyms_xs_pu_formula.c_str());
+        d2_filtered = d2_filtered.Define(fbgasyms_xs_up_name.c_str(),fbgasyms_xs_up_formula.c_str());
+        d2_filtered = d2_filtered.Define(fbgasyms_xs_pp_name.c_str(),fbgasyms_xs_pp_formula.c_str());
     }
     //TODO: Add output message about defined branches
 
@@ -930,41 +1005,33 @@ void execute(const YAML::Node& node) {
     }
     //TODO: Add output messages about defined branches
 
-    // Define a lambda to get static random numbers for each rdf entry
-    std::map<ULong64_t,float> randvar_map;
-    if (inject_asym) d2_filtered.Foreach([&randvar_map,&gRandom](ULong64_t iEntry){ randvar_map[iEntry] = (float)gRandom->Rndm(); },{"rdfentry_"});
-    auto getEntrySlot = [&randvar_map](ULong64_t iEntry) {
-      return randvar_map[iEntry];
-    };
-
     // Define helicity variable, injecting and applying MC matching cuts if requested
-    auto frame = (!inject_asym) ? d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str()) :
-                    d2_filtered.Define(randvar_name.c_str(),getEntrySlot,{"rdfentry_"})
-                    .Define(xs_name.c_str(), [&pol]
-                        (bool mc_sg_match, float fsgasyms_xs, float fbgasyms_xs) {
-                            return (float)((mc_sg_match) ?
-                            0.5*(1.0 + pol*fsgasyms_xs) :
-                            0.5*(1.0 + pol*fbgasyms_xs));
-                        },
-                        {mc_sg_match_name.c_str(),fsgasyms_xs_name.c_str(),fbgasyms_xs_name.c_str()})
-                    .Define(helicity_name.c_str(), [](float my_rand_var, float XS) {
-                        return (float)(my_rand_var<XS ? 1.0 : -1.0);
-                    },
-                    {randvar_name.c_str(),xs_name.c_str()});
-
-
-    // Define the helicity variable
-
-    // Define the target spin variable
-
-
+    auto frame = (!inject_asym) ?
+                    d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str())
+                                .Define(tspin_name.c_str(), tspin_formula.c_str()) :
+                    saga::data::injectAsym(
+                        d2_filtered,
+                        seed,
+                        pol,
+                        tpol,
+                        mc_sg_match_name,
+                        fsgasyms_xs_pu_name,
+                        fsgasyms_xs_up_name,
+                        fsgasyms_xs_pp_name,
+                        fbgasyms_xs_pu_name,
+                        fbgasyms_xs_up_name,
+                        fbgasyms_xs_pp_name,
+                        randvar_name,
+                        helicity_name,
+                        tspin_name
+                    );
     //TODO: Add output message about defined branches
 
     // Make sure injection values are all computed before running analysis
     if (inject_asym) {
         double my_testvar  = (double)*frame.Mean(randvar_name.c_str());
-        double my_testvar1 = (double)*frame.Mean(xs_name.c_str());
-        double my_testvar2 = (double)*frame.Mean(helicity_name.c_str());
+        double my_testvar1 = (double)*frame.Mean(helicity_name.c_str());
+        double my_testvar2 = (double)*frame.Mean(tspin_name.c_str());
     }
 
     // Dump dataset to ROOT file and exit
