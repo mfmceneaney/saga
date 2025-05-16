@@ -449,7 +449,7 @@ RNode injectAsym(
         float xs_val     = 0.0;
 
         // Reassign helicity and target spin based on XS value
-        while (bhelicity==0 || random_var<=xs_val) {
+        while (random_var<=xs_val) {
 
             // Regenerate random variables
             random_var = rng.Uniform();
@@ -457,11 +457,11 @@ RNode injectAsym(
             float t_rand_var = rng.Uniform();
 
             // Assign helicity with probabilities given by polarization
-            if (b_rand_var>bpol || t_rand_var>tpol) break;
+            if ((b_rand_var>bpol && bpol>0.0) || (t_rand_var>tpol && tpol>0.0)) break;
 
             // Assign beam helicity and target spin
-            bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
-            tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
+            if (bpol>0.0) bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
+            if (tpol>0.0) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
 
             // Compute the XS value
             float xs_val;
