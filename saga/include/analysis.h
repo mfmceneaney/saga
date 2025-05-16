@@ -740,7 +740,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
     // Create pdf helicity==0
     std::string fitformula_11 = "1.0";
-    RooGenericPdf _model_11("_model_11", fitformula_up.c_str(), *argset);
+    RooGenericPdf _model_11("_model_11", fitformula_11.c_str(), *argset);
 
     // Create extended pdf helicity==0
     RooRealVar nsig_11("nsig_11", "number of signal events", ninit, 0.0, count);
