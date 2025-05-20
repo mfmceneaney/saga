@@ -499,32 +499,32 @@ RNode injectAsym(
         double xs_val     = 0.0;
         
         // Generate random variables
-        double b_rand_var = rng.Uniform();
-        double t_rand_var = rng.Uniform();
+        double b_rand_var = 0.0;
+        double t_rand_var = 0.0;
 
-        // Assign helicity with probabilities given by polarization
-        if ((b_rand_var<=bpol || bpol==0.0) && (t_rand_var<=tpol || tpol==0.0)) {
+        // Reassign helicity and target spin based on XS value
+        while (random_var<=xs_val) {
 
-            // Reassign helicity and target spin based on XS value
-            while (random_var<=xs_val) {
+            // Generate random variables
+            b_rand_var = rng.Uniform();
+            t_rand_var = rng.Uniform();
+            random_var = rng.Uniform();
 
-                // Regenerate random variable for XS to avoid infinite loops
-                random_var = rng.Uniform();
+            // Assign helicity with probabilities given by polarization
+            if ((b_rand_var>bpol && bpol>0.0) || (t_rand_var>tpol && tpol>0.0)) break;
 
-                // Assign beam helicity and target spin
-                if (bpol>0.0) bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
-                if (tpol>0.0) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
+            // Assign beam helicity and target spin
+            if (bpol>0.0) bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
+            if (tpol>0.0) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
 
-                // Compute the XS value
-                if (mc_sg_match) {
-                    xs_val = 0.5*(1.0 + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
-                } else {
-                    xs_val = 0.5*(1.0 + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
-                }
+            // Compute the XS value
+            if (mc_sg_match) {
+                xs_val = 0.5*(1.0 + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
+            } else {
+                xs_val = 0.5*(1.0 + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
+            }
 
-            } //  while (bhelicity==0.0 || random_var<=xs_val) {
-            
-        }
+        } //  while (bhelicity==0.0 || random_var<=xs_val) {
 
         // Once helicity and target spin satisfy XS(h,tspin)>random_var
         return (int)((bhelicity+1)*10 + (tspin+1)); //NOTE: ENCODE AS A 2 DIGIT NUMBER ASSUMING 3 STATES FOR BEAM HELICITY AND TARGET SPIN EACH.
