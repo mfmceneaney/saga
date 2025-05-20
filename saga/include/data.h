@@ -503,7 +503,7 @@ RNode injectAsym(
         double t_rand_var = 0.0;
 
         // Reassign helicity and target spin based on XS value
-        while (random_var<=xs_val) {
+        while (random_var>=xs_val) {
 
             // Generate random variables
             b_rand_var = rng.Uniform();
