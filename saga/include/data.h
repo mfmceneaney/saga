@@ -468,8 +468,8 @@ RNode mapDataFromCSV(RNode filtered_df,
 RNode injectAsym(
     RNode df,
     int seed,
-    float bpol,
-    float tpol,
+    double bpol,
+    double tpol,
     std::string mc_sg_match_name,
     std::string asyms_sg_pu_name,
     std::string asyms_sg_up_name,
@@ -483,7 +483,7 @@ RNode injectAsym(
     ) {
 
     // Define a lambda to inject an asymmetry for each rdf entry
-    auto getEntrySlot = [&seed,&bpol,&tpol](
+    auto getEntrySlot = [seed,bpol,tpol](
                         ULong64_t iEntry,
                         bool mc_sg_match,
                         float asyms_sg_pu, float asyms_sg_up, float asyms_sg_pp,
@@ -492,36 +492,39 @@ RNode injectAsym(
         // Combine global seed and row index for determinism
         TRandom3 rng(seed + static_cast<UInt_t>(iEntry));
 
-        // Randomly generate random variable, beam helicity, and target spin
+        // Initialize beam helicity, target spin, random variable and cross-section asymmetry value
         int bhelicity    = 0;
         int tspin        = 0;
-        float random_var = 0.0;
-        float xs_val     = 0.0;
+        double random_var = 0.0;
+        double xs_val     = 0.0;
+        
+        // Generate random variables
+        double b_rand_var = rng.Uniform();
+        double t_rand_var = rng.Uniform();
 
-        // Reassign helicity and target spin based on XS value
-        while (random_var<=xs_val) {
+        // Assign helicity with probabilities given by polarization
+        if ((b_rand_var<=bpol || bpol==0.0) && (t_rand_var<=tpol || tpol==0.0)) {
 
-            // Regenerate random variables
-            random_var = rng.Uniform();
-            float b_rand_var = rng.Uniform();
-            float t_rand_var = rng.Uniform();
+            // Reassign helicity and target spin based on XS value
+            while (random_var<=xs_val) {
 
-            // Assign helicity with probabilities given by polarization
-            if ((b_rand_var>bpol && bpol>0.0) || (t_rand_var>tpol && tpol>0.0)) break;
+                // Regenerate random variable for XS to avoid infinite loops
+                random_var = rng.Uniform();
 
-            // Assign beam helicity and target spin
-            if (bpol>0.0) bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
-            if (tpol>0.0) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
+                // Assign beam helicity and target spin
+                if (bpol>0.0) bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
+                if (tpol>0.0) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
 
-            // Compute the XS value
-            float xs_val;
-            if (mc_sg_match) {
-                xs_val = 0.5*(1.0 + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
-            } else {
-                xs_val = 0.5*(1.0 + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
-            }
+                // Compute the XS value
+                if (mc_sg_match) {
+                    xs_val = 0.5*(1.0 + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
+                } else {
+                    xs_val = 0.5*(1.0 + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
+                }
 
-        } //  while (bhelicity==0.0 || random_var<=xs_val) {
+            } //  while (bhelicity==0.0 || random_var<=xs_val) {
+            
+        }
 
         // Once helicity and target spin satisfy XS(h,tspin)>random_var
         return (int)((bhelicity+1)*10 + (tspin+1)); //NOTE: ENCODE AS A 2 DIGIT NUMBER ASSUMING 3 STATES FOR BEAM HELICITY AND TARGET SPIN EACH.
@@ -538,14 +541,16 @@ RNode injectAsym(
                         }
                     )
                     .Define(helicity_name.c_str(), [](int my_rand_var) -> float {
-                        if (my_rand_var % 10 == 2) return (float) 1.0;
-                        if (my_rand_var % 10 == 0) return (float)-1.0;
+                        if (my_rand_var / 10 == 2) return (float) 1.0;
+                        if (my_rand_var / 10 == 1) return (float) 0.0;
+                        if (my_rand_var / 10 == 0) return (float)-1.0;
                         return (float)0.0;
                     },
                     {randvar_name.c_str()})
                     .Define(tspin_name.c_str(), [](int my_rand_var) -> float {
-                        if (my_rand_var % 1 == 2) return (float) 1.0;
-                        if (my_rand_var % 1 == 0) return (float)-1.0;
+                        if (my_rand_var % 10 == 2) return (float) 1.0;
+                        if (my_rand_var % 10 == 1) return (float) 0.0;
+                        if (my_rand_var % 10 == 0) return (float)-1.0;
                         return (float)0.0;
                     },
                     {randvar_name.c_str()});
