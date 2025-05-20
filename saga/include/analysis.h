@@ -751,7 +751,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf helicity==+1
         std::string fitformula_21 = Form("1.0+%.3f*%s",bpol,fitformula_pu.c_str());
-        RooGenericPdf _model_21("_model_21", fitformula_pu.c_str(), *argset);
+        RooGenericPdf _model_21("_model_21", fitformula_21.c_str(), *argset);
 
         // Create extended pdf helicity==+1
         RooRealVar nsig_21("nsig_21", "number of signal events", ninit, 0.0, count);
@@ -759,7 +759,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf helicity==-1
         std::string fitformula_01 = Form("1.0-%.3f*%s",bpol,fitformula_pu.c_str());
-        RooGenericPdf _model_01("_model_01", fitformula_pu.c_str(), *argset);
+        RooGenericPdf _model_01("_model_01", fitformula_01.c_str(), *argset);
 
         // Create extended pdf helicity==-1
         RooRealVar nsig_01("nsig_01", "number of signal events", ninit, 0.0, count);
@@ -787,7 +787,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf tspin==+1
         std::string fitformula_12 = Form("1.0+%.3f*%s",tpol,fitformula_up.c_str());
-        RooGenericPdf _model_12("_model_12", fitformula_up.c_str(), *argset);
+        RooGenericPdf _model_12("_model_12", fitformula_12.c_str(), *argset);
 
         // Create extended pdf tspin==+1
         RooRealVar nsig_12("nsig_12", "number of signal events", ninit, 0.0, count);
@@ -795,7 +795,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf tspin==-1
         std::string fitformula_10 = Form("1.0-%.3f*%s",tpol,fitformula_up.c_str());
-        RooGenericPdf _model_10("_model_10", fitformula_up.c_str(), *argset);
+        RooGenericPdf _model_10("_model_10", fitformula_10.c_str(), *argset);
 
         // Create extended pdf tspin==-1
         RooRealVar nsig_10("nsig_10", "number of signal events", ninit, 0.0, count);
@@ -823,7 +823,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf htspin==+1
         std::string fitformula_22_00 = Form("1.0+%.3f*%s",bpol*tpol,fitformula_pp.c_str());
-        RooGenericPdf _model_22_00("_model_22_00", fitformula_pp.c_str(), *argset);
+        RooGenericPdf _model_22_00("_model_22_00", fitformula_22_00.c_str(), *argset);
 
         // Create extended pdf htspin==+1
         RooRealVar nsig_22_00("nsig_22_00", "number of signal events", ninit, 0.0, count);
@@ -831,7 +831,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf htspin==-1
         std::string fitformula_20_02 = Form("1.0-%.3f*%s",bpol*tpol,fitformula_pp.c_str());
-        RooGenericPdf _model_20_02("_model_20_02", fitformula_pp.c_str(), *argset);
+        RooGenericPdf _model_20_02("_model_20_02", fitformula_20_02.c_str(), *argset);
 
         // Create extended pdf htspin==-1
         RooRealVar nsig_20_02("nsig_", "number of signal events", ninit, 0.0, count);
@@ -860,7 +860,7 @@ RooSimultaneous * getSimGenAsymPdf(
         //----- Beam helicity dependent terms -----//
         // Create pdf (h,t,ht) -> ( 1, 0, 0)
         std::string fitformula_21 = Form("1.0+%.3f*%s",bpol,fitformula_pu.c_str());
-        RooGenericPdf _model_21("_model_21", fitformula_pu.c_str(), *argset);
+        RooGenericPdf _model_21("_model_21", fitformula_21.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> ( 1, 0, 0)
         RooRealVar nsig_21("nsig_21", "number of signal events", ninit, 0.0, count);
@@ -868,7 +868,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf (h,t,ht) -> (-1, 0, 0)
         std::string fitformula_01 = Form("1.0-%.3f*%s",bpol,fitformula_pu.c_str());
-        RooGenericPdf _model_01("_model_01", fitformula_pu.c_str(), *argset);
+        RooGenericPdf _model_01("_model_01", fitformula_01.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> (-1, 0, 0)
         RooRealVar nsig_01("nsig_01", "number of signal events", ninit, 0.0, count);
@@ -877,7 +877,7 @@ RooSimultaneous * getSimGenAsymPdf(
         //----- Target spin dependent terms -----//
         // Create pdf (h,t,ht) -> ( 0, 1, 0)
         std::string fitformula_12 = Form("1.0+%.3f*%s",tpol,fitformula_up.c_str());
-        RooGenericPdf _model_12("_model_12", fitformula_up.c_str(), *argset);
+        RooGenericPdf _model_12("_model_12", fitformula_12.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> ( 0, 1, 0)
         RooRealVar nsig_12("nsig_12", "number of signal events", ninit, 0.0, count);
@@ -885,7 +885,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf (h,t,ht) -> ( 0,-1, 0)
         std::string fitformula_10 = Form("1.0-%.3f*%s",tpol,fitformula_up.c_str());
-        RooGenericPdf _model_10("_model_10", fitformula_up.c_str(), *argset);
+        RooGenericPdf _model_10("_model_10", fitformula_10.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> ( 0,-1, 0)
         RooRealVar nsig_10("nsig_10", "number of signal events", ninit, 0.0, count);
@@ -894,7 +894,7 @@ RooSimultaneous * getSimGenAsymPdf(
         //----- Beam helicity and target spin dependent terms -----//
         // Create pdf (h,t,ht) -> ( 1, 1, 1)
         std::string fitformula_22 = Form("1.0+%.3f*%s+%.3f*%s+%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
-        RooGenericPdf _model_22("_model_22", fitformula_pp.c_str(), *argset);
+        RooGenericPdf _model_22("_model_22", fitformula_22.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> ( 1, 1, 1)
         RooRealVar nsig_22("nsig_22", "number of signal events", ninit, 0.0, count);
@@ -902,7 +902,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf (h,t,ht) -> (-1,-1, 1)
         std::string fitformula_00 = Form("1.0-%.3f*%s-%.3f*%s+%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
-        RooGenericPdf _model_00("_model_00", fitformula_pp.c_str(), *argset);
+        RooGenericPdf _model_00("_model_00", fitformula_00.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> (-1,-1, 1)
         RooRealVar nsig_00("nsig_00", "number of signal events", ninit, 0.0, count);
@@ -910,7 +910,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf (h,t,ht) -> (-1, 1,-1)
         std::string fitformula_02 = Form("1.0-%.3f*%s+%.3f*%s-%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
-        RooGenericPdf _model_02("_model_02", fitformula_pp.c_str(), *argset);
+        RooGenericPdf _model_02("_model_02", fitformula_02.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> (-1, 1,-1)
         RooRealVar nsig_02("nsig_02", "number of signal events", ninit, 0.0, count);
@@ -918,7 +918,7 @@ RooSimultaneous * getSimGenAsymPdf(
 
         // Create pdf (h,t,ht) -> ( 1,-1,-1)
         std::string fitformula_20 = Form("1.0+%.3f*%s-%.3f*%s-%.3f*%s",bpol,fitformula_pu.c_str(),tpol,fitformula_up.c_str(),bpol*tpol,fitformula_pp.c_str());
-        RooGenericPdf _model_20("_model_20", fitformula_pp.c_str(), *argset);
+        RooGenericPdf _model_20("_model_20", fitformula_20.c_str(), *argset);
 
         // Create extended pdf (h,t,ht) -> ( 1,-1,-1)
         RooRealVar nsig_20("nsig_20", "number of signal events", ninit, 0.0, count);
