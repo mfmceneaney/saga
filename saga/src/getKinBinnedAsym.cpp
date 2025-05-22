@@ -671,6 +671,13 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: tpol: " << tpol << std::endl;
 
+    // ASYMFIT_FORMULA_UU
+    std::string asymfit_formula_uu = "";
+    if (node["asymfit_formula_uu"]) {
+        asymfit_formula_uu = node["asymfit_formula_uu"].as<std::string>();
+    }
+    std::cout << "INFO: asymfit_formula_uu: " << asymfit_formula_uu << std::endl;
+
     // ASYMFIT_FORMULA_PU
     std::string asymfit_formula_pu = "";
     if (node["asymfit_formula_pu"]) {
@@ -1132,6 +1139,7 @@ void execute(const YAML::Node& node) {
             // parameterss passed to analysis::fitAsym()
             bpol, //double                           bpol,
             tpol, //double                           tpol,
+            asymfit_formula_uu, //std::string                      asymfit_formula_pu,
             asymfit_formula_pu, //std::string                      asymfit_formula_pu,
             asymfit_formula_up, //std::string                      asymfit_formula_up,
             asymfit_formula_pp, //std::string                      asymfit_formula_pp,
