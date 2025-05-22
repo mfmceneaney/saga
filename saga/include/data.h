@@ -335,6 +335,7 @@ void createDataset(
     w->import(h);
     w->import(t);
     w->import(ht);
+    w->import(ss);
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
 
     // Import data into the workspace
