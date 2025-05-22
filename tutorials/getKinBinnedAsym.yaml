@@ -11,6 +11,10 @@ bgasyms: [0.0, 0.0, 0.0]
 particle_suffixes: ["_p","_pim"]
 mc_sg_match_name: "mc_sg_match"
 mc_sg_match_formula: "(bool)(ppid_p_mc==3122 && pidx_p_mc==pidx_pim_mc && abs(dtheta_p)<6*TMath::Pi()/180.0 && abs(dtheta_p)<6*TMath::Pi()/180.0)" #NOTE: dtheta and dphi variables are automatically defined for the given particle suffixes.
+phi_s_original_name: "phi_s"
+phi_s_injected_name: "phi_s_injected"
+fsgasyms_xs_uu_name: "fsgasyms_xs_uu" #NOTE: Define beam helicity dependent asymmetry terms
+fsgasyms_xs_uu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
 fsgasyms_xs_pu_name: "fsgasyms_xs_pu" #NOTE: Define beam helicity dependent asymmetry terms
 fsgasyms_xs_pu_formula: "(float)(0.747*costhetaT*(depol0*sgasyms[0]*TMath::Cos(phi_h_ppim)+depol1*sgasyms[1]+depol1*sgasyms[2]*TMath::Cos(2.0*phi_h_ppim)))" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
 fsgasyms_xs_up_name: "fsgasyms_xs_up" #NOTE: Define target spin dependent asymmetry terms
