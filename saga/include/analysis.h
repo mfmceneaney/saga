@@ -49,6 +49,7 @@
 // Local includes
 #include <data.h>
 #include <bins.h>
+#include <util.h>
 
 #pragma once
 
@@ -670,6 +671,81 @@ void applySPlot(
 }
 
 /**
+* @brief Create a subset of a RooArgSet for a given pdf formula
+*
+* @param argset RooArgSet containing RooRealVar* variables
+* @param fitformula PDF formula passed to RooGenericPdf
+* @param varformulas List of variable formulas passed to RooGenericPdf for all arguments in the RooArgSet
+* @param varnames List of variable names in RooArgSet directly corresponding to the list of variable formulas
+*
+* @return RooArgSet*
+*/
+RooArgSet* getSubRooArgSet(
+    RooArgSet* argset,
+    std::string fitformula,
+    std::vector<std::string> varformulas,
+    std::vector<std::string> varnames
+    ) {
+
+    // Isolate the argset for the target spin dependent terms
+    RooArgSet *subargset = new RooArgSet();
+
+    // Loop variable formulas and check if they are in the fit formula
+    for (int idx = 0; idx<varformulas.size(); idx++) {
+
+        // Check if fit formula contains variable formula
+        if (fitformula.find(varformulas[idx]) != std::string::npos) {
+
+            // Find the RooRealVar in the argset
+            RooRealVar *var = (RooRealVar*)argset->find(varnames[idx].c_str());
+            if (var==nullptr) {
+                std::cerr << "ERROR: RooRealVar \"" << varnames[idx].c_str() << "\" with formula \"" << varformulas[idx].c_str() << "\" not found in argset" << std::endl;
+                continue;
+            }
+            subargset->add(*var);
+        }
+    }
+
+    return subargset;
+
+} // RooArgSet* getSubRooArgSet()
+
+
+/**
+* @brief Adjust the parameter indexing of a pdf formula for a given subset of parameters
+*
+* Note that the output formula will have the variable notation `x[<idx>]` where `idx`
+* indicates the integer index of the variable in the appropriate RooArgSet.
+*
+* @param fitformula PDF formula passed to RooGenericPdf
+* @param varformulas List of variable formulas passed to RooGenericPdf
+*
+* @return std::string
+*/
+std::string getSubFormula(
+    std::string fitformula,
+    std::vector<std::string> varformulas
+    ) {
+
+    // Loop variable formulas and map old formulas to new formulas
+    std::string subfitformula = fitformula;
+    int add_idx = 0;
+    for (int idx = 0; idx<varformulas.size(); idx++) {
+
+        // Check if fit formula contains variable formula
+        if (fitformula.find(varformulas[idx]) != std::string::npos) {
+
+            // Replace variable and increment index of variables added
+            saga::util::replaceAll(subfitformula, varformulas[idx], Form("x[%d]", add_idx));
+            add_idx++;
+        }
+    }
+
+    return subfitformula;
+
+} // RooArgSet* getSubRooArgSet()
+
+/**
 * @brief Create a simultaneous PDF for fitting a generic asymmetry with a maximum likelihood fit.
 * 
 * Create a simultaneous PDF given the formulas for the asymmetries coupling to each combination of beam helicity
@@ -690,12 +766,21 @@ void applySPlot(
 * The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
 * 
+* Note that in the case that all three fit formula terms are used, the formulas and corresponding
+* argument sets for the PDFs that depend only on either beam helicity or target spin will be reduced
+* to the appropriate subset of variables used in the corresponding fit formula.  This ensures
+* that the PDFs will still compile correctly even when uploaded to the RooWorkspace.
+*
+* When using a single fit formula the indexing of parameters in the fit formula is straightforward.
+* However, when using all three fit formulas, the indexing is global across all three formulas.
+* 
 * @param w RooWorkspace in which to work
 * @param h Beam helicity \f$h_b\in(-1,0,1)\f$
 * @param t Target spin \f$h_t\in(-1,0,1)\f$
 * @param ht Beam helicity times target spin \f$h_b \cdot h_t\in(-1,0,1)\f$
 * @param ss Combined beam helicity and target spin state \f$ss = (h_b+1)*10 + (h_t+1)\f$
 * @param argset Argument set for PDF
+* @param argnames Argument names for PDF
 * @param method_name Method name, used to name PDF
 * @param binid Unique bin id, used to name PDF
 * @param fitformula_pu Fit formula for the beam helicity dependent asymmetry terms \f$A_{PU}\f$
@@ -715,6 +800,7 @@ std::string getSimGenAsymPdf(
     RooCategory *ht,
     RooCategory *ss,
     RooArgSet *argset,
+    std::vector<std::string> argnames,
     std::string method_name,
     std::string binid,
     std::string fitformula_pu,
@@ -733,6 +819,12 @@ std::string getSimGenAsymPdf(
     if (fitformula_pp!="") nstates += 1;
     nstates *= 3;
     double ninit = count / nstates;
+
+    // Set variable formulas list
+    std::vector<std::string> varformulas;
+    for (int idx=0; idx<argset->size(); idx++) {
+        varformulas.push_back(Form("x[%d]", idx));
+    }
 
     // Create simultaneous pdf
     RooSimultaneous * model;
@@ -769,34 +861,44 @@ std::string getSimGenAsymPdf(
     RooExtendPdf model_20_02("model_20_02", "extended signal pdf", _model_20_02, nsig_20_02);
 
     //----- Beam helicity dependent terms -----//
+
+    // Isolate the argset for the target spin dependent terms
+    RooArgSet *argset_pu = getSubRooArgSet(argset, fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_uu.c_str(), varformulas, argnames);
+    std::string subfitformula_pu = getSubFormula(fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_uu.c_str(), varformulas);
+
     // Create pdf (h,t,ht) -> ( 1, 0, 0)
-    std::string fitformula_21 = Form("1.0+%.3f*(%s)",bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_uu.c_str());
-    RooGenericPdf _model_21(Form("_%s_21",model_name.c_str()), fitformula_21.c_str(), *argset);
+    std::string fitformula_21 = Form("1.0+%.3f*(%s)",bpol,subfitformula_pu.c_str());
+    RooGenericPdf _model_21(Form("_%s_21",model_name.c_str()), fitformula_21.c_str(), *argset_pu);
 
     // Create extended pdf (h,t,ht) -> ( 1, 0, 0)
     RooRealVar nsig_21("nsig_21", "number of signal events", ninit, 0.0, count);
     RooExtendPdf model_21("model_21", "extended signal pdf", _model_21, nsig_21);
 
     // Create pdf (h,t,ht) -> (-1, 0, 0)
-    std::string fitformula_01 = Form("1.0-%.3f*(%s)",bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_uu.c_str());
-    RooGenericPdf _model_01(Form("_%s_01",model_name.c_str()), fitformula_01.c_str(), *argset);
+    std::string fitformula_01 = Form("1.0-%.3f*(%s)",bpol,subfitformula_pu.c_str());
+    RooGenericPdf _model_01(Form("_%s_01",model_name.c_str()), fitformula_01.c_str(), *argset_pu);
 
     // Create extended pdf (h,t,ht) -> (-1, 0, 0)
     RooRealVar nsig_01("nsig_01", "number of signal events", ninit, 0.0, count);
     RooExtendPdf model_01("model_01", "extended signal pdf", _model_01, nsig_01);
 
     //----- Target spin dependent terms -----//
+
+    // Isolate the argset for the target spin dependent terms
+    RooArgSet *argset_up = getSubRooArgSet(argset, fitformula_up!="" ? fitformula_up.c_str() : fitformula_uu.c_str(), varformulas, argnames);
+    std::string subfitformula_up = getSubFormula(fitformula_up!="" ? fitformula_up.c_str() : fitformula_uu.c_str(), varformulas);
+
     // Create pdf (h,t,ht) -> ( 0, 1, 0)
-    std::string fitformula_12 = Form("1.0+%.3f*(%s)",tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_uu.c_str());
-    RooGenericPdf _model_12(Form("_%s_12",model_name.c_str()), fitformula_12.c_str(), *argset);
+    std::string fitformula_12 = Form("1.0+%.3f*(%s)",tpol,subfitformula_up.c_str());
+    RooGenericPdf _model_12(Form("_%s_12",model_name.c_str()), fitformula_12.c_str(), *argset_up);
 
     // Create extended pdf (h,t,ht) -> ( 0, 1, 0)
     RooRealVar nsig_12("nsig_12", "number of signal events", ninit, 0.0, count);
     RooExtendPdf model_12("model_12", "extended signal pdf", _model_12, nsig_12);
 
     // Create pdf (h,t,ht) -> ( 0,-1, 0)
-    std::string fitformula_10 = Form("1.0-%.3f*(%s)",tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_uu.c_str());
-    RooGenericPdf _model_10(Form("_%s_10",model_name.c_str()), fitformula_10.c_str(), *argset);
+    std::string fitformula_10 = Form("1.0-%.3f*(%s)",tpol,subfitformula_up.c_str());
+    RooGenericPdf _model_10(Form("_%s_10",model_name.c_str()), fitformula_10.c_str(), *argset_up);
 
     // Create extended pdf (h,t,ht) -> ( 0,-1, 0)
     RooRealVar nsig_10("nsig_10", "number of signal events", ninit, 0.0, count);
@@ -1065,15 +1167,19 @@ std::vector<double> fitAsym(
 
     // Add parameters to argument list in order
     RooArgSet *argset = new RooArgSet();
+    std::vector<std::string> argnames;
     for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
         argset->add(*f[ff]);
+        argnames.push_back(f[ff]->GetName());
     }
     for (int aa=0; aa<nparams; aa++) { // Fit asymmetry amplitude parameters
         argset->add(*a[aa]);
+        argnames.push_back(a[aa]->GetName());
     }
     if (!use_average_depol) {
         for (int dd=0; dd<depolvars.size(); dd++) { // Fit depolarization factor variables
             argset->add(*d[dd]);
+            argnames.push_back(d[dd]->GetName());
         }
     }
 
@@ -1085,6 +1191,7 @@ std::vector<double> fitAsym(
         ht,
         ss,
         argset,
+        argnames,
         method_name,
         binid,
         fitformula_pu,
