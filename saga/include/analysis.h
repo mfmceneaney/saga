@@ -1077,6 +1077,7 @@ std::vector<double> fitAsym(
         }
     }
 
+    // Create and load asymmetry pdf
     std::string model_name = getSimGenAsymPdf(
         w,
         h,
@@ -1094,7 +1095,6 @@ std::vector<double> fitAsym(
         count,
         use_extended_nll
     );
-
     RooAbsPdf *model = w->pdf(model_name.c_str());
 
     // Fit the pdf to data
