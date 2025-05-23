@@ -472,7 +472,9 @@ RNode mapDataFromCSV(RNode filtered_df,
 * @param combined_spin_state_name Name of column containing combined beam helicity and target spin state encoded as \f$ss = (h_b+1)*10 + (h_t+1)\f$
 * @param helicity_name Name of column containing the beam helicity
 * @param tspin_name Name of column containing the target spin
-* @param phi_s_name Name of column containing the injected \f$\phi_{S}\f$ variable
+* @param phi_s_up_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=+1\f$ events
+* @param phi_s_dn_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=-1\f$ events
+* @param phi_s_name_injected Name of column to contain the injected \f$\phi_{S}\f$ variable
 *
 * @return `ROOT::RDataFrame` with helicity and target spin values injected
 */
@@ -497,7 +499,9 @@ RNode injectAsym(
     std::string combined_spin_state_name,
     std::string helicity_name,
     std::string tspin_name,
-    std::string phi_s_name
+    std::string phi_s_up_name,
+    std::string phi_s_dn_name,
+    std::string phi_s_name_injected
     ) {
 
     // Define a lambda to inject an asymmetry for each rdf entry
@@ -588,8 +592,10 @@ RNode injectAsym(
                     {combined_spin_state_name.c_str()});
 
     // Define tspin dependent phi_s AFTER injecting the asymmetry
-    if (phi_s_name!="") {
-        frame = frame.Define(phi_s_name.c_str(), [](float tspin, float phi_s) -> float { return (float) tspin * phi_s;},{tspin_name.c_str(),phi_s_name.c_str()});
+    if (phi_s_up_name!="" && phi_s_dn_name!="") {
+        std::string _phi_s_name_injected = phi_s_name_injected;
+        if (_phi_s_name_injected=="") _phi_s_name_injected = Form("%s_injected",phi_s_up_name.c_str());
+        frame = frame.Define(_phi_s_name_injected.c_str(), [](float tspin, float phi_s_up, float phi_s_dn) -> float { return (float)(tspin>0 ? phi_s_up : phi_s_dn);},{tspin_name.c_str(),phi_s_up_name.c_str(),phi_s_dn_name.c_str()});
     }
 
     return frame;

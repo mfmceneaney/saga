@@ -1164,6 +1164,8 @@ void execute(const YAML::Node& node) {
                         combined_spin_state,
                         helicity_name,
                         tspin_name,
+                        phi_s_original_name,
+                        phi_s_original_name_dn,
                         phi_s_injected_name
                     );
     //TODO: Add output message about defined branches
