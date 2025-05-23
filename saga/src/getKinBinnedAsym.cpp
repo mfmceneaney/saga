@@ -971,11 +971,11 @@ void execute(const YAML::Node& node) {
     // Define the tspin==+1 and tspin==-1 A_{UT} asymmetry names
     std::string fsgasyms_xs_uu_pos_name = Form("_%s_pos",fsgasyms_xs_uu_name.c_str());
     std::string fsgasyms_xs_uu_neg_name = Form("_%s_neg",fsgasyms_xs_uu_name.c_str());
-    std::string fsgasyms_xs_pu_pos_name = Form("_%s_neg",fsgasyms_xs_pu_name.c_str());
+    std::string fsgasyms_xs_pu_pos_name = Form("_%s_pos",fsgasyms_xs_pu_name.c_str());
     std::string fsgasyms_xs_pu_neg_name = Form("_%s_neg",fsgasyms_xs_pu_name.c_str());
-    std::string fbgasyms_xs_uu_pos_name = Form("_%s_neg",fbgasyms_xs_uu_name.c_str());
+    std::string fbgasyms_xs_uu_pos_name = Form("_%s_pos",fbgasyms_xs_uu_name.c_str());
     std::string fbgasyms_xs_uu_neg_name = Form("_%s_neg",fbgasyms_xs_uu_name.c_str());
-    std::string fbgasyms_xs_pu_pos_name = Form("_%s_neg",fbgasyms_xs_pu_name.c_str());
+    std::string fbgasyms_xs_pu_pos_name = Form("_%s_pos",fbgasyms_xs_pu_name.c_str());
     std::string fbgasyms_xs_pu_neg_name = Form("_%s_neg",fbgasyms_xs_pu_name.c_str());
 
     // Define the tspin==+1 and tspin==-1 A_{UT} asymmetry formulas
