@@ -138,6 +138,13 @@ void execute(const YAML::Node& node) {
     }
     std::cout << "INFO: phi_s_original_name: " << phi_s_original_name << std::endl;
 
+    // PHI_S_ORIGINAL_NAME_DN
+    std::string phi_s_original_name_dn = "phi_s_dn";
+    if (node["phi_s_original_name_dn"]) {
+        phi_s_original_name_dn = node["phi_s_original_name_dn"].as<std::string>();
+    }
+    std::cout << "INFO: phi_s_original_name_dn: " << phi_s_original_name_dn << std::endl;
+
     // PHI_S_INJECTED_NAME
     std::string phi_s_injected_name = "phi_s_injected";
     if (node["phi_s_injected_name"]) {
@@ -1041,17 +1048,21 @@ void execute(const YAML::Node& node) {
         fbgasyms_xs_pu_pos_formula = fbgasyms_xs_pu_formula;
         fbgasyms_xs_pu_neg_formula = fbgasyms_xs_pu_formula;
 
-        // And put the appropriate sign on the phi_s variable for A_{UT} and A_{LT} asymmetries
-        std::string phi_s_original_name_mc = Form("%s_mc", phi_s_original_name.c_str());
-        std::string phi_s_original_name_mc_neg = Form("-%s",phi_s_original_name_mc.c_str());
-        saga::util::replaceAll(fsgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-        saga::util::replaceAll(fbgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-        saga::util::replaceAll(fsgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-        saga::util::replaceAll(fbgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-        std::cout << "INFO: Updated " << fsgasyms_xs_uu_neg_name.c_str() << " = " << fsgasyms_xs_uu_neg_formula.c_str() << std::endl;
-        std::cout << "INFO: Updated " << fbgasyms_xs_uu_neg_name.c_str() << " = " << fbgasyms_xs_uu_neg_formula.c_str() << std::endl;
-        std::cout << "INFO: Updated " << fsgasyms_xs_pu_neg_name.c_str() << " = " << fsgasyms_xs_pu_neg_formula.c_str() << std::endl;
-        std::cout << "INFO: Updated " << fbgasyms_xs_pu_neg_name.c_str() << " = " << fbgasyms_xs_pu_neg_formula.c_str() << std::endl;
+        // Check if you have phi_s variable names to replace
+        if (phi_s_original_name!="" && phi_s_original_name_dn!="") {
+
+            // And put the appropriate sign on the phi_s variable for A_{UT} and A_{LT} asymmetries
+            std::string phi_s_original_name_mc = Form("%s_mc", phi_s_original_name.c_str());
+            std::string phi_s_original_name_mc_neg = Form("%s_mc",phi_s_original_name_dn.c_str());//NOTE: Need to multiply spin vector by -1 and then take phi in g*N CM frame which equates to flipping the angle vector, i.e., phi -> pi + phi = phi', if (phi'>2pi) phi' = phi' - 2pi
+            saga::util::replaceAll(fsgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+            saga::util::replaceAll(fbgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+            saga::util::replaceAll(fsgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+            saga::util::replaceAll(fbgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+            std::cout << "INFO: Updated " << fsgasyms_xs_uu_neg_name.c_str() << " = " << fsgasyms_xs_uu_neg_formula.c_str() << std::endl;
+            std::cout << "INFO: Updated " << fbgasyms_xs_uu_neg_name.c_str() << " = " << fbgasyms_xs_uu_neg_formula.c_str() << std::endl;
+            std::cout << "INFO: Updated " << fsgasyms_xs_pu_neg_name.c_str() << " = " << fsgasyms_xs_pu_neg_formula.c_str() << std::endl;
+            std::cout << "INFO: Updated " << fbgasyms_xs_pu_neg_name.c_str() << " = " << fbgasyms_xs_pu_neg_formula.c_str() << std::endl;
+        }
     }
 
     // Define variables from formulas
