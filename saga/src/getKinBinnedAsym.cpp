@@ -1140,9 +1140,11 @@ void execute(const YAML::Node& node) {
     //TODO: Add output messages about defined branches
 
     // Define helicity variable, injecting and applying MC matching cuts if requested
+    std::string combined_spin_state_formula  = Form("(int)(10*(%s+1)+%s+1)",helicity_name.c_str(),tspin_name.c_str());
     auto frame = (!inject_asym) ?
                     d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str())
-                                .Define(tspin_name.c_str(), tspin_formula.c_str()) :
+                                .Define(tspin_name.c_str(), tspin_formula.c_str())
+                                .Define(combined_spin_state.c_str(), combined_spin_state_formula.c_str()) :
                     saga::data::injectAsym(
                         d2_filtered,
                         seed,
