@@ -432,17 +432,20 @@ RNode mapDataFromCSV(RNode filtered_df,
 *
 * Inject an asymmetry into an existing `ROOT::RDataFrame` given a random seed,
 * beam and target polarizations, and the relevant signal and background 
-* asymmetry formulas separated into terms dependent on beam helicity, target spin, or both.
-* The algorithm proceeds as follows.
+* asymmetry formulas separated into unpolarized and (only) transverse target spin, i.e., \f$\phi_{S}\f$, dependent asymmetry terms,
+* as well as asymmetry terms dependent on beam helicity, target spin, or both.
+* In the case of an asymmetry term depending (only) on transverse target spin, the \f$\phi_{S}\f$ variable can be injected into the dataset if a variable name is supplied.
+* The injection algorithm proceeds as follows.
 * For each event, a random number \f$r\in[0,1)\f$, beam helicity \f$h_b\in(-1,0,1)\f$, and target spin \f$h_t\in(-1,0,1)\f$ are all randomly generated.
 * A non-zero \f$h_b\f$ and \f$h_t\f$ are generated with probabilities taken from the beam and target polarizations respectively:
 * \f$P(h_b\neq0) = \overline{P^2_b}\f$ and
 * \f$P(h_t\neq0) = \overline{P^2_t}\f$.
 * The event weight \f$w\f$ is computed as:
 * \f[
-*   w = \frac{1}{2} (1 + h_b \cdot A_{PU} + h_b \cdot A_{UP} + h_b \cdot h_t \cdot A_{PP}),
+*   w = \frac{1}{2} (1 + A_{UU} + A_{UT} + h_b \cdot A_{PU} + h_b \cdot A_{UP} + h_b \cdot h_t \cdot A_{PP}),
 * \f]
-* where \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ are the asymmetry terms
+* where \f$A_{UU}\f$, \f$A_{UT}\f$ are the unpolarized and (only) transverse target spin dependent asymmetry terms
+* and \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ are the asymmetry terms
 * dependent on beam helicity, target spin, or both.
 * Note that the asymmetry terms will taken from either the signal or background asymmetries
 * depending on whether the event has been marked as signal or background.
@@ -454,15 +457,24 @@ RNode mapDataFromCSV(RNode filtered_df,
 * @param bpol Average beam polarization
 * @param tpol Average target polarization
 * @param mc_sg_match_name Name of boolean column indicating signal events
-* @param asyms_sg_pu_name Name of column containing the true signal asymmetries dependent on beam helicity
+* @param asyms_sg_uu_pos_name Name of column containing the true signal unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=+1\f$
+* @param asyms_sg_uu_neg_name Name of column containing the true signal unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=-1\f$
+* @param asyms_sg_pu_pos_name Name of column containing the true signal asymmetries dependent on beam helicity, for \f$S_{\perp}=+1\f$
+* @param asyms_sg_pu_neg_name Name of column containing the true signal asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$
 * @param asyms_sg_up_name Name of column containing the true signal asymmetries dependent on target spin
 * @param asyms_sg_pp_name Name of column containing the true signal asymmetries dependent on beam helicity and target spin
-* @param asyms_bg_pu_name Name of column containing the true background asymmetries dependent on beam helicity
+* @param asyms_bg_uu_pos_name Name of column containing the true background unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=+1\f$
+* @param asyms_bg_uu_neg_name Name of column containing the true background unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=-1\f$
+* @param asyms_bg_pu_pos_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=+1\f$
+* @param asyms_bg_pu_neg_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$
 * @param asyms_bg_up_name Name of column containing the true background asymmetries dependent on target spin
 * @param asyms_bg_pp_name Name of column containing the true background asymmetries dependent on beam helicity and target spin
-* @param randvar_name Name of column containing randomly generated values used to determine beam helicity and target spin
+* @param combined_spin_state_name Name of column containing combined beam helicity and target spin state encoded as \f$ss = (h_b+1)*10 + (h_t+1)\f$
 * @param helicity_name Name of column containing the beam helicity
 * @param tspin_name Name of column containing the target spin
+* @param phi_s_up_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=+1\f$ events
+* @param phi_s_dn_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=-1\f$ events
+* @param phi_s_name_injected Name of column to contain the injected \f$\phi_{S}\f$ variable
 *
 * @return `ROOT::RDataFrame` with helicity and target spin values injected
 */
@@ -472,23 +484,36 @@ RNode injectAsym(
     double bpol,
     double tpol,
     std::string mc_sg_match_name,
-    std::string asyms_sg_pu_name,
+    std::string asyms_sg_uu_pos_name,
+    std::string asyms_sg_uu_neg_name,
+    std::string asyms_sg_pu_pos_name,
+    std::string asyms_sg_pu_neg_name,
     std::string asyms_sg_up_name,
     std::string asyms_sg_pp_name,
-    std::string asyms_bg_pu_name,
+    std::string asyms_bg_uu_pos_name,
+    std::string asyms_bg_uu_neg_name,
+    std::string asyms_bg_pu_pos_name,
+    std::string asyms_bg_pu_neg_name,
     std::string asyms_bg_up_name,
     std::string asyms_bg_pp_name,
-    std::string randvar_name,
+    std::string combined_spin_state_name,
     std::string helicity_name,
-    std::string tspin_name
+    std::string tspin_name,
+    std::string phi_s_up_name,
+    std::string phi_s_dn_name,
+    std::string phi_s_name_injected
     ) {
 
     // Define a lambda to inject an asymmetry for each rdf entry
     auto getEntrySlot = [seed,bpol,tpol](
                         ULong64_t iEntry,
                         bool mc_sg_match,
-                        float asyms_sg_pu, float asyms_sg_up, float asyms_sg_pp,
-                        float asyms_bg_pu, float asyms_bg_up, float asyms_bg_pp) -> int {
+                        float asyms_sg_uu_pos, float asyms_sg_uu_neg,
+                        float asyms_sg_pu_pos, float asyms_sg_pu_neg,
+                        float asyms_sg_up, float asyms_sg_pp,
+                        float asyms_bg_uu_pos, float asyms_bg_uu_neg,
+                        float asyms_bg_pu_pos, float asyms_bg_pu_neg,
+                        float asyms_bg_up, float asyms_bg_pp) -> int {
 
         // Combine global seed and row index for determinism
         TRandom3 rng(seed + static_cast<UInt_t>(iEntry));
@@ -518,11 +543,17 @@ RNode injectAsym(
             if (bpol>0.0) bhelicity = (b_rand_var<=bpol/2.0) ? 1 : -1;
             if (tpol>0.0) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
 
+            // Set the phi_s dependent asymmetries
+            float asyms_sg_uu = (tspin>0) ? asyms_sg_uu_pos : asyms_sg_uu_neg;
+            float asyms_bg_uu = (tspin>0) ? asyms_bg_uu_pos : asyms_bg_uu_neg;
+            float asyms_sg_pu = (tspin>0) ? asyms_sg_pu_pos : asyms_sg_pu_neg;
+            float asyms_bg_pu = (tspin>0) ? asyms_bg_pu_pos : asyms_bg_pu_neg;
+
             // Compute the XS value
             if (mc_sg_match) {
-                xs_val = 0.5*(1.0 + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
+                xs_val = 0.5*(1.0 + asyms_sg_uu + bhelicity*asyms_sg_pu + tspin*asyms_sg_up + bhelicity*tspin*asyms_sg_pp);
             } else {
-                xs_val = 0.5*(1.0 + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
+                xs_val = 0.5*(1.0 + asyms_bg_uu + bhelicity*asyms_bg_pu + tspin*asyms_bg_up + bhelicity*tspin*asyms_bg_pp);
             }
 
         } //  while (bhelicity==0.0 || random_var<=xs_val) {
@@ -533,12 +564,16 @@ RNode injectAsym(
 
     // Define random variable
     auto frame = df.Define(
-                        randvar_name.c_str(),
+                        combined_spin_state_name.c_str(),
                         getEntrySlot,
                         {
                             "rdfentry_", mc_sg_match_name.c_str(),
-                            asyms_sg_pu_name.c_str(), asyms_sg_up_name.c_str(), asyms_sg_pp_name.c_str(),
-                            asyms_bg_pu_name.c_str(), asyms_bg_up_name.c_str(), asyms_bg_pp_name.c_str()
+                            asyms_sg_uu_pos_name.c_str(), asyms_sg_uu_neg_name.c_str(),
+                            asyms_sg_pu_pos_name.c_str(), asyms_sg_pu_neg_name.c_str(),
+                            asyms_sg_up_name.c_str(), asyms_sg_pp_name.c_str(),
+                            asyms_bg_uu_pos_name.c_str(), asyms_bg_uu_neg_name.c_str(),
+                            asyms_bg_pu_pos_name.c_str(), asyms_bg_pu_neg_name.c_str(),
+                            asyms_bg_up_name.c_str(), asyms_bg_pp_name.c_str()
                         }
                     )
                     .Define(helicity_name.c_str(), [](int my_rand_var) -> float {
@@ -547,14 +582,21 @@ RNode injectAsym(
                         if (my_rand_var / 10 == 0) return (float)-1.0;
                         return (float)0.0;
                     },
-                    {randvar_name.c_str()})
+                    {combined_spin_state_name.c_str()})
                     .Define(tspin_name.c_str(), [](int my_rand_var) -> float {
                         if (my_rand_var % 10 == 2) return (float) 1.0;
                         if (my_rand_var % 10 == 1) return (float) 0.0;
                         if (my_rand_var % 10 == 0) return (float)-1.0;
                         return (float)0.0;
                     },
-                    {randvar_name.c_str()});
+                    {combined_spin_state_name.c_str()});
+
+    // Define tspin dependent phi_s AFTER injecting the asymmetry
+    if (phi_s_up_name!="" && phi_s_dn_name!="") {
+        std::string _phi_s_name_injected = phi_s_name_injected;
+        if (_phi_s_name_injected=="") _phi_s_name_injected = Form("%s_injected",phi_s_up_name.c_str());
+        frame = frame.Define(_phi_s_name_injected.c_str(), [](float tspin, float phi_s_up, float phi_s_dn) -> float { return (float)(tspin>0 ? phi_s_up : phi_s_dn);},{tspin_name.c_str(),phi_s_up_name.c_str(),phi_s_dn_name.c_str()});
+    }
 
     return frame;
 
