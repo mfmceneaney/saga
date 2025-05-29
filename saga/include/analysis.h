@@ -50,6 +50,7 @@
 #include <data.h>
 #include <bins.h>
 #include <util.h>
+#include <signal.h>
 
 #pragma once
 
@@ -65,377 +66,6 @@
 namespace saga {
 
 namespace analysis {
-
-/**
-* @brief Apply a \f$\Lambda\f$ baryon mass fit
-*
-* Apply a \f$\Lambda\f$ baryon mass fit with signal function chosen from
-* (`"gauss"`, `"landau"`, `"cb"`, `"landau_X_gauss"`, `"cb_X_gauss"`, `"cb_gauss"`) and
-* Chebychev polynomial background function and save model and
-* yield variables to workspace for use with sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
-* This will also return \f$\varepsilon\f$ which is the fraction of events
-* in the signal region (`sig_region_min`,`sig_region_max`) which
-* are background.  The background fraction is computed using the sums of the observed
-* distribution and the histogrammed background function in the signal region respectively.
-*
-* @param w RooWorkspace in which to work
-* @param massfitvars Invariant mass fit variable names
-* @param rds RooDataSet to use for fit
-* @param sgYield_name Signal yield variable name
-* @param bgYield_name Background yield variable name
-* @param frame ROOT RDataframe from which to create a histogram of invariant mass
-* @param mass_nbins_conv Number of invariant mass bins for convolution of PDFs
-* @param model_name Full PDF name
-* @param sig_pdf_name Signal PDF name
-* @param sg_region_min Invariant mass signal region lower bound
-* @param sg_region_max Invariant mass signal region upper bound
-* @param use_poly4_bg Use a 4th order Chebychev polynomial background instead of 2nd order
-* @param bin_id Unique bin identifier string
-*
-* @return List containing background fraction \f$\varepsilon\f$ and its statistical error
-*/
-std::vector<double> applyLambdaMassFit(
-    RooWorkspace *w,
-    std::vector<std::string> massfitvars,
-    RooAbsData *rds,
-    std::string sgYield_name,
-    std::string bgYield_name,
-    ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-    int mass_nbins_conv,
-    std::string model_name,
-    std::string sig_pdf_name,
-    double sg_region_min,
-    double sg_region_max,
-    int use_poly4_bg,
-    std::string bin_id
-    ) {
-
-    using namespace RooFit;
-
-    std::string massvar = massfitvars[0]; //NOTE: ASSUME ONE MASS FIT VARIABLE.
-
-    // Get variables from workspace
-    RooRealVar *m = w->var(massvar.c_str());
-    double mass_min = m->getMin();
-    double mass_max = m->getMax();
-    int    mass_nbins_hist =  m->getBins();
-
-    // Get dataset length
-    int count = (int)rds->numEntries();
-
-    // Create histogram
-    auto h1 = (TH1D) *frame.Histo1D({"h1",massvar.c_str(),mass_nbins_hist,mass_min,mass_max},massvar.c_str());
-    TH1D *h = (TH1D*)h1.Clone(massvar.c_str());
-    h->SetTitle("");
-    h->GetXaxis()->SetTitle(Form("%s (GeV)",m->GetTitle()));
-    h->GetXaxis()->SetTitleSize(0.06);
-    h->GetXaxis()->SetTitleOffset(0.75);
-    h->GetYaxis()->SetTitle("Counts");
-    h->GetYaxis()->SetTitleSize(0.06);
-    h->GetYaxis()->SetTitleOffset(0.87);
-
-    // Set y axes limits
-    h->GetYaxis()->SetRangeUser(0.0,1.05*h->GetMaximum());
-
-    // Construct signal gauss(t,mg,sg)
-    RooRealVar mg("mg", "mg", 1.1157, mass_min, mass_max);
-    RooRealVar sg("sg", "sg", 0.008, 0.0, 0.1);
-    RooGaussian gauss(Form("gauss%s",bin_id.c_str()), "gauss", *m, mg, sg);
-
-    // Construct landau(t,ml,sl) ;
-    RooRealVar ml("ml", "mean landau", 1.1157, mass_min, mass_max);
-    RooRealVar sl("sl", "sigma landau", 0.005, 0.0, 0.1);
-    RooLandau landau(Form("landau%s",bin_id.c_str()), "landau", *m, ml, sl);
-
-    // Construct signal parameters and function
-    RooRealVar mu("mu","#mu",1.1157,0.0,2.0);
-    RooRealVar s("s","#sigma",0.008,0.0,1.0);
-    RooRealVar a_left("a_left","alpha_left",10.0);
-    RooRealVar n_left("n_left","n_left",10.0);
-    RooRealVar a("a","#alpha",1.0,0.0,3.0);
-    RooRealVar n("n","n",2.0,2.0,10.0);
-    RooCrystalBall cb(Form("cb%s",bin_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
-
-    // Construct addition component pdfs
-    RooRealVar sg_add("sg_add", "sg_add", 0.0001, 0.0, 0.001);
-    RooGaussian gauss_add(Form("gauss_add%s",bin_id.c_str()), "gauss_add", *m, mu, sg_add);
-    RooCrystalBall cb_add(Form("cb_add%s",bin_id.c_str()), "crystal_ball", *m, mu, s, a_left, n_left, a, n); //NOTE: Include model name for uniqueness within bin.
-    double cbFrac_init = 0.1;
-    RooRealVar cbFrac(Form("cbFrac%s",bin_id.c_str()), "fitted yield for signal", cbFrac_init, 0., 1.0);
-    RooAddPdf cb_gauss(Form("cb_gauss%s",bin_id.c_str()), Form("cb_add%s+gauss_add%s",bin_id.c_str(),bin_id.c_str()), RooArgList(cb_add,gauss_add), RooArgList(cbFrac)); //NOTE: N-1 Coefficients! 
-
-    // Construct convolution component pdfs
-    RooRealVar mg_conv("mg_conv", "mg_conv", 0.0);
-    RooRealVar sg_conv("sg_conv", "sg_conv", 0.008, 0.0, 0.1);
-    RooGaussian gauss_landau_conv(Form("gauss_landau_conv%s",bin_id.c_str()), "gauss_landau_conv", *m, mg_conv, sg_conv);
-    RooGaussian gauss_cb_conv(Form("gauss_cb_conv%s",bin_id.c_str()), "gauss_cb_conv", *m, mg_conv, sg_conv);
-    RooLandau landau_conv(Form("landau_conv%s",bin_id.c_str()), "landau_conv", *m, ml, sl);
-    RooCrystalBall cb_conv(Form("cb_conv%s",bin_id.c_str()), "crystal_ball_conv", *m, mu, s, a_left, n_left, a, n);
-    
-    // Set #bins to be used for FFT sampling to 10000
-    m->setBins(mass_nbins_conv, "cache");
-    
-    // Construct Convolution PDFs
-    RooFFTConvPdf landau_X_gauss(Form("landau_X_gauss%s",bin_id.c_str()), "CB (X) gauss_conv", *m, landau_conv, gauss_landau_conv);
-    RooFFTConvPdf cb_X_gauss(Form("cb_X_gauss%s",bin_id.c_str()), "CB (X) gauss_conv", *m, cb_conv, gauss_cb_conv);
-
-    // Import signal functions to workspace
-    w->import(gauss);
-    w->import(landau);
-    w->import(cb);
-    w->import(landau_X_gauss);
-    w->import(cb_X_gauss);
-    w->import(cb_gauss);
-
-    // Pick out signal function based on preference
-    std::string sig_pdf_name_unique = Form("%s%s",sig_pdf_name.c_str(),bin_id.c_str());
-    RooAbsPdf *sig = w->pdf(sig_pdf_name_unique.c_str());
-
-    // Consruct background parameters and function
-    RooRealVar b1("b1","b_{1}",  0.72,-10.0,10.0);
-    RooRealVar b2("b2","b_{2}", -0.17,-10.0,10.0);
-    RooRealVar b3("b3","b_{3}",  0.05,-10.0,10.0);
-    RooRealVar b4("b4","b_{4}", -0.01,-10.0,10.0);
-    std::string bg_pdf_name_unique = Form("bg%s",bin_id.c_str());
-    RooChebychev bg(bg_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str(),*m,(use_poly4_bg==1 ? RooArgList(b1,b2,b3,b4) : RooArgList(b1,b2)));
-    
-    // Combine signal and background functions
-    double sgfrac = 0.1;
-    double sgYield_init = sgfrac * count;
-    double bgYield_init = (1.0-sgfrac) * count;
-    RooRealVar sgYield(Form("%s%s",sgYield_name.c_str(),bin_id.c_str()), "fitted yield for signal", sgYield_init, 0., 2.0*count);
-    RooRealVar bgYield(Form("%s%s",bgYield_name.c_str(),bin_id.c_str()), "fitted yield for background", bgYield_init, 0., 2.0*count);
-    RooAddPdf model(Form("%s%s",model_name.c_str(),bin_id.c_str()), Form("%s+%s",sig_pdf_name_unique.c_str(),bg_pdf_name_unique.c_str()), RooArgList(*sig,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
-
-    // Fit invariant mass spectrum
-    std::unique_ptr<RooFitResult> fit_result_data{model.fitTo(*rds, Save(), PrintLevel(-1))};
-
-    //---------------------------------------- Compute chi2 ----------------------------------------//
-    // Import TH1 histogram into RooDataHist
-    RooDataHist dh("dh", "dh", *m, Import(*h));
-
-    // Compute chi2 value
-    RooFit::OwningPtr<RooAbsReal> chi2 = model.createChi2(dh, Range("fullRange"),
-                 Extended(true), DataError(RooAbsData::Poisson));
-    int nparameters = (int) model.getParameters(RooArgSet(*m))->size();
-    int ndf = mass_nbins_hist - nparameters; //NOTE: ASSUME ALL BINS NONZERO
-    double chi2ndf = (double) chi2->getVal()/ndf;
-
-    //---------------------------------------- Compute epsilon ----------------------------------------//
-    // Bg hist
-    RooFit::OwningPtr<RooDataHist> bghist_roofit = bg.generateBinned(RooArgSet(*m), (double)bgYield.getVal());
-    TH1F *bghist = (TH1F*)bghist_roofit->createHistogram("bghist",*m); //bg->GetHistogram();
-    bghist->SetTitle("");
-    bghist->SetBins(mass_nbins_hist,mass_min,mass_max);
-    bghist->SetLineWidth(1);
-    bghist->SetLineColor(kAzure);
-    bghist->Draw("SAME PE"); // Rebinning is a pain and fn is automatically binned to 100, so just keep 100 bins.
-
-    // Signal hist
-    TH1D *hist = (TH1D*)h->Clone("hist");
-    hist->Add(bghist,-1);
-    hist->SetLineWidth(1);
-    hist->SetLineColor(8);
-    hist->Draw("SAME PE");
-
-    // Integrate signal histogram
-    auto i_sig_err = 0.0;
-    auto i_sig = hist->IntegralAndError(hist->FindBin(sg_region_min),hist->FindBin(sg_region_max),i_sig_err);
-
-    // Define a range named "signal" in x from -5,5
-    m->setRange("signal", sg_region_min, sg_region_max);
- 
-    // Integrate the signal PDF
-    std::unique_ptr<RooAbsReal> igm_sig{sig->createIntegral(*m, NormSet(*m), Range("signal"))};
-    RooProduct i_sg_yield{"i_sg_yield", "i_sg_yield", {*igm_sig, sgYield}};
-    Double_t integral_sg_value = i_sg_yield.getVal();
-    Double_t integral_sg_value_error = i_sg_yield.getPropagatedError(*fit_result_data, *m); // Note Need fit result saved for this to work!
-
-    // Integrate the background PDF
-    std::unique_ptr<RooAbsReal> igm_bg{bg.createIntegral(*m, NormSet(*m), Range("signal"))};
-    RooProduct i_bg_yield{"i_bg_yield", "i_bg_yield", {*igm_bg, bgYield}};
-    Double_t integral_bg_value = i_bg_yield.getVal();
-    Double_t integral_bg_value_error = i_bg_yield.getPropagatedError(*fit_result_data, *m); // Note Need fit result saved for this to work!                                                                                                                
-
-    // Get Full Model PDF integral
-    std::unique_ptr<RooAbsReal> igm_model{model.createIntegral(*m, NormSet(*m), Range("signal"))};
-    RooRealVar model_yield("model_yield", "model_yield",sgYield.getVal()+bgYield.getVal());
-    Double_t integral_model_value = igm_model->getVal() * model_yield.getVal();
-    Double_t integral_model_value_error = igm_model->getPropagatedError(*fit_result_data, *m) * model_yield.getVal(); // Note Need fit result saved for this to work!                                                                                                                 
-
-    // Sum on dataset
-    std::string signal_cut = Form("%.8f<%s && %s<%.8f",(double)sg_region_min,m->GetName(),m->GetName(),(double)sg_region_max);
-    double i_ds = rds->sumEntries(signal_cut.c_str());
-    double i_ds_err = TMath::Sqrt(i_ds);
-
-    // Compute epsilon in a couple different ways
-    double eps_pdf_int = integral_bg_value / i_ds;
-    double eps_sg_th1_int = 1.0 - i_sig / i_ds ;
-    double eps_sg_pdf_int = 1.0 - integral_sg_value / i_ds ;
-
-    // Compute epsilon errors in a couple different ways
-    double eps_pdf_int_err = integral_bg_value_error / i_ds;
-    double eps_sg_th1_int_err = i_sig_err / i_ds ;
-    double eps_sg_pdf_int_err = integral_sg_value_error / i_ds ;
-
-    // // Now compute true epsilon
-    // double true_bg_count = (double)*frame.Filter(mccuts_true_bg.c_str()).Filter(signal_cut.c_str()).Count();
-    // double true_full_count = (double)*frame.Filter(signal_cut.c_str()).Count();
-    // double eps_true = (double) true_bg_count / true_full_count;
-
-    // Plot invariant mass fit from RooFit
-    RooPlot *mframe_1d = m->frame(Title("1D pdf fit mass_ppim."));
-    rds->plotOn(mframe_1d);
-    model.plotOn(mframe_1d);
-    model.plotOn(mframe_1d, Components(*sig), LineStyle(kDashed), LineColor(kRed));
-    model.plotOn(mframe_1d, Components(bg), LineStyle(kDashed), LineColor(kBlue));
-    TCanvas *c_massfit = new TCanvas("c_massfit");
-    c_massfit->cd();
-    gPad->SetLeftMargin(0.15);
-    mframe_1d->GetYaxis()->SetTitleOffset(1.6);
-    mframe_1d->Draw();
-
-    // Plot sig and bg histograms
-    bghist->Draw("SAME");
-    hist->Draw("SAME");
-
-    // Create Legend Entries
-    TString s_chi2, s_ntot, s_nbg, s_epsilon;
-    s_chi2.Form("#chi^{2}/NDF = %.2f",chi2ndf);
-    s_ntot.Form("N_{Tot} = %.2e #pm %.0f",i_ds,i_ds_err);
-    s_nbg.Form("N_{bg} = %.2e #pm %.0f",integral_bg_value,integral_bg_value_error);
-    s_epsilon.Form("#varepsilon = %.3f #pm %.3f",eps_pdf_int,eps_pdf_int_err);
-    TString s_mg, s_sg;
-    s_mg.Form("#mu_{Gaus} = %.4f #pm %.4f GeV",mg.getVal(),mg.getError());
-    s_sg.Form("#sigma_{Gaus} = %.4f #pm %.4f GeV",sg.getVal(),sg.getError());
-    TString s_mg_conv, s_sg_conv;
-    s_mg_conv.Form("#mu_{Gaus} = %.4f #pm %.4f GeV",mg_conv.getVal(),mg_conv.getError());
-    s_sg_conv.Form("#sigma_{Gaus} = %.4f #pm %.4f GeV",sg_conv.getVal(),sg_conv.getError());
-    TString s_mg_add, s_sg_add;
-    s_sg_add.Form("#sigma_{Gaus} = %.4f #pm %.4f GeV",sg_add.getVal(),sg_add.getError());
-    TString s_ml, s_sl;
-    s_ml.Form("#mu_{Landau} = %.4f #pm %.4f GeV",ml.getVal(),ml.getError());
-    s_sl.Form("#sigma_{Landau} = %.4f #pm %.4f GeV",sl.getVal(),sl.getError());
-    TString s_alpha, s_n, s_sigma, s_mu, s_c1;
-    s_alpha.Form("#alpha = %.3f #pm %.3f",a.getVal(),a.getError());
-    s_n.Form("n = %.2f #pm %.2f",n.getVal(),n.getError());
-    s_sigma.Form("#sigma = %.5f #pm %.5f GeV",s.getVal(),s.getError());
-    s_mu.Form("#mu = %.5f #pm %.2f GeV",mu.getVal(),mu.getError());
-    s_c1.Form("C = %.5f #pm %.5f GeV",sgYield.getVal(),sgYield.getError());
-
-    // Draw Legend
-    TLegend *legend=new TLegend(0.45,0.2,0.875,0.625); //NOTE: FOR WITHOUT MC DECOMP
-    legend->SetTextSize(0.04);
-    legend->SetMargin(0.1);
-    legend->AddEntry((TObject*)0, s_chi2, Form(" %g ",chi2ndf));
-    if (sig_pdf_name=="gauss") {
-        legend->AddEntry((TObject*)0, s_mg, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sg, Form(" %g ",chi2ndf));
-    }
-    else if (sig_pdf_name=="landau") {
-        legend->AddEntry((TObject*)0, s_ml, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sl, Form(" %g ",chi2ndf));
-    }
-    else if (sig_pdf_name=="cb") {
-        legend->AddEntry((TObject*)0, s_alpha, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_n, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sigma, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_mu, Form(" %g ",chi2ndf));
-    }
-    else if (sig_pdf_name=="landau_X_gauss") {
-        legend->AddEntry((TObject*)0, s_ml, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sl, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_mg_conv, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sg_conv, Form(" %g ",chi2ndf));
-    }
-    else if (sig_pdf_name=="cb_X_gauss") {
-        legend->AddEntry((TObject*)0, s_alpha, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_n, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sigma, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_mu, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_mg_conv, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sg_conv, Form(" %g ",chi2ndf));
-    }
-    else if (sig_pdf_name=="cb_gauss") {
-        legend->AddEntry((TObject*)0, s_alpha, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_n, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sigma, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_mu, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sg_add, Form(" %g ",chi2ndf));
-    }
-    else {
-        legend->AddEntry((TObject*)0, s_alpha, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_n, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_sigma, Form(" %g ",chi2ndf));
-        legend->AddEntry((TObject*)0, s_mu, Form(" %g ",chi2ndf));
-    }
-    legend->AddEntry((TObject*)0, s_ntot, Form(" %g ",chi2ndf));
-    legend->AddEntry((TObject*)0, s_nbg, Form(" %g ",chi2ndf));
-    legend->AddEntry((TObject*)0, s_epsilon, Form(" %g ",chi2ndf));
-    legend->Draw();
-
-    // Save Canvas
-    c_massfit->SaveAs(Form("%s_%s_%s.pdf",c_massfit->GetName(),sig_pdf_name.c_str(),bin_id.c_str()));
-
-    // Add yield variables to workspace
-    w->import(sgYield);
-    w->import(bgYield);
-
-    // Add model to workspace
-    w->import(model);
-
-    // Return background fraction and error
-    std::vector<double> result;
-    result.push_back(eps_sg_th1_int);
-    result.push_back(eps_sg_th1_int_err);
-    return result;
-}
-
-/**
-* @brief Apply the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
-*
-* Apply sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a> given a dataset, yield variables, and a PDF model and 
-* add the sWeighted datasets to the workspace.
-* 
-* @param w RooWorkspace in which to work
-* @param dataset_name Dataset name
-* @param sgYield_name Signal yield variable name
-* @param bgYield_name Background yield variable name
-* @param model_name Full PDF name
-* @param dataset_sg_name Name of dataset with signal sweights
-* @param dataset_bg_name Name of dataset with background sweights
-*/
-void applySPlot(
-        RooWorkspace *w,
-        std::string dataset_name,
-        std::string sgYield_name,
-        std::string bgYield_name,
-        std::string model_name,
-        std::string dataset_sg_name,
-        std::string dataset_bg_name
-    ) {
-
-    // Get variables from workspace
-    RooRealVar *sgYield = w->var(sgYield_name.c_str());
-    RooRealVar *bgYield = w->var(bgYield_name.c_str());
-
-    // Get pdf from workspace
-    RooAbsPdf *model = w->pdf(model_name.c_str());
-
-    // Get dataset from workspace
-    RooDataSet *rooDataSetResult = (RooDataSet*)w->data(dataset_name.c_str());
-
-    // Run sPlot and create weighted datasets
-    RooStats::SPlot sData{"sData", "sPlot Data", *rooDataSetResult, model, RooArgList(*sgYield, *bgYield)};
-    auto& data = static_cast<RooDataSet&>(*rooDataSetResult);
-    RooDataSet data_sg_sw{dataset_sg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",sgYield_name.c_str())};
-    RooDataSet data_bg_sw{dataset_bg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",bgYield_name.c_str())};
-
-    // Import sweighted datasets into workspace
-    w->import(data_sg_sw);
-    w->import(data_bg_sw);
-
-}
 
 /**
 * @brief Create a subset of a RooArgSet for a given pdf formula
@@ -1172,6 +802,7 @@ std::vector<double> fitAsym(
 * @param massfitvar_titles List of invariant mass fit variables titles
 * @param massfitvar_lims List invariant mass fit variable minimum and maximum bounds 
 * @param massfitvar_bins List of invariant mass fit variables bins
+
 * @param bpol Luminosity averaged beam polarization
 * @param tpol Luminosity averaged target polarization
 * @param asymfit_formula_uu The asymmetry formula in ROOT TFormula format for the unpolarized and transverse target spin (\f$\phi_{S}\f$) dependent asymmetries
@@ -1184,19 +815,41 @@ std::vector<double> fitAsym(
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_binned_fit Option to use a binned fit to the data
-* @param massfit_model_name Full PDF name
-* @param massfit_nbins_conv Number of invariant mass bins for convolution of PDFs
-* @param massfit_sig_pdf_name Signal PDF name for invariant mass fit
-* @param massfit_sg_region_min Invariant mass signal region lower bound
-* @param massfit_sg_region_max Invariant mass signal region upper bound
-* @param sgYield_name Signal yield variable name
-* @param bgYield_name Background yield variable name
+
+* @param massfit_pdf_name Base name of the combined signal and background pdf.  Note, the actual PDF name will be: `<pdf_name>_<binid>`.
+* @param massfit_formula_sg The signal PDF formula in ROOT TFormula format
+* @param massfit_formula_bg The background PDF formula in ROOT TFormula format
+* @param massfit_sgYield_name Base name of the signal yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
+* @param massfit_bgYield_name Base name of the background yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
+* @param massfit_initsgfrac Initial value of the ratio of signal events to total events \f$u\f$ in the dataset
+* @param massfit_parinits_sg List of signal PDF parameter initial values
+* @param massfit_parnames_sg List of signal PDF parameter names
+* @param massfit_partitles_sg List of signal PDF parameter titles
+* @param massfit_parunits_sg List of signal PDF parameter unit titles
+* @param massfit_parlims_sg List of signal PDF parameter minimum and maximum bounds
+* @param massfit_parinits_bg List of background PDF parameter initial values
+* @param massfit_parnames_bg List of background PDF parameter names
+* @param massfit_partitles_bg List of background PDF parameter titles
+* @param massfit_parunits_bg List of background PDF parameter unit titles
+* @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
+* @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
+
 * @param use_splot Option to use sPlot method and perform fit with sWeighted dataset
-* @param massfit_sgcut Signal region cut for sideband subtraction background correction
-* @param massfit_bgcut Signal region cut for sideband subtraction background correction
+
+* @param massfit_sgcut Signal region cut for sideband subtraction background correction.  Note, this will automatically be formed from `massfit_sgregion_lims` if not specified.
+* @param massfit_bgcut Background region cut for sideband subtraction background correction
 * @param use_sb_subtraction Option to use sideband subtraction for background correction
 * @param use_binned_sb_weights Option to use weights from invariant mass fits binned in the asymmetry fit variable for background correction
 * @param asymfitvar_bincuts Map of unique bin id ints to bin variable cuts for asymmetry fit variable bins
+
+* @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend for the signal and background mass fit
+* @param massfit_lg_text_size Size of TLegend text for the signal and background mass fit
+* @param massfit_lg_margin Margin of TLegend for the signal and background mass fit
+* @param massfit_lg_ncols Number of columns in TLegend for the signal and background mass fit
+* @param massfit_use_sumw2error Option to use `RooFit::SumW2Error(true)` option for the signal and background mass fit which is necessary if using a weighted dataset 
+* @param massfit_use_extended_nll Option to use an extended Negative Log Likelihood function for minimization for the signal and background mass fit
+* @param massfit_use_binned_fit Option to use a binned fit to the data for the signal and background mass fit
+
 * @param out Output stream
 */
 void getKinBinnedAsym(
@@ -1247,16 +900,26 @@ void getKinBinnedAsym(
         bool                             use_extended_nll,
         bool                             use_binned_fit,
 
-        // parameters passed to data::createDataset() and analysis::applyLambdaMassFit() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
-        std::string                      massfit_model_name,
-        int                              massfit_nbins_conv,
-        std::string                      massfit_sig_pdf_name, //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")
-        double                           massfit_sg_region_min,
-        double                           massfit_sg_region_max,
+        // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+        std::string                      massfit_pdf_name,
+        std::string                      massfit_fitformula_sg,
+        std::string                      massfit_fitformula_bg,
+        std::string                      massfit_sgYield_name,
+        std::string                      massfit_bgYield_name,
+        double                           massfit_initsgfrac,
+        std::vector<double>              massfit_parinits_sg,
+        std::vector<std::string>         massfit_parnames_sg,
+        std::vector<std::string>         massfit_partitles_sg,
+        std::vector<std::string>         massfit_parunits_sg,
+        std::vector<std::vector<double>> massfit_parlims_sg,
+        std::vector<double>              massfit_parinits_bg,
+        std::vector<std::string>         massfit_parnames_bg,
+        std::vector<std::string>         massfit_partitles_bg,
+        std::vector<std::string>         massfit_parunits_bg,
+        std::vector<std::vector<double>> massfit_parlims_bg,
+        std::vector<std::vector<double>> massfit_sgregion_lims,
 
         // Parameters passed to analysis::applySPlots()
-        std::string                      sgYield_name,
-        std::string                      bgYield_name,
         bool                             use_splot,
 
         // Parameters used for sb subtraction
@@ -1266,8 +929,17 @@ void getKinBinnedAsym(
         bool                             use_binned_sb_weights,
         std::map<int,std::string>        asymfitvar_bincuts,
 
+        // Parameters passed to signal::fitMass()
+        double                           lg_text_size             = 0.04,
+        double                           lg_margin                = 0.1,
+        int                              lg_ncols                 = 1,
+        bool                             plot_bg_pars             = false,
+        bool                             massfit_use_sumw2error   = true,
+        bool                             massfit_use_extended_nll = false,
+        bool                             massfit_use_binned_fit   = false,
+
         // Ouput stream
-        std::ostream &out                = std::cout
+        std::ostream                    &out = std::cout
     ) {
 
     // Check arguments
@@ -1284,6 +956,7 @@ void getKinBinnedAsym(
     out << " }\n";
 
     // Filter frames for signal and sideband
+    massfit_sgcut = (massfit_sgcut.size()>0) ? massfit_sgcut : saga::util::addLimitCuts("",massfitvars,massfit_sgregion_lims);
     auto frame_sg = (massfit_sgcut.size()>0) ? frame.Filter(massfit_sgcut.c_str()) : frame;
     auto frame_sb = (massfit_bgcut.size()>0) ? frame.Filter(massfit_bgcut.c_str()) : frame;
 
@@ -1294,7 +967,7 @@ void getKinBinnedAsym(
     std::string csv_separator = ",";
 
     // Set CSV column headers
-    // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr}
+    // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}
     csvout << "bin_id" << csv_separator.c_str();
     csvout << "count" << csv_separator.c_str();
     for (int bb=0; bb<binvars.size(); bb++) {
@@ -1308,8 +981,48 @@ void getKinBinnedAsym(
     for (int aa=0; aa<asymfitpar_inits.size(); aa++) {
         csvout << Form("a%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
         csvout << Form("a%d",aa) << "_err";
-        if (aa<asymfitpar_inits.size()-1) csvout << csv_separator.c_str();
+        if (aa<asymfitpar_inits.size()-1 || massfit_pdf_name!="") csvout << csv_separator.c_str();
         else csvout << std::endl;//NOTE: IMPORTANT!
+    }
+
+    // Optionally add mass fit outputs
+    if (massfit_pdf_name!="") {
+
+        // Add signal region integration values
+        csvout << "int_sg_pdf_val" << csv_separator.c_str();
+        csvout << "int_sg_pdf_err" << csv_separator.c_str();
+        csvout << "int_bg_pdf_val" << csv_separator.c_str();
+        csvout << "int_bg_pdf_err" << csv_separator.c_str();
+        csvout << "int_model_pdf_val" << csv_separator.c_str();
+        csvout << "int_model_pdf_err" << csv_separator.c_str();
+        csvout << "int_ds_val" << csv_separator.c_str();
+        csvout << "int_ds_err" << csv_separator.c_str();
+        csvout << "eps_bg_pdf" << csv_separator.c_str();
+        csvout << "eps_bg_pdf_err" << csv_separator.c_str();
+        csvout << "eps_sg_pdf" << csv_separator.c_str();
+        csvout << "eps_sg_pdf_err" << csv_separator.c_str();
+        csvout << "eps_pdf" << csv_separator.c_str();
+        csvout << "eps_pdf_err" << csv_separator.c_str();
+
+        // Add chi2 / ndf fit values
+        for (int idx=0; idx<massfitvars.size(); idx++) {
+            csvout << Form("chi2ndf_1d_%s", massfitvars[idx].c_str()) << csv_separator.c_str();
+        }
+
+        // Add mass fit signal PDF parameters and errors
+        for (int aa=0; aa<massfit_parinits_sg.size(); aa++) {
+            csvout << massfit_parnames_sg[aa].c_str() << csv_separator.c_str();
+            csvout << massfit_parnames_sg[aa].c_str() << "_err" << csv_separator.c_str();
+        }
+
+        // Add mass fit background PDF parameters and errors
+        for (int aa=0; aa<massfit_parinits_bg.size(); aa++) {
+            csvout << massfit_parnames_bg[aa].c_str() << csv_separator.c_str();
+            csvout << massfit_parnames_bg[aa].c_str() << "_err";
+            if (aa<massfit_parinits_bg.size()-1) csvout << csv_separator.c_str();
+            else csvout << std::endl;//NOTE: IMPORTANT!
+        }
+
     }
 
     // Loop bins and get data
@@ -1363,24 +1076,59 @@ void getKinBinnedAsym(
         );
 
         // Apply Lambda mass fit to FULL bin frame
-        RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
-        std::vector<double> epss = {0.0, 0.0};
-        if (massfit_sig_pdf_name.size()>0 && !use_binned_sb_weights) {  //NOTE: A mass fit in each bin is only needed for basic sideband subtraction and splots.
-            epss = saga::massfit::applyLambdaMassFit(
-                    ws,
-                    massfitvars,
-                    rooDataSetResult,
-                    sgYield_name,
-                    bgYield_name,
-                    binframe,
-                    massfit_nbins_conv,
-                    massfit_model_name,
-                    massfit_sig_pdf_name,
-                    massfit_sg_region_min,
-                    massfit_sg_region_max,
-                    1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
-                    scheme_binid
-                );
+        // RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
+        std::vector<double> massfit_result;
+        if (massfit_formula_sg.size()>0 && massfit_formula_bg.size()>0 && !use_binned_sb_weights) {  //NOTE: A mass fit in each bin is needed for basic sideband subtraction and splots.
+            // epss = saga::signal::fitMass(
+            //         ws,
+            //         massfitvars,
+            //         rooDataSetResult,
+            //         sgYield_name,
+            //         bgYield_name,
+            //         binframe,
+            //         massfit_nbins_conv,
+            //         massfit_pdf_name,
+            //         massfit_sig_pdf_name,
+            //         massfit_sg_region_min,
+            //         massfit_sg_region_max,
+            //         1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
+            //         scheme_binid
+            //     );
+
+            // Fit the mass spectrum
+            std::vector<double> massfit_result = saga::signal::fitMass(
+                    ws, // RooWorkspace                    *w,
+                    dataset_name, // std::string                      dataset_name,
+                    scheme_binid, // std::string                      binid,
+                    bin_cut, // std::string                      bincut,
+                    binvars, // std::vector<std::string>         binvars,
+                    massfitvars, // std::vector<std::string>         fitvars,
+                    massfit_pdf_name, // std::string                      model_name,
+                    massfit_formula_sg, // std::string                      fitformula_sg,
+                    massfit_formula_bg, // std::string                      fitformula_bg,
+                    massfit_sgYield_name, // std::string                      sgYield_name,
+                    massfit_bgYield_name, // std::string                      bgYield_name,
+                    massfit_initsgfrac, // double                           initsgfrac,
+                    massfit_parinits_sg, // std::vector<double>              fitparinits_sg,
+                    massfit_parnames_sg, // std::vector<std::string>         fitparnames_sg,
+                    massfit_partitles_sg, // std::vector<std::string>         fitpartitles_sg,
+                    massfit_parunits_sg, // std::vector<std::string>         fitparunits_sg,
+                    massfit_parlims_sg, // std::vector<std::vector<double>> fitparlims_sg,
+                    massfit_parinits_bg, // std::vector<double>              fitparinits_bg,
+                    massfit_parnames_bg, // std::vector<std::string>         fitparnames_bg,
+                    massfit_partitles_bg, // std::vector<std::string>         fitpartitles_bg,
+                    massfit_parunits_bg, // std::vector<std::string>         fitparunits_bg,
+                    massfit_parlims_bg, // std::vector<std::vector<double>> fitparlims_bg,
+                    massfit_sgregion_lims, // std::vector<std::vector<double>> sgregion_lims,
+                    massfit_lg_text_size, // double                           lg_text_size     = 0.04,
+                    massfit_lg_margin, // double                           lg_margin        = 0.1,
+                    massfit_lg_ncols, // int                              lg_ncols         = 1,
+                    massfit_plot_bg_pars, // bool                             plot_bg_pars     = false,
+                    massfit_use_sumw2error, // bool                             use_sumw2error   = true,
+                    massfit_use_extended_nll, // bool                             use_extended_nll = false,
+                    massfit_use_binned_fit, // bool                             use_binned_fit   = false,
+                    out // std::ostream                    &out              = std::cout
+            );
         }
 
         // Apply sPlot
@@ -1391,9 +1139,9 @@ void getKinBinnedAsym(
             applySPlot(
                 ws,
                 dataset_name,
-                Form("%s%s",sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: applyLambdaMassFit renames these variables to ensure workspace uniqueness
-                Form("%s%s",bgYield_name.c_str(),scheme_binid.c_str()),
-                Form("%s%s",massfit_model_name.c_str(),scheme_binid.c_str()),
+                Form("%s_%s",sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
+                Form("%s_%s",bgYield_name.c_str(),scheme_binid.c_str()),
+                Form("%s_%s",massfit_pdf_name.c_str(),scheme_binid.c_str()),
                 dataset_sg_name,
                 dataset_bg_name
             );
@@ -1403,28 +1151,49 @@ void getKinBinnedAsym(
         // Weight dataset from binned mass fits
         if (use_binned_sb_weights) {
             std::string rds_weighted_name = (std::string)Form("%s_binned_sb_ws",dataset_name.c_str());
-            saga::massfit::setWeightsFromLambdaMassFit(
-                ws,
-                rooDataSetResult,
-                massfitvars,
-                sgYield_name,
-                bgYield_name,
-                binframe,
-                massfit_nbins_conv,
-                massfit_model_name,
-                massfit_sig_pdf_name,
-                massfit_sg_region_min,
-                massfit_sg_region_max,
-                1, //use_poly4_bg
-                scheme_binid,
-                massfit_sgcut,
-                massfit_bgcut,
-                asymfitvars,
-                asymfitvar_bincuts,
-                rds_weighted_name,
-                "binned_sb_w", //weightvar
-                {-999.,999.}, //weightvar_lims,
-                0.0 //weights_default
+            saga::signal::setWeightsFromMassFit(
+                ws, // RooWorkspace                    *w,
+                dataset_name, // std::string                      dataset_name,
+                scheme_binid, // std::string                      binid,
+                bin_cut, // std::string                      bincut,
+                binvars, // std::vector<std::string>         binvars,
+                massfitvars, // std::vector<std::string>         fitvars,
+                massfit_pdf_name, // std::string                      pdf_name,
+                massfit_formula_sg, // std::string                      fitformula_sg,
+                massfit_formula_bg, // std::string                      fitformula_bg,
+                massfit_sgYield_name, // std::string                      sgYield_name,
+                massfit_bgYield_name, // std::string                      bgYield_name,
+                massfit_initsgfrac, // double                           initsgfrac,
+                massfit_parinits_sg, // std::vector<double>              fitparinits_sg,
+                massfit_parnames_sg, // std::vector<std::string>         fitparnames_sg,
+                massfit_partitles_sg, // std::vector<std::string>         fitpartitles_sg,
+                massfit_parunits_sg, // std::vector<std::string>         fitparunits_sg,
+                massfit_parlims_sg, // std::vector<std::vector<double>> fitparlims_sg,
+                massfit_parinits_bg, // std::vector<double>              fitparinits_bg,
+                massfit_parnames_bg, // std::vector<std::string>         fitparnames_bg,
+                massfit_partitles_bg, // std::vector<std::string>         fitpartitles_bg,
+                massfit_parunits_bg, // std::vector<std::string>         fitparunits_bg,
+                massfit_parlims_bg, // std::vector<std::vector<double>> fitparlims_bg,
+                massfit_sgregion_lims, // std::vector<std::vector<double>> sgregion_lims,
+
+                binframe, // RNode                            frame, // arguments for this method
+                massfit_bgcut, // std::string                      bgcut, 
+                asymfitvars, // std::vector<std::string>         asymfitvars,
+                asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
+                rds_weighted_name, // std::string                      rds_weighted_name,
+                "binned_sb_w", // std::string                      weightvar,
+                {-999.,999.}, // std::vector<double>              weightvar_lims,
+
+                massfit_lg_text_size, // double                           lg_text_size     = 0.04,
+                massfit_lg_margin, // double                           lg_margin        = 0.1,
+                massfit_lg_ncols, // int                              lg_ncols         = 1,
+                massfit_plot_bg_pars, // bool                             plot_bg_pars     = false,
+                massfit_use_sumw2error, // bool                             use_sumw2error   = true,
+                massfit_use_extended_nll, // bool                             use_extended_nll = false,
+                massfit_use_binned_fit, // bool                             use_binned_fit   = false,
+
+                0.0, // double                           weights_default  = 0.0 // arguments for this method
+                out, // std::ostream                    &out              = std::cout
             );
             fit_dataset_name = rds_weighted_name;
         }
@@ -1574,11 +1343,11 @@ void getKinBinnedAsym(
         double ys_corrected[nparams];
         double eys_corrected[nparams];
 
-        // Get bin data
+        // Get asymmetry fit bin data
         int k = 0;
         count = (int)asymfit_result[k++];
         for (int idx=0; idx<binvars.size(); idx++) {
-            xs[idx]     = asymfit_result[k++]; //NOTE: ASSUME THIS IS 1D BINNING FOR NOW
+            xs[idx]     = asymfit_result[k++];
             exs[idx]    = asymfit_result[k++];
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
@@ -1590,12 +1359,77 @@ void getKinBinnedAsym(
             eys[idx] = asymfit_result[k++];
         }
 
-        // Apply sideband subtraction to asymmetries assuming that depolarization factors do not vary much
+
+        // Get mass fit bin data
+        double int_sg_pdf_val;
+        double int_sg_pdf_err;
+        double int_bg_pdf_val;
+        double int_bg_pdf_err;
+        double int_model_pdf_val;
+        double int_model_pdf_err;
+        double int_ds_val;
+        double int_ds_err;
+        double eps_bg_pdf;
+        double eps_bg_pdf_err;
+        double eps_sg_pdf;
+        double eps_sg_pdf_err;
+        double eps_pdf;
+        double eps_pdf_err;
+        std::vector<double> chi2ndfs;
+        std::vector<double> massfit_pars_sg;
+        std::vector<double> massfit_parerrs_sg;
+        std::vector<double> massfit_pars_bg;
+        std::vector<double> massfit_parerrs_bg;
+        if (massfit_result.size()>0) {
+
+            // Start counter
+            int m = 1; //NOTE: Ignore count which should first entry
+
+            // Add signal region integration values
+            int_sg_pdf_val    = massfit_result[m++];
+            int_sg_pdf_err    = massfit_result[m++];
+            int_bg_pdf_val    = massfit_result[m++];
+            int_bg_pdf_err    = massfit_result[m++];
+            int_model_pdf_val = massfit_result[m++];
+            int_model_pdf_err = massfit_result[m++];
+            int_ds_val        = massfit_result[m++];
+            int_ds_err        = massfit_result[m++];
+
+            // Add background fractions
+            eps_bg_pdf     = massfit_result[m++];
+            eps_bg_pdf_err = massfit_result[m++];
+            eps_sg_pdf     = massfit_result[m++];
+            eps_sg_pdf_err = massfit_result[m++];
+            eps_pdf        = massfit_result[m++];
+            eps_pdf_err    = massfit_result[m++];
+
+            // Add chi2/ndfs
+            for (int idx=0; idx<massfitvars.size(); idx++) {
+                chi2ndfs.push_back(massfit_result[m++]);
+            }
+
+            // Skip bin variables
+            m += binvars.size();
+
+            // Add signal PDF parameters and errors
+            for (int idx=0; idx<massfit_parinits_sg.size(); idx++) {
+                massfit_pars_sg.push_back(massfit_result[m++]);
+                massfit_parerrs_sg.push_back(massfit_result[m++]);
+            }
+
+            // Add background PDF parameters and errors
+            for (int idx=0; idx<massfit_parinits_bg.size(); idx++) {
+                massfit_pars_bg.push_back(massfit_result[m++]);
+                massfit_parerrs_bg.push_back(massfit_result[m++]);
+            }
+        }
+
+        // Apply sideband subtraction to asymmetries
         double epsilon, epsilon_err;
         if (use_sb_subtraction) {
-            int k2 = 1 + + depolvars.size();
-            epsilon = epss[0];
-            epsilon_err = epss[1];
+            int k2 = 1 + binvars.size() + depolvars.size();
+            epsilon = eps_bg_pdf;
+            epsilon_err = eps_bg_pdf_err;
             for (int idx=0; idx<nparams; idx++) {
                 ys_sb[idx] = asymfit_result_sb[k2++];
                 eys_sb[idx] = asymfit_result_sb[k2++];
@@ -1649,8 +1483,51 @@ void getKinBinnedAsym(
         for (int aa=0; aa<nparams; aa++) {
             csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
             csvout << eys_corrected[aa];
-            if (aa<nparams-1) csvout << csv_separator.c_str();
+            if (aa<nparams-1 || massfit_pdf_name!="") csvout << csv_separator.c_str();
             else csvout << std::endl;//NOTE: IMPORTANT!
+        }
+
+        //TODO: Add sideband results to output for backward computations...
+
+        // Optionally add mass fit outputs
+        // COLS: {integration values and errors in signal region},{background fraction values and errors},{chi2/ndf},{signal PDF parameterss and errors},{background PDF parameterss and errors}
+        if (massfit_pdf_name!="") {
+
+            // Add signal region integration values
+            csvout << int_sg_pdf_val << csv_separator.c_str();
+            csvout << int_sg_pdf_err << csv_separator.c_str();
+            csvout << int_bg_pdf_val << csv_separator.c_str();
+            csvout << int_bg_pdf_err << csv_separator.c_str();
+            csvout << int_model_pdf_val << csv_separator.c_str();
+            csvout << int_model_pdf_err << csv_separator.c_str();
+            csvout << int_ds_val << csv_separator.c_str();
+            csvout << int_ds_err << csv_separator.c_str();
+            csvout << eps_bg_pdf << csv_separator.c_str();
+            csvout << eps_bg_pdf_err << csv_separator.c_str();
+            csvout << eps_sg_pdf << csv_separator.c_str();
+            csvout << eps_sg_pdf_err << csv_separator.c_str();
+            csvout << eps_pdf << csv_separator.c_str();
+            csvout << eps_pdf_err << csv_separator.c_str();
+
+            // Add chi2 / ndf fit values
+            for (int idx=0; idx<chi2ndfs.size(); idx++) {
+                csvout << chi2ndfs[i] << csv_separator.c_str();
+            }
+
+            // Add mass fit signal PDF parameters and errors
+            for (int aa=0; aa<massfit_pars_sg.size(); aa++) {
+                csvout << massfit_pars_sg.c_str() << csv_separator.c_str();
+                csvout << massfit_parerrs_sg.c_str() << csv_separator.c_str();
+            }
+
+            // Add mass fit background PDF parameters and errors
+            for (int aa=0; aa<massfit_pars_bg.size(); aa++) {
+                csvout << massfit_pars_sg.c_str() << csv_separator.c_str();
+                csvout << massfit_parerrs_bg.c_str();
+                if (aa<massfit_pars_bg.size()-1) csvout << csv_separator.c_str();
+                else csvout << std::endl;//NOTE: IMPORTANT!
+            }
+
         }
     }
 
