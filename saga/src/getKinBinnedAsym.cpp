@@ -9,7 +9,6 @@
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
-#include <TRandom.h>
 #include <TMath.h>
 
 // Project Includes
@@ -386,6 +385,7 @@ void execute(const YAML::Node& node) {
     auto d2_filtered = (!inject_asym) ? d2.Filter(cuts.c_str()) :
                     d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
 
+    // Define angular difference variables
     if (inject_asym) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
     //TODO: Add output message about defined branches
 
