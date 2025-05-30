@@ -636,12 +636,12 @@ RNode defineAngularDiffVars(
     std::vector<std::string> dtheta_vars;
     std::vector<std::string> dphi_vars;
     for (int idx=0; idx<particle_suffixes.size(); idx++) {
-        theta_vars.push_back(Form("theta%s",particle_suffixes[idx].c_str()));
-        phi_vars.push_back(Form("phi%s",particle_suffixes[idx].c_str()));
-        theta_mc_vars.push_back(Form("theta%s_mc",particle_suffixes[idx].c_str()));
-        phi_mc_vars.push_back(Form("phi%s_mc",particle_suffixes[idx].c_str()));
-        dtheta_vars.push_back(Form("dtheta%s",particle_suffixes[idx].c_str()));
-        dphi_vars.push_back(Form("dphi%s",particle_suffixes[idx].c_str()));
+        theta_vars.push_back(Form("%s%s",theta_name.c_str(),particle_suffixes[idx].c_str()));
+        phi_vars.push_back(Form("%s%s",phi_name.c_str(),particle_suffixes[idx].c_str()));
+        theta_mc_vars.push_back(Form("%s%s%s",theta_name.c_str(),particle_suffixes[idx].c_str(),mc_suffix.c_str()));
+        phi_mc_vars.push_back(Form("%s%s%s",phi_name.c_str(),particle_suffixes[idx].c_str(),mc_suffix.c_str()));
+        dtheta_vars.push_back(Form("d%s%s",theta_name.c_str(),particle_suffixes[idx].c_str()));
+        dphi_vars.push_back(Form("d%s%s",phi_name.c_str(),particle_suffixes[idx].c_str()));
     }
 
     // Define angular difference variable branches
