@@ -602,6 +602,67 @@ RNode injectAsym(
 
 }// RNode injectAsym()
 
+/**
+* @brief Define Monte Carlo (MC) simulation angular difference variables
+*
+* Define the angular difference variables by taking the difference of reconstructed and MC values:
+* - \f$\Delta\theta = |\theta_{Rec} - \theta_{MC}|\f$
+* - \f$\Delta\phi = |\phi_{Rec} - \phi_{MC}|\f$.
+*
+* Note that \f$\phi\f$ is a cyclic variable on \f$2\pi\f$, so if \f$|\phi_{Rec} - \phi_{MC}|>\pi\f$ then:
+* - \f$\Delta\phi = 2\pi - |\phi_{Rec} - \phi_{MC}|\f$.
+*
+* @param frame `ROOT::RDataFrame` in which to define angular difference variables
+* @param particle_suffixes Suffixes of particle variables to define angular difference variables for
+* @param theta_name Name of theta variable
+* @param phi_name Name of phi variable
+* @param mc_suffix Suffix of MC variables
+*
+* @return `ROOT::RDataFrame` with angular difference variables defined
+*/
+RNode defineAngularDiffVars(
+        RNode frame,
+        std::vector<std::string> particle_suffixes,
+        std::string theta_name = "theta",
+        std::string phi_name   = "phi",
+        std::string mc_suffix  = "_mc"
+    ) {
+    
+    // Define angular difference variable names
+    std::vector<std::string> theta_vars;
+    std::vector<std::string> phi_vars;
+    std::vector<std::string> theta_mc_vars;
+    std::vector<std::string> phi_mc_vars;
+    std::vector<std::string> dtheta_vars;
+    std::vector<std::string> dphi_vars;
+    for (int idx=0; idx<particle_suffixes.size(); idx++) {
+        theta_vars.push_back(Form("theta%s",particle_suffixes[idx].c_str()));
+        phi_vars.push_back(Form("phi%s",particle_suffixes[idx].c_str()));
+        theta_mc_vars.push_back(Form("theta%s_mc",particle_suffixes[idx].c_str()));
+        phi_mc_vars.push_back(Form("phi%s_mc",particle_suffixes[idx].c_str()));
+        dtheta_vars.push_back(Form("dtheta%s",particle_suffixes[idx].c_str()));
+        dphi_vars.push_back(Form("dphi%s",particle_suffixes[idx].c_str()));
+    }
+
+    // Define angular difference variable branches
+    if (particle_suffixes.size()==0) {
+        return frame;
+    }
+    auto newframe = frame.Define(dtheta_vars[0].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[0].c_str(),theta_mc_vars[0].c_str()})
+        .Define(dphi_vars[0].c_str(),[](float phi, float phi_mc){
+            return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
+            ? TMath::Abs(phi-phi_mc) : 2*TMath::Pi() - TMath::Abs(phi-phi_mc));
+            },{phi_vars[0].c_str(),phi_mc_vars[0].c_str()});
+    for (int idx=1; idx<particle_suffixes.size(); idx++) {
+        newframe = newframe.Define(dtheta_vars[idx].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[idx].c_str(),theta_mc_vars[idx].c_str()})
+            .Define(dphi_vars[idx].c_str(),[](float phi, float phi_mc){
+                return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
+                ? TMath::Abs(phi-phi_mc) : 2*TMath::Pi() - TMath::Abs(phi-phi_mc));
+                },{phi_vars[idx].c_str(),phi_mc_vars[idx].c_str()});
+    }
+    return newframe;
+}
+
 } // namespace data
 
 } // namespace saga {
