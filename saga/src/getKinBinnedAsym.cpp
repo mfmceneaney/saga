@@ -762,7 +762,7 @@ void execute(const YAML::Node& node) {
     }
     std::cout << " ]" << std::endl;
 
-    // ASYMFITPAR_INITS
+    // ASYMFITPAR_INITLIMS
     std::vector<std::vector<double>> asymfitpar_initlims;
     if (node["asymfitpar_initlims"]) {
         asymfitpar_initlims = node["asymfitpar_initlims"].as<std::vector<std::vector<double>>>();
@@ -807,56 +807,234 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN FIT ARGUMENTS
 
-    // MASSFIT_MODEL_NAME
-    std::string massfit_model_name = "model";//NOTE: JUST FIX FOR NOW
-
-    // MASSFIT_NBINS_CONV
-    int massfit_nbins_conv = 1000;
-    if (node["massfit_nbins_conv"]) {
-        massfit_nbins_conv = node["massfit_nbins_conv"].as<int>();
+    // MASSFIT_PDF_NAME
+    std::string massfit_pdf_name = "";
+    if (node["massfit_pdf_name"]) {
+        massfit_pdf_name = node["massfit_pdf_name"].as<std::string>();
     }
-    std::cout << "INFO: massfit_nbins_conv: " << massfit_nbins_conv << std::endl;
+    std::cout << "INFO: massfit_pdf_name: " << massfit_pdf_name << std::endl;
 
-    // MASSFIT_SIG_PDF_NAME
-    std::string massfit_sig_pdf_name = "cb";
-    if (node["massfit_sig_pdf_name"]) {
-        massfit_sig_pdf_name = node["massfit_sig_pdf_name"].as<std::string>();
+    // MASSFIT_FORMULA_SG
+    std::string massfit_formula_sg = "gaus(x[0],x[1],x[2])"; //NOTE: This is parsed by RooGenericPdf using TFormula
+    if (node["massfit_formula_sg"]) {
+        massfit_formula_sg = node["massfit_formula_sg"].as<std::string>();
     }
-    std::cout << "INFO: massfit_sig_pdf_name: " << massfit_sig_pdf_name << std::endl; //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")
+    std::cout << "INFO: massfit_formula_sg: " << massfit_formula_sg << std::endl;
 
-    // MASSFIT_SG_REGION_MIN //TODO: CONVERT TO STRING CUT SINCE ALLOWING MULTIPLE INVARIANT MASS FIT VARIABLES
-    double massfit_sg_region_min = 1.11;
-    if (node["massfit_sg_region_min"]) {
-        massfit_sg_region_min = node["massfit_sg_region_min"].as<double>();
+    // MASSFIT_FORMULA_BG
+    std::string massfit_formula_bg = "cb2(x[0],x[1],x[2])"; //NOTE: This is parsed by RooGenericPdf using TFormula
+    if (node["massfit_formula_bg"]) {
+        massfit_formula_bg = node["massfit_formula_bg"].as<std::string>();
     }
-    std::cout << "INFO: massfit_sg_region_min: " << massfit_sg_region_min << std::endl;
+    std::cout << "INFO: massfit_formula_bg: " << massfit_formula_bg << std::endl;
 
-    // MASSFIT_SG_REGION_MAX 
-    double massfit_sg_region_max = 1.13;
-    if (node["massfit_sg_region_max"]) {
-        massfit_sg_region_max = node["massfit_sg_region_max"].as<double>();
+    // MASSFIT_SGYIELD_NAME
+    std::string massfit_sgYield_name = "sgYield";
+    if (node["massfit_sgYield_name"]) {
+        massfit_sgYield_name = node["massfit_sgYield_name"].as<std::string>();
     }
-    std::cout << "INFO: massfit_sg_region_max: " << massfit_sg_region_max << std::endl;
+    std::cout << "INFO: massfit_sgYield_name: " << massfit_sgYield_name << std::endl;
+
+    // MASSFIT_BGYIELD_NAME
+    std::string massfit_bgYield_name = "bgYield";
+    if (node["massfit_bgYield_name"]) {
+        massfit_bgYield_name = node["massfit_bgYield_name"].as<std::string>();
+    }
+    std::cout << "INFO: massfit_bgYield_name: " << massfit_bgYield_name << std::endl;
+
+    // MASSFIT_INITSGFRAC
+    double massfit_initsgfrac = 0.1;
+    if (node["massfit_initsgfrac"]) {
+        massfit_initsgfrac = node["massfit_initsgfrac"].as<double>();
+    }
+    std::cout << "INFO: massfit_initsgfrac: " << massfit_initsgfrac << std::endl;
+
+    // MASSFIT_PARNAMES_SG
+    std::vector<std::string> massfit_parnames_sg;
+    if (node["massfit_parnames_sg"]) {
+        massfit_parnames_sg = node["massfit_parnames_sg"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: massfit_parnames_sg: [ ";
+    for (int idx=0; idx<massfit_parnames_sg.size(); idx++) {
+        if (idx!=massfit_parnames_sg.size()-1) { std::cout << massfit_parnames_sg[idx].c_str()<<", "; }
+        else { std::cout << massfit_parnames_sg[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARTITLES_SG
+    std::vector<std::string> massfit_partitles_sg;
+    if (node["massfit_partitles_sg"]) {
+        massfit_partitles_sg = node["massfit_partitles_sg"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: massfit_partitles_sg: [ ";
+    for (int idx=0; idx<massfit_partitles_sg.size(); idx++) {
+        if (idx!=massfit_partitles_sg.size()-1) { std::cout << massfit_partitles_sg[idx].c_str()<<", "; }
+        else { std::cout << massfit_partitles_sg[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARUNITS_SG
+    std::vector<std::string> massfit_parunits_sg;
+    if (node["massfit_parunits_sg"]) {
+        massfit_parunits_sg = node["massfit_parunits_sg"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: massfit_parunits_sg: [ ";
+    for (int idx=0; idx<massfit_parunits_sg.size(); idx++) {
+        if (idx!=massfit_parunits_sg.size()-1) { std::cout << massfit_parunits_sg[idx].c_str()<<", "; }
+        else { std::cout << massfit_parunits_sg[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARINITS_SG
+    std::vector<double> massfit_parinits_sg;
+    if (node["massfit_parinits_sg"]) {
+        massfit_parinits_sg = node["massfit_parinits_sg"].as<std::vector<double>>();
+    }
+    std::cout << "INFO: massfit_parinits_sg: [ ";
+    for (int idx=0; idx<massfit_parinits_sg.size(); idx++) {
+        if (idx!=massfit_parinits_sg.size()-1) { std::cout << massfit_parinits_sg[idx]<<", "; }
+        else { std::cout << massfit_parinits_sg[idx]; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARLIMS_SG
+    std::vector<std::vector<double>> massfit_parlims_sg;
+    if (node["massfit_parlims_sg"]) {
+        massfit_parlims_sg = node["massfit_parlims_sg"].as<std::vector<std::vector<double>>>();
+    }
+    std::cout << "INFO: massfit_parlims_sg: [ ";
+    for (int idx=0; idx<massfit_parlims_sg.size(); idx++) {
+        if (idx!=massfit_parlims_sg.size()-1) { std::cout << "[ " << massfit_parlims_sg[idx][0] << ", " << massfit_parlims_sg[idx][1] << " ], "; }
+        else { std::cout << "[ " << massfit_parlims_sg[idx][0] << ", " << massfit_parlims_sg[idx][1] << " ] "; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARNAMES_BG
+    std::vector<std::string> massfit_parnames_bg;
+    if (node["massfit_parnames_bg"]) {
+        massfit_parnames_bg = node["massfit_parnames_bg"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: massfit_parnames_bg: [ ";
+    for (int idx=0; idx<massfit_parnames_bg.size(); idx++) {
+        if (idx!=massfit_parnames_bg.size()-1) { std::cout << massfit_parnames_bg[idx].c_str()<<", "; }
+        else { std::cout << massfit_parnames_bg[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARTITLES_BG
+    std::vector<std::string> massfit_partitles_bg;
+    if (node["massfit_partitles_bg"]) {
+        massfit_partitles_bg = node["massfit_partitles_bg"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: massfit_partitles_bg: [ ";
+    for (int idx=0; idx<massfit_partitles_bg.size(); idx++) {
+        if (idx!=massfit_partitles_bg.size()-1) { std::cout << massfit_partitles_bg[idx].c_str()<<", "; }
+        else { std::cout << massfit_partitles_bg[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARUNITS_BG
+    std::vector<std::string> massfit_parunits_bg;
+    if (node["massfit_parunits_bg"]) {
+        massfit_parunits_bg = node["massfit_parunits_bg"].as<std::vector<std::string>>();
+    }
+    std::cout << "INFO: massfit_parunits_bg: [ ";
+    for (int idx=0; idx<massfit_parunits_bg.size(); idx++) {
+        if (idx!=massfit_parunits_bg.size()-1) { std::cout << massfit_parunits_bg[idx].c_str()<<", "; }
+        else { std::cout << massfit_parunits_bg[idx].c_str(); }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARINITS_BG
+    std::vector<double> massfit_parinits_bg;
+    if (node["massfit_parinits_bg"]) {
+        massfit_parinits_bg = node["massfit_parinits_bg"].as<std::vector<double>>();
+    }
+    std::cout << "INFO: massfit_parinits_bg: [ ";
+    for (int idx=0; idx<massfit_parinits_bg.size(); idx++) {
+        if (idx!=massfit_parinits_bg.size()-1) { std::cout << massfit_parinits_bg[idx]<<", "; }
+        else { std::cout << massfit_parinits_bg[idx]; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_PARLIMS_BG
+    std::vector<std::vector<double>> massfit_parlims_bg;
+    if (node["massfit_parlims_bg"]) {
+        massfit_parlims_bg = node["massfit_parlims_bg"].as<std::vector<std::vector<double>>>();
+    }
+    std::cout << "INFO: massfit_parlims_bg: [ ";
+    for (int idx=0; idx<massfit_parlims_bg.size(); idx++) {
+        if (idx!=massfit_parlims_bg.size()-1) { std::cout << "[ " << massfit_parlims_bg[idx][0] << ", " << massfit_parlims_bg[idx][1] << " ], "; }
+        else { std::cout << "[ " << massfit_parlims_bg[idx][0] << ", " << massfit_parlims_bg[idx][1] << " ] "; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_SGREGION_LIMS
+    std::vector<std::vector<double>> massfit_sgregion_lims;
+    if (node["massfit_sgregion_lims"]) {
+        massfit_sgregion_lims = node["massfit_sgregion_lims"].as<std::vector<std::vector<double>>>();
+    }
+    std::cout << "INFO: massfit_sgregion_lims: [ ";
+    for (int idx=0; idx<massfit_sgregion_lims.size(); idx++) {
+        if (idx!=massfit_sgregion_lims.size()-1) { std::cout << "[ " << massfit_sgregion_lims[idx][0] << ", " << massfit_sgregion_lims[idx][1] << " ], "; }
+        else { std::cout << "[ " << massfit_sgregion_lims[idx][0] << ", " << massfit_sgregion_lims[idx][1] << " ] "; }
+    }
+    std::cout << " ]" << std::endl;
+
+    // MASSFIT_LG_TEXT_SIZE
+    double massfit_lg_text_size = 0.04;
+    if (node["massfit_lg_text_size"]) {
+        massfit_lg_text_size = node["massfit_lg_text_size"].as<bool>();
+    }
+    std::cout << "INFO: massfit_lg_text_size: " << massfit_lg_text_size << std::endl;
+
+    // MASSFIT_LG_MARGIN
+    double massfit_lg_margin = 0.1;
+    if (node["massfit_lg_margin"]) {
+        massfit_lg_margin = node["massfit_lg_margin"].as<bool>();
+    }
+    std::cout << "INFO: massfit_lg_margin: " << massfit_lg_margin << std::endl;
+
+    // MASSFIT_LG_NCOLS
+    double massfit_lg_ncols = 1;
+    if (node["massfit_lg_ncols"]) {
+        massfit_lg_ncols = node["massfit_lg_ncols"].as<bool>();
+    }
+    std::cout << "INFO: massfit_lg_ncols: " << massfit_lg_ncols << std::endl;
+
+    // MASSFIT_PLOT_BG_PARS
+    bool massfit_plot_bg_pars = false;
+    if (node["massfit_plot_bg_pars"]) {
+        massfit_plot_bg_pars = node["massfit_plot_bg_pars"].as<bool>();
+    }
+    std::cout << "INFO: massfit_plot_bg_pars: " << massfit_plot_bg_pars << std::endl;
+
+    // MASSFIT_USE_SUMW2ERROR
+    bool massfit_use_sumw2error = false;
+    if (node["massfit_use_sumw2error"]) {
+        massfit_use_sumw2error = node["massfit_use_sumw2error"].as<bool>();
+    }
+    std::cout << "INFO: massfit_use_sumw2error: " << massfit_use_sumw2error << std::endl;
+
+    // MASSFIT_USE_EXTENDED_NLL
+    bool massfit_use_extended_nll = true;
+    if (node["massfit_use_extended_nll"]) {
+        massfit_use_extended_nll = node["massfit_use_extended_nll"].as<bool>();
+    }
+    std::cout << "INFO: massfit_use_extended_nll: " << massfit_use_extended_nll << std::endl;
+
+    // MASSFIT_USE_BINNED_FIT
+    bool massfit_use_binned_fit = false;
+    if (node["massfit_use_binned_fit"]) {
+        massfit_use_binned_fit = node["massfit_use_binned_fit"].as<bool>();
+    }
+    std::cout << "INFO: massfit_use_binned_fit: " << massfit_use_binned_fit << std::endl;
 
     // END FIT ARGUMENTS
     //----------------------------------------------------------------------//
 
     //----------------------------------------------------------------------//
     // BEGIN SPLOT ARGUMENTS
-
-    // SGYIELD_NAME
-    std::string sgyield_name = "sgyield";
-    if (node["sgyield_name"]) {
-        sgyield_name = node["sgyield_name"].as<std::string>();
-    }
-    std::cout << "INFO: sgyield_name: " << sgyield_name << std::endl;
-
-    // BGYIELD_NAME
-    std::string bgyield_name = "bgyield";
-    if (node["bgyield_name"]) {
-        bgyield_name = node["bgyield_name"].as<std::string>();
-    }
-    std::cout << "INFO: bgyield_name: " << bgyield_name << std::endl;
 
     // USE_SPLOT
     bool use_splot = true;
@@ -1240,74 +1418,93 @@ void execute(const YAML::Node& node) {
         // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
         std::string scheme_name = Form("%s%s",baseoutpath.c_str(),binscheme_name.c_str());
         saga::analysis::getKinBinnedAsym(
-            scheme_name, //std::string                      scheme_name,
-            frame, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-            "w", //std::string                      workspace_name,
-            "workspace", //std::string                      workspace_title,
+            scheme_name, // std::string                      scheme_name,
+            frame, // RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
+            "w", // std::string                      workspace_name,
+            "workspace", // std::string                      workspace_title,
 
-            // parameters passed to saga::data::createDataset()
-            "dataset", //std::string                      dataset_name,
-            "dataset", //std::string                      dataset_title,
+            // // parameters passed to data::createDataset()
+            "dataset", // std::string                      dataset_name,
+            "dataset", // std::string                      dataset_title,
             helicity_name, // std::string                      helicity,
-            helicity_states, //std::map<std::string,int>        helicity_states,
-            tspin_name, // std::string                         tspin,
-            tspin_states, //std::map<std::string,int>           tspin_states,
-            htspin_name, // std::string                         htspin,
-            htspin_states, //std::map<std::string,int>           htspin_states,
-            combined_spin_state, //std::string                      combined_spin_state,
-            bincuts, //std::map<int,std::string>        bincuts,
-            scheme_binvars, //std::vector<std::string>         binvars,
-            scheme_binvar_titles, //std::vector<std::string>         binvar_titles,
-            scheme_binvar_lims, //std::vector<std::vector<double>> binvar_lims,
-            scheme_binvar_bins, //std::vector<int>                 binvar_bins,
-            depolvars, //std::vector<std::string>         depolvars,
-            depolvar_titles, //std::vector<std::string>         depolvar_titles,
-            depolvar_lims, //std::vector<std::vector<double>> depolvar_lims,
-            depolvar_bins, //std::vector<int>                 depolvar_bins,
-            asymfitvars, //std::vector<std::string>         asymfitvars,
-            asymfitvar_titles, //std::vector<std::string>         asymfitvar_titles,
-            asymfitvar_lims, //std::vector<std::vector<double>> asymfitvar_lims,
-            asymfitvar_bins, //std::vector<int>                 asymfitvar_bins,
-            massfitvars, //std::vector<std::string>         massfitvars,
-            massfitvar_titles, //std::vector<std::string>         massfitvar_titles,
-            massfitvar_lims, //std::vector<std::vector<double>> massfitvar_lims,
-            massfitvar_bins, //std::vector<int>                 massfitvar_bins,
+            helicity_states, // std::map<std::string,int>        helicity_states,
+            tspin_name, // std::string                      tspin,
+            tspin_states, // std::map<std::string,int>        tspin_states,
+            htspin_name, // std::string                      htspin,
+            htspin_states, // std::map<std::string,int>        htspin_states,
+            combined_spin_state, // std::string                      combined_spin_state,
+            bincuts, // std::map<int,std::string>        bincuts,
+            scheme_binvars, // std::vector<std::string>         binvars,
+            scheme_binvar_titles, // std::vector<std::string>         binvar_titles,
+            scheme_binvar_lims, // std::vector<std::vector<double>> binvar_lims,
+            scheme_binvar_bins, // std::vector<int>                 binvar_bins,
+            depolvars, // std::vector<std::string>         depolvars,
+            depolvar_titles, // std::vector<std::string>         depolvar_titles,
+            depolvar_lims, // std::vector<std::vector<double>> depolvar_lims,
+            depolvar_bins, // std::vector<int>                 depolvar_bins,
+            asymfitvars, // std::vector<std::string>         asymfitvars,
+            asymfitvar_titles, // std::vector<std::string>         asymfitvar_titles,
+            asymfitvar_lims, // std::vector<std::vector<double>> asymfitvar_lims,
+            asymfitvar_bins, // std::vector<int>                 asymfitvar_bins,
+            massfitvars, // std::vector<std::string>         massfitvars,
+            massfitvar_titles, // std::vector<std::string>         massfitvar_titles,
+            massfitvar_lims, // std::vector<std::vector<double>> massfitvar_lims,
+            massfitvar_bins, // std::vector<int>                 massfitvar_bins,
 
-            // parameterss passed to analysis::fitAsym()
-            bpol, //double                           bpol,
-            tpol, //double                           tpol,
-            asymfit_formula_uu, //std::string                      asymfit_formula_pu,
-            asymfit_formula_pu, //std::string                      asymfit_formula_pu,
-            asymfit_formula_up, //std::string                      asymfit_formula_up,
-            asymfit_formula_pp, //std::string                      asymfit_formula_pp,
-            asymfitpar_inits, //std::vector<double>              asymfitpar_inits,
-            asymfitpar_initlims, //std::vector<std::vector<double>> asymfitpar_initlims,
-            use_sumw2error, //bool                             use_sumw2error,
-            use_average_depol, //bool                             use_average_depol,
-            use_extended_nll, //bool                             use_extended_nll,
-            use_binned_fit, //bool                             use_binned_fit,
+            // // parameterss passed to analysis::fitAsym()
+            bpol, // double                           bpol,
+            tpol, // double                           tpol,
+            asymfit_formula_uu, // std::string                      asymfit_formula_uu,
+            asymfit_formula_pu, // std::string                      asymfit_formula_pu,
+            asymfit_formula_up, // std::string                      asymfit_formula_up,
+            asymfit_formula_pp, // std::string                      asymfit_formula_pp,
+            asymfitpar_inits, // std::vector<double>              asymfitpar_inits,
+            asymfitpar_initlims, // std::vector<std::vector<double>> asymfitpar_initlims,
+            use_sumw2error, // bool                             use_sumw2error,
+            use_average_depol, // bool                             use_average_depol,
+            use_extended_nll, // bool                             use_extended_nll,
+            use_binned_fit, // bool                             use_binned_fit,
 
-            // parameters passed to saga::data::createDataset() and analysis::applyLambdaMassFit() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
-            massfit_model_name, //std::string                      massfit_model_name,
-            massfit_nbins_conv, //int                              massfit_nbins_conv,
-            massfit_sig_pdf_name, //std::string                      massfit_sig_pdf_name, //NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss")
-            massfit_sg_region_min, //double                           massfit_sg_region_min,
-            massfit_sg_region_max, //double                           massfit_sg_region_max,
+            // // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+            massfit_pdf_name, // std::string                      massfit_pdf_name,
+            massfit_formula_sg, // std::string                      massfit_formula_sg,
+            massfit_formula_bg, // std::string                      massfit_formula_bg,
+            massfit_sgYield_name, // std::string                      massfit_sgYield_name,
+            massfit_bgYield_name, // std::string                      massfit_bgYield_name,
+            massfit_initsgfrac, // double                           massfit_initsgfrac,
+            massfit_parinits_sg, // std::vector<double>              massfit_parinits_sg,
+            massfit_parnames_sg, // std::vector<std::string>         massfit_parnames_sg,
+            massfit_partitles_sg, // std::vector<std::string>         massfit_partitles_sg,
+            massfit_parunits_sg, // std::vector<std::string>         massfit_parunits_sg,
+            massfit_parlims_sg, // std::vector<std::vector<double>> massfit_parlims_sg,
+            massfit_parinits_bg, // std::vector<double>              massfit_parinits_bg,
+            massfit_parnames_bg, // std::vector<std::string>         massfit_parnames_bg,
+            massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
+            massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
+            massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
+            massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
 
-            // Parameters passed to analysis::applySPlots()
-            sgyield_name, //std::string                      sgYield_name,
-            bgyield_name, //std::string                      bgYield_name,
-            use_splot, //bool                             use_splot,
+            // // Parameters passed to analysis::applySPlots()
+            use_splot, // bool                             use_splot,
 
-            // Parameters used for sb subtraction
-            massfit_sgcut, //std::string                      massfit_sgcut,
-            massfit_bgcut, //std::string                      massfit_bgcut,
-            use_sb_subtraction, //bool                             use_sb_subtraction,
-            use_binned_sb_weights, //bool                             use_binned_sb_weights,
-            asymfitvar_bincuts, //std::map<int,std::string>        asymfitvar_bincuts,
+            // // Parameters used for sb subtraction
+            massfit_sgcut, // std::string                      massfit_sgcut,
+            massfit_bgcut, // std::string                      massfit_bgcut,
+            use_sb_subtraction, // bool                             use_sb_subtraction,
+            use_binned_sb_weights, // bool                             use_binned_sb_weights,
+            asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
 
-            // Output stream
-            out //std::ostream &out                = std::cout
+            // // Parameters passed to signal::fitMass()
+            massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
+            massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
+            massfit_lg_ncols, // int                              massfit_lg_ncols         = 1,
+            massfit_plot_bg_pars, // bool                             massfit_plot_bg_pars     = false,
+            massfit_use_sumw2error, // bool                             massfit_use_sumw2error   = false,
+            massfit_use_extended_nll, // bool                             massfit_use_extended_nll = true,
+            massfit_use_binned_fit, // bool                             massfit_use_binned_fit   = false,
+
+            // // Ouput stream
+            out // std::ostream                    &out                      = std::cout
         );
     } // for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 

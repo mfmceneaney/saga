@@ -11,10 +11,10 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <TAxis.h>
-#include <TLegend.h>
+// #include <TLegend.h>
 #include <TH1.h>
 #include <ROOT/RDataFrame.hxx>
-#include <TLatex.h>
+// #include <TLatex.h>
 
 // Local includes
 #include <util.h>

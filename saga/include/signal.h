@@ -282,8 +282,8 @@ std::vector<double> fitMass(
         double                           lg_margin        = 0.1,
         int                              lg_ncols         = 1,
         bool                             plot_bg_pars     = false,
-        bool                             use_sumw2error   = true,
-        bool                             use_extended_nll = false,
+        bool                             use_sumw2error   = false,
+        bool                             use_extended_nll = true,
         bool                             use_binned_fit   = false,
         std::ostream                    &out              = std::cout
     ) {
@@ -391,12 +391,12 @@ std::vector<double> fitMass(
         std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit PDF
-        r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
 
     } else {
 
         // Fit PDF
-        r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
     }
     
     // Print fit result
@@ -438,7 +438,7 @@ std::vector<double> fitMass(
         rdhs_1d[i] = new RooDataHist(dh_title.c_str(), dh_title.c_str(), *f[i], *bin_ds);
 
         // Compute chi2 value
-        RooFit::OwningPtr<RooAbsReal> chi2 = model->createChi2(*rdhs_1d[i], Range("fullRange"),
+        OwningPtr<RooAbsReal> chi2 = model->createChi2(*rdhs_1d[i], Range("fullRange"),
                     Extended(use_extended_nll), DataError(RooAbsData::Poisson));
         int nparameters = (int)model->getParameters(RooArgSet(*f[i]))->size();
         int ndf = f[i]->getBins() - nparameters; //NOTE: ASSUME ALL BINS NONZERO
@@ -495,7 +495,7 @@ std::vector<double> fitMass(
     for (int i=0; i<fitvars.size(); i++) {
 
         // Create a histogram from the background PDF
-        RooFit::OwningPtr<RooDataHist> h_bg = bg->generateBinned(RooArgSet(*f[i]), (double)bgYield->getVal());
+        OwningPtr<RooDataHist> h_bg = bg->generateBinned(RooArgSet(*f[i]), (double)bgYield->getVal());
 
         // Create the signal histogram by subtracting the background histogram from the full histogram
         RooDataHist *h = (RooDataHist*)rdhs_1d[i]->Clone(Form("%s_clone",rdhs_1d[i]->GetName()));
@@ -511,7 +511,7 @@ std::vector<double> fitMass(
         model->plotOn(mframe_1d, Components(*bg), LineStyle(kDashed), LineColor(kBlue));
 
         // Plot on a TCanvas
-        TCanvas *c_massfit = new TCanvas("c_%s_%s",method_name.c_str(),binid.c_str());
+        TCanvas *c_massfit = new TCanvas(Form("c_%s_%s",method_name.c_str(),binid.c_str()));
         c_massfit->cd();
         gPad->SetLeftMargin(0.15);
         mframe_1d->GetYaxis()->SetTitleOffset(1.6);
@@ -881,8 +881,8 @@ void setWeightsFromMassFit(
         double                           lg_margin        = 0.1,
         int                              lg_ncols         = 1,
         bool                             plot_bg_pars     = false,
-        bool                             use_sumw2error   = true,
-        bool                             use_extended_nll = false,
+        bool                             use_sumw2error   = false,
+        bool                             use_extended_nll = true,
         bool                             use_binned_fit   = false,
         double                           weights_default  = 0.0, // arguments for this method
         std::ostream                    &out              = std::cout
@@ -919,6 +919,9 @@ void setWeightsFromMassFit(
     // Apply bin cuts
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
 
+    // Get the signal region cut
+    std::string sgcut = saga::util::addLimitCuts("",fitvars,sgregion_lims);
+
     // Loop bins and apply fits recording background fractions and errors
     std::map<int,std::vector<double>> weights_map;
     for (auto it = asymfitvar_bincuts.begin(); it != asymfitvar_bincuts.end(); ++it) {
@@ -932,9 +935,6 @@ void setWeightsFromMassFit(
 
         // Get bin dataset
         RooDataSet *bin_ds_asymfitvar = (RooDataSet*)bin_ds->reduce(asymfitvar_bincut.c_str());
-
-        // Get the signal region cut
-        std::string sgcut = saga::util::addLimitCuts("",fitvars,sgregion_lims);
 
         // Get the signal and sideband counts
         int sg_count = (int)bin_ds_asymfitvar->sumEntries(sgcut.c_str());

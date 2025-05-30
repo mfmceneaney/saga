@@ -97,12 +97,30 @@ use_sumw2error: False
 use_average_depol: False
 use_extended_nll: true
 use_binned_fit: false
-massfit_nbins_conv: 1000
-massfit_sig_pdf_name: "cb" #NOTE: This must be one of ("gauss","landau","cb","landau_X_gauss","cb_X_gauss").  No mass fit will be applied if an empty string is passed.
-massfit_sg_region_min: 1.11
-massfit_sg_region_max: 1.13
-sgyield_name: "sgyield"
-bgYield_name: "bgyield"
+massfit_pdf_name: "" #NOTE: A mass fit and background correction will only be used if this is not empty.
+massfit_formula_sg: "gaus(x[0],x[1],x[2])" #NOTE: This is parsed by RooGenericPdf using TFormula
+massfit_formula_bg: "cb2(x[0],x[1],x[2])" #NOTE: This is parsed by RooGenericPdf using TFormula
+massfit_sgYield_name: "sgYield"
+massfit_bgYield_name: "bgYield"
+massfit_initsgfrac: 0.1
+massfit_parnames_sg: ["sigma","mu"]
+massfit_partitles_sg: ["#sigma","#mu"]
+massfit_parunits_sg: ["(GeV)", "(GeV)"]
+massfit_parinits_sg: [0.008, 1.1157]
+massfit_parlims_sg: [ [-10.0, 10.0], [-10.0, 10.0] ]
+massfit_parnames_bg: ["a1","a2"]
+massfit_partitles_bg: ["a1","a2"]
+massfit_parunits_bg: ["(GeV)", "(GeV)"]
+massfit_parinits_bg: [0.0, 0.0]
+massfit_parlims_bg: [ [-10.0, 10.0], [-10.0, 10.0] ]
+massfit_sgregion_lims: [ [1.11, 1.13] ]
+massfit_lg_text_size: 0.04
+massfit_lg_margin: 0.1
+massfit_lg_ncols: 1
+massfit_plot_bg_pars: false
+massfit_use_sumw2error: false
+massfit_use_extended_nll: true
+massfit_use_binned_fit: false
 use_splot: false
 massfit_sgcut: "mass_ppim>1.11 && mass_ppim<1.13"
 massfit_bgcut: "(mass_ppim>1.08 && mass_ppim<1.11) || (mass_ppim>1.15 && mass_ppim<1.18)"

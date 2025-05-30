@@ -7,44 +7,44 @@
 // ROOT Includes
 #include <TStyle.h>
 #include <TCanvas.h>
-#include <TAxis.h>
-#include <TLegend.h>
-#include <TH1.h>
+// #include <TAxis.h>
+// #include <TLegend.h>
+// #include <TH1.h>
 #include <ROOT/RDataFrame.hxx>
-#include <Fit/Fitter.h>
-#include <Fit/BinData.h>
-#include <Fit/Chi2FCN.h>
-#include <Math/WrappedMultiTF1.h>
-#include <HFitInterface.h>
-#include <TGraphErrors.h>
-#include <TRandom.h>
-#include <TF2.h>
-#include <TLatex.h>
+// #include <Fit/Fitter.h>
+// #include <Fit/BinData.h>
+// #include <Fit/Chi2FCN.h>
+// #include <Math/WrappedMultiTF1.h>
+// #include <HFitInterface.h>
+// #include <TGraphErrors.h>
+// #include <TRandom.h>
+// #include <TF2.h>
+// #include <TLatex.h>
 
 // RooFit Includes
 #include <RooCategory.h>
 #include <RooRealVar.h>
 #include <RooFormulaVar.h>
-#include <RooProduct.h>
+// #include <RooProduct.h>
 #include <RooDataSet.h>
 #include <RooPlot.h>
-#include <RooAbsDataHelper.h>
+// #include <RooAbsDataHelper.h>
 #include <RooDataHist.h>
 #include <RooArgList.h>
-#include <RooAddPdf.h>
+// #include <RooAddPdf.h>
 #include <RooGenericPdf.h>
 #include <RooExtendPdf.h>
 #include <RooSimultaneous.h>
-#include <RooFFTConvPdf.h>
-#include <RooCrystalBall.h>
-#include <RooLandau.h>
-#include <RooGaussian.h>
-#include <RooChebychev.h>
+// #include <RooFFTConvPdf.h>
+// #include <RooCrystalBall.h>
+// #include <RooLandau.h>
+// #include <RooGaussian.h>
+// #include <RooChebychev.h>
 #include <RooFitResult.h>
 #include <RooWorkspace.h>
 
-// RooStats includes
-#include <RooStats/SPlot.h>
+// // RooStats includes
+// #include <RooStats/SPlot.h>
 
 // Local includes
 #include <data.h>
@@ -66,6 +66,9 @@
 namespace saga {
 
 namespace analysis {
+
+using namespace RooFit;
+using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
 /**
 * @brief Create a subset of a RooArgSet for a given pdf formula
@@ -536,9 +539,6 @@ std::vector<double> fitAsym(
     // Set method name
     std::string method_name = "fitAsym";
 
-    // Switch off histogram stats
-    gStyle->SetOptStat(0);
-
     // Load helicity variable from workspace
     RooCategory * h  = w->cat(helicity.c_str());
     RooCategory * t  = w->cat(tspin.c_str());
@@ -665,6 +665,9 @@ std::vector<double> fitAsym(
 
     // // Define the asymmetry as a function
     // RooFormulaVar f_asym("f_asym","Asymmetry function",Form("%.3f*%s",bpol,fitformula.c_str()), *argset);//NOTE: NEED TO CORRECT FOR POLARIZATION FACTOR.
+
+    // // Switch off histogram stats
+    // gStyle->SetOptStat(0);
 
     // // Loop fit variables and plot fit projections
     // for (int idx=0; idx<fitvars.size(); idx++) {
@@ -854,7 +857,7 @@ std::vector<double> fitAsym(
 */
 void getKinBinnedAsym(
         std::string                      scheme_name,
-        ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
+        RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
         std::string                      workspace_name,
         std::string                      workspace_title,
 
@@ -902,8 +905,8 @@ void getKinBinnedAsym(
 
         // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
         std::string                      massfit_pdf_name,
-        std::string                      massfit_fitformula_sg,
-        std::string                      massfit_fitformula_bg,
+        std::string                      massfit_formula_sg,
+        std::string                      massfit_formula_bg,
         std::string                      massfit_sgYield_name,
         std::string                      massfit_bgYield_name,
         double                           massfit_initsgfrac,
@@ -930,16 +933,16 @@ void getKinBinnedAsym(
         std::map<int,std::string>        asymfitvar_bincuts,
 
         // Parameters passed to signal::fitMass()
-        double                           lg_text_size             = 0.04,
-        double                           lg_margin                = 0.1,
-        int                              lg_ncols                 = 1,
-        bool                             plot_bg_pars             = false,
-        bool                             massfit_use_sumw2error   = true,
-        bool                             massfit_use_extended_nll = false,
+        double                           massfit_lg_text_size     = 0.04,
+        double                           massfit_lg_margin        = 0.1,
+        int                              massfit_lg_ncols         = 1,
+        bool                             massfit_plot_bg_pars     = false,
+        bool                             massfit_use_sumw2error   = false,
+        bool                             massfit_use_extended_nll = true,
         bool                             massfit_use_binned_fit   = false,
 
         // Ouput stream
-        std::ostream                    &out = std::cout
+        std::ostream                    &out                      = std::cout
     ) {
 
     // Check arguments
@@ -1124,8 +1127,8 @@ void getKinBinnedAsym(
                     massfit_lg_margin, // double                           lg_margin        = 0.1,
                     massfit_lg_ncols, // int                              lg_ncols         = 1,
                     massfit_plot_bg_pars, // bool                             plot_bg_pars     = false,
-                    massfit_use_sumw2error, // bool                             use_sumw2error   = true,
-                    massfit_use_extended_nll, // bool                             use_extended_nll = false,
+                    massfit_use_sumw2error, // bool                             use_sumw2error   = false,
+                    massfit_use_extended_nll, // bool                             use_extended_nll = true,
                     massfit_use_binned_fit, // bool                             use_binned_fit   = false,
                     out // std::ostream                    &out              = std::cout
             );
@@ -1136,11 +1139,11 @@ void getKinBinnedAsym(
         if (use_splot) {
             std::string dataset_sg_name = (std::string)Form("%s_sg_sw",dataset_name.c_str());
             std::string dataset_bg_name = (std::string)Form("%s_bg_sw",dataset_name.c_str());
-            applySPlot(
+            saga::signal::applySPlot(
                 ws,
                 dataset_name,
-                Form("%s_%s",sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
-                Form("%s_%s",bgYield_name.c_str(),scheme_binid.c_str()),
+                Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
+                Form("%s_%s",massfit_bgYield_name.c_str(),scheme_binid.c_str()),
                 Form("%s_%s",massfit_pdf_name.c_str(),scheme_binid.c_str()),
                 dataset_sg_name,
                 dataset_bg_name
@@ -1188,12 +1191,12 @@ void getKinBinnedAsym(
                 massfit_lg_margin, // double                           lg_margin        = 0.1,
                 massfit_lg_ncols, // int                              lg_ncols         = 1,
                 massfit_plot_bg_pars, // bool                             plot_bg_pars     = false,
-                massfit_use_sumw2error, // bool                             use_sumw2error   = true,
-                massfit_use_extended_nll, // bool                             use_extended_nll = false,
+                massfit_use_sumw2error, // bool                             use_sumw2error   = false,
+                massfit_use_extended_nll, // bool                             use_extended_nll = true,
                 massfit_use_binned_fit, // bool                             use_binned_fit   = false,
 
                 0.0, // double                           weights_default  = 0.0 // arguments for this method
-                out, // std::ostream                    &out              = std::cout
+                out // std::ostream                    &out              = std::cout
             );
             fit_dataset_name = rds_weighted_name;
         }
@@ -1511,19 +1514,19 @@ void getKinBinnedAsym(
 
             // Add chi2 / ndf fit values
             for (int idx=0; idx<chi2ndfs.size(); idx++) {
-                csvout << chi2ndfs[i] << csv_separator.c_str();
+                csvout << chi2ndfs[idx] << csv_separator.c_str();
             }
 
             // Add mass fit signal PDF parameters and errors
             for (int aa=0; aa<massfit_pars_sg.size(); aa++) {
-                csvout << massfit_pars_sg.c_str() << csv_separator.c_str();
-                csvout << massfit_parerrs_sg.c_str() << csv_separator.c_str();
+                csvout << massfit_pars_sg[aa] << csv_separator.c_str();
+                csvout << massfit_parerrs_sg[aa] << csv_separator.c_str();
             }
 
             // Add mass fit background PDF parameters and errors
             for (int aa=0; aa<massfit_pars_bg.size(); aa++) {
-                csvout << massfit_pars_sg.c_str() << csv_separator.c_str();
-                csvout << massfit_parerrs_bg.c_str();
+                csvout << massfit_pars_sg[aa] << csv_separator.c_str();
+                csvout << massfit_parerrs_bg[aa];
                 if (aa<massfit_pars_bg.size()-1) csvout << csv_separator.c_str();
                 else csvout << std::endl;//NOTE: IMPORTANT!
             }
