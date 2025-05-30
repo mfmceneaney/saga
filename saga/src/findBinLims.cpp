@@ -15,79 +15,31 @@
 void execute(const YAML::Node& node) {
 
     // Process arguments
+    std::string   message_prefix  = "INFO: ";
+    bool          verbose         = true;
+    std::ostream &yamlargout      = std::cout;
 
-    // INPATH
-    std::string inpath = "";
-    if (node["inpath"]) {
-        inpath = node["inpath"].as<std::string>();
-    }
-    std::cout << "INFO: inpath: " << inpath << std::endl;
+    //----------------------------------------------------------------------//
+    // BEGIN ARGUMENTS
+    std::string outpath = saga::util::getYamlArg<std::string>(node,"outpath","out.yaml",message_prefix,verbose,yamlargout);
+    std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose,yamlargout);
+    std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose,yamlargout);
+    int nthreads = saga::util::getYamlArg<int>(node,"nthreads",1,message_prefix,verbose,yamlargout);
+    std::string cuts = saga::util::getYamlArg<std::string>(node,"cuts","",message_prefix,verbose,yamlargout);
 
-    // TREREGet tree name
-    std::string tree = "";
-    if (node["tree"]) {
-        tree = node["tree"].as<std::string>();
-    }
-    std::cout << "INFO: tree: " << tree << std::endl;
-
-    // NTHREADS
-    int nthreads = 1;
-    if (node["nthreads"]) {
-        nthreads = node["nthreads"].as<int>();
-    }
-    std::cout << "INFO: nthreads: " << nthreads << std::endl;
-
-    // CUTS
-    std::string cuts = "";
-    if (node["cuts"]) {
-        cuts = node["cuts"].as<std::string>();
-    }
-    std::cout << "INFO: cuts: " << cuts << std::endl;
-
-    // OUTPATH
-    std::string outpath = "out.yaml";
-    if (node["outpath"]) {
-        outpath = node["outpath"].as<std::string>();
-    }
-    std::cout << "INFO: outpath: " << outpath << std::endl;
-    
-    // BINVVARS
-    std::vector<std::string> binvars;
-    if (node["binvars"]) {
-        binvars = node["binvars"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: binvars: [ ";
-    for (int idx=0; idx<binvars.size(); idx++) {
-        if (idx!=binvars.size()-1) { std::cout << binvars[idx]<<", "; }
-        else { std::cout << binvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
+    //----------------------------------------------------------------------//
+    // BEGIN BIN VARIABLES
+    std::vector<std::string> binvars = saga::util::getYamlArg<std::vector<std::string>>(node, "binvars", {}, message_prefix, verbose, yamlargout);
 
     // NBINS_LIST
-    std::vector<int> nbins_list;
-    if (node["nbins_list"]) {
-        nbins_list = node["nbins_list"].as<std::vector<int>>();
-    }
-    std::cout << "INFO: nbins_list: [ ";
-    for (int idx=0; idx<nbins_list.size(); idx++) {
-        if (idx!=nbins_list.size()-1) { std::cout << nbins_list[idx]<<", "; }
-        else { std::cout << nbins_list[idx]; }
-    }
-    std::cout << " ]" << std::endl;
+    std::vector<int> nbins_list = saga::util::getYamlArg<std::vector<int>>(node, "nbins_list", {}, message_prefix, verbose, yamlargout);
     if (binvars.size()!=nbins_list.size()) {
         std::cerr << "ERROR: binvars.size() must match nbins_list.size()" << std::endl;
     }
 
+    //----------------------------------------------------------------------//
     // VAR_FORMULAS
-    std::vector<std::vector<std::string>> var_formulas;
-    if (node["var_formulas"]) {
-        var_formulas = node["var_formulas"].as<std::vector<std::vector<std::string>>>();
-    }
-    std::cout << "INFO: var_formulas: { \n";
-    for (int idx=0; idx<var_formulas.size(); idx++) {
-        std::cout << "\t[ " << var_formulas[idx][0].c_str() << " : " << var_formulas[idx][1].c_str() << " ],\n";
-    }
-    std::cout << " }" << std::endl;
+    std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------------------------------------//
     // FINDBINLIMS
@@ -103,7 +55,7 @@ void execute(const YAML::Node& node) {
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
     for (int idx=0; idx<var_formulas.size(); idx++) {
         d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
-        std::cout<<"INFO: Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
+        yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
     
     // Apply overall cuts AFTER defining variables
