@@ -386,34 +386,7 @@ void execute(const YAML::Node& node) {
     auto d2_filtered = (!inject_asym) ? d2.Filter(cuts.c_str()) :
                     d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
 
-    // Define MC matching variable names
-    std::vector<std::string> theta_vars;
-    std::vector<std::string> phi_vars;
-    std::vector<std::string> theta_mc_vars;
-    std::vector<std::string> phi_mc_vars;
-    std::vector<std::string> dtheta_vars;
-    std::vector<std::string> dphi_vars;
-    if (inject_asym) {
-        for (int idx=0; idx<particle_suffixes.size(); idx++) {
-            theta_vars.push_back(Form("theta%s",particle_suffixes[idx].c_str()));
-            phi_vars.push_back(Form("phi%s",particle_suffixes[idx].c_str()));
-            theta_mc_vars.push_back(Form("theta%s_mc",particle_suffixes[idx].c_str()));
-            phi_mc_vars.push_back(Form("phi%s_mc",particle_suffixes[idx].c_str()));
-            dtheta_vars.push_back(Form("dtheta%s",particle_suffixes[idx].c_str()));
-            dphi_vars.push_back(Form("dphi%s",particle_suffixes[idx].c_str()));
-        }
-    }
-
-    // Define MC matching angular difference variable branches
-    if (inject_asym) {
-        for (int idx=0; idx<particle_suffixes.size(); idx++) {
-            d2_filtered = d2_filtered.Define(dtheta_vars[idx].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[idx].c_str(),theta_mc_vars[idx].c_str()})
-                .Define(dphi_vars[idx].c_str(),[](float phi, float phi_mc){
-                    return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
-                    ? TMath::Abs(phi-phi_mc) : 2*TMath::Pi() - TMath::Abs(phi-phi_mc));
-                    },{phi_vars[idx].c_str(),phi_mc_vars[idx].c_str()});
-        }
-    }
+    if (inject_asym) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
     //TODO: Add output message about defined branches
 
     // Define signal matching condition, and XS values branches
