@@ -41,6 +41,8 @@ binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name:
     Q2: [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]
     x: [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
 binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
+nbatches: 1 #NOTE: You can batch all bin schemes if they are large to allow for parellelization
+ibatch: 0 #NOTE: Specify the bin scheme batch index here
 binvars: [] #NOTE: ONLY INCLUDE OTHER VARIABLE NAMES AND LIMITS TO AUTOMATICALLY APPLY OVERALL LIMIT CUTS
 binvar_lims: []
 depolvars: []

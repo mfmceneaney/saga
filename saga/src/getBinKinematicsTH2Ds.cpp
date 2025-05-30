@@ -28,9 +28,9 @@ void execute(const YAML::Node& node) {
     std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose,yamlargout);
     std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose,yamlargout);
     int nthreads = saga::util::getYamlArg<int>(node,"nthreads",1,message_prefix,verbose,yamlargout);
-    std::string cuts = saga::util::getYamlArg<std::string>(node,"cuts","",message_prefix,verbose,yamlargout);
     bool save_pdfs = saga::util::getYamlArg<bool>(node, "save_pdfs", false, message_prefix, verbose, yamlargout);
     bool save_csvs = saga::util::getYamlArg<bool>(node, "save_csvs", false, message_prefix, verbose, yamlargout);
+    std::string cuts = saga::util::getYamlArg<std::string>(node,"cuts","",message_prefix,verbose,yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN MC MATCHING ARGUMENTS

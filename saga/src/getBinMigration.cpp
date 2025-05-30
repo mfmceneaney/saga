@@ -96,30 +96,22 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN BIN VARIABLES
     std::vector<std::string> binvars = saga::util::getYamlArg<std::vector<std::string>>(node, "binvars", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> binvar_titles = saga::util::getYamlArg<std::vector<std::string>>(node, "binvar_titles", {}, message_prefix, verbose, yamlargout); //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
     std::vector<std::vector<double>> binvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "binvar_lims", {}, message_prefix, verbose, yamlargout);
-    std::vector<int> binvar_bins = saga::util::getYamlArg<std::vector<int>>(node, "binvar_bins", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN DEPOLARIZATION VARIABLES
     std::vector<std::string> depolvars = saga::util::getYamlArg<std::vector<std::string>>(node, "depolvars", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> depolvar_titles = saga::util::getYamlArg<std::vector<std::string>>(node, "depolvar_titles", {}, message_prefix, verbose, yamlargout); //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
     std::vector<std::vector<double>> depolvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "depolvar_lims", {}, message_prefix, verbose, yamlargout);
-    std::vector<int> depolvar_bins = saga::util::getYamlArg<std::vector<int>>(node, "depolvar_bins", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN ASYMMETRY FIT VARIABLES
     std::vector<std::string> asymfitvars = saga::util::getYamlArg<std::vector<std::string>>(node, "asymfitvars", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> asymfitvar_titles = saga::util::getYamlArg<std::vector<std::string>>(node, "asymfitvar_titles", {}, message_prefix, verbose, yamlargout); //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
     std::vector<std::vector<double>> asymfitvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "asymfitvar_lims", {}, message_prefix, verbose, yamlargout);
-    std::vector<int> asymfitvar_bins = saga::util::getYamlArg<std::vector<int>>(node, "asymfitvar_bins", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN MASS FIT VARIABLES
     std::vector<std::string> massfitvars = saga::util::getYamlArg<std::vector<std::string>>(node, "massfitvars", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfitvar_titles = saga::util::getYamlArg<std::vector<std::string>>(node, "massfitvar_titles", {}, message_prefix, verbose, yamlargout); //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
     std::vector<std::vector<double>> massfitvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfitvar_lims", {}, message_prefix, verbose, yamlargout);
-    std::vector<int> massfitvar_bins = saga::util::getYamlArg<std::vector<int>>(node, "massfitvar_bins", {}, message_prefix, verbose, yamlargout);
 
     // MC_SUFFIX
     std::string mc_suffix = saga::util::getYamlArg<std::string>(node, "mc_suffix", "_mc", message_prefix, verbose, yamlargout);

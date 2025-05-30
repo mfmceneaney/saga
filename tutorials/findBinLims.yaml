@@ -1,8 +1,8 @@
+outpath: "out.yaml"
 inpath: "file.root"
 tree: "t"
 nthreads: 1
 cuts: "mass_ppim<1.24 && Q2>1 && W>2 && y<0.8 && xF_ppim>0.0 && z_ppim<1.0 && detector_p==6 && detector_pim==6"
-outpath: "out.yaml"
 binvars: ["x","xF_ppim","z_ppim","ptpt"]
 nbins_list: [2, 8, 16, 4]
 var_formulas: #NOTE: Variable definitions will be applied in order in case of dependencies, and they should follow the form [variable_name,formula].
