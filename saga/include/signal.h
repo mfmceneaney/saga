@@ -46,6 +46,9 @@
 // RooStats includes
 #include <RooStats/SPlot.h>
 
+// Yaml includes
+#include <yaml-cpp/yaml.h>
+
 // Local includes
 #include <util.h>
 
@@ -195,6 +198,9 @@ std::vector<std::string> getGenMassPdf(
 * The variable names in each fit formula should (separately) follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
 *
+* The mass fit parameters (`massfit_*`) may optionally be loaded from a yaml file containing all these parameters by name
+* to allow one to specify bin-dependent starting parameters, limits, and even PDF formulas.
+*
 * The returned vector will contain, in order:
 * - Total bin count
 *
@@ -226,30 +232,31 @@ std::vector<std::string> getGenMassPdf(
 * @param bincut Kinematic variable cut for bin
 * @param binvars List of kinematic binning variables
 * @param fitvars List of mass fit variables
-* @param pdf_name Base name of the combined signal and background pdf.  Note, the actual PDF name will be: `<pdf_name>_<binid>`.
-* @param fitformula_sg The signal PDF formula in ROOT TFormula format
-* @param fitformula_bg The background PDF formula in ROOT TFormula format
-* @param sgYield_name Base name of the signal yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
-* @param bgYield_name Base name of the background yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
-* @param initsgfrac Initial value of the ratio of signal events to total events \f$u\f$ in the dataset
-* @param fitparinits_sg List of signal PDF parameter initial values
-* @param fitparnames_sg List of signal PDF parameter names
-* @param fitpartitles_sg List of signal PDF parameter titles
-* @param fitparunits_sg List of signal PDF parameter unit titles
-* @param fitparlims_sg List of signal PDF parameter minimum and maximum bounds
-* @param fitparinits_bg List of background PDF parameter initial values
-* @param fitparnames_bg List of background PDF parameter names
-* @param fitpartitles_bg List of background PDF parameter titles
-* @param fitparunits_bg List of background PDF parameter unit titles
-* @param fitparlims_bg List of background PDF parameter minimum and maximum bounds
-* @param sgregion_lims List of signal region minimum and maximum bounds for each fit variable
-* @param plot_bg_pars Option to plot background pdf parameters on TLegend
-* @param lg_text_size Size of TLegend text
-* @param lg_margin Margin of TLegend
-* @param lg_ncols Number of columns in TLegend
-* @param use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
-* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
-* @param use_binned_fit Option to use a binned fit to the data
+* @param yamlfile Path to YAML file specifying the remaining mass fit arguments
+* @param massfit_pdf_name Base name of the combined signal and background pdf.  Note, the actual PDF name will be: `<massfit_pdf_name>_<binid>`.
+* @param massfit_formula_sg The signal PDF formula in ROOT TFormula format
+* @param massfit_formula_bg The background PDF formula in ROOT TFormula format
+* @param massfit_sgYield_name Base name of the signal yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
+* @param massfit_bgYield_name Base name of the background yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
+* @param massfit_initsgfrac Initial value of the ratio of signal events to total events \f$u\f$ in the dataset
+* @param massfit_parinits_sg List of signal PDF parameter initial values
+* @param massfit_parnames_sg List of signal PDF parameter names
+* @param massfit_partitles_sg List of signal PDF parameter titles
+* @param massfit_parunits_sg List of signal PDF parameter unit titles
+* @param massfit_parlims_sg List of signal PDF parameter minimum and maximum bounds
+* @param massfit_parinits_bg List of background PDF parameter initial values
+* @param massfit_parnames_bg List of background PDF parameter names
+* @param massfit_partitles_bg List of background PDF parameter titles
+* @param massfit_parunits_bg List of background PDF parameter unit titles
+* @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
+* @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
+* @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend
+* @param massfit_lg_text_size Size of TLegend text
+* @param massfit_lg_margin Margin of TLegend
+* @param massfit_lg_ncols Number of columns in TLegend
+* @param massfit_use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
+* @param massfit_use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
+* @param massfit_use_binned_fit Option to use a binned fit to the data
 * @param out Output stream
 *
 * @return List of bin count, bin variable means and errors, fit parameters and errors
@@ -261,35 +268,84 @@ std::vector<double> fitMass(
         std::string                      bincut,
         std::vector<std::string>         binvars,
         std::vector<std::string>         fitvars,
-        std::string                      pdf_name,
-        std::string                      fitformula_sg,
-        std::string                      fitformula_bg,
-        std::string                      sgYield_name,
-        std::string                      bgYield_name,
-        double                           initsgfrac,
-        std::vector<double>              fitparinits_sg,
-        std::vector<std::string>         fitparnames_sg,
-        std::vector<std::string>         fitpartitles_sg,
-        std::vector<std::string>         fitparunits_sg,
-        std::vector<std::vector<double>> fitparlims_sg,
-        std::vector<double>              fitparinits_bg,
-        std::vector<std::string>         fitparnames_bg,
-        std::vector<std::string>         fitpartitles_bg,
-        std::vector<std::string>         fitparunits_bg,
-        std::vector<std::vector<double>> fitparlims_bg,
-        std::vector<std::vector<double>> sgregion_lims,
-        double                           lg_text_size     = 0.04,
-        double                           lg_margin        = 0.1,
-        int                              lg_ncols         = 1,
-        bool                             plot_bg_pars     = false,
-        bool                             use_sumw2error   = false,
-        bool                             use_extended_nll = true,
-        bool                             use_binned_fit   = false,
+        std::string                      yamlfile,
+        std::string                      massfit_pdf_name,
+        std::string                      massfit_formula_sg,
+        std::string                      massfit_formula_bg,
+        std::string                      massfit_sgYield_name,
+        std::string                      massfit_bgYield_name,
+        double                           massfit_initsgfrac,
+        std::vector<double>              massfit_parinits_sg,
+        std::vector<std::string>         massfit_parnames_sg,
+        std::vector<std::string>         massfit_partitles_sg,
+        std::vector<std::string>         massfit_parunits_sg,
+        std::vector<std::vector<double>> massfit_parlims_sg,
+        std::vector<double>              massfit_parinits_bg,
+        std::vector<std::string>         massfit_parnames_bg,
+        std::vector<std::string>         massfit_partitles_bg,
+        std::vector<std::string>         massfit_parunits_bg,
+        std::vector<std::vector<double>> massfit_parlims_bg,
+        std::vector<std::vector<double>> massfit_sgregion_lims,
+        double                           massfit_lg_text_size     = 0.04,
+        double                           massfit_lg_margin        = 0.1,
+        int                              massfit_lg_ncols         = 1,
+        bool                             massfit_plot_bg_pars     = false,
+        bool                             massfit_use_sumw2error   = false,
+        bool                             massfit_use_extended_nll = true,
+        bool                             massfit_use_binned_fit   = false,
         std::ostream                    &out              = std::cout
     ) {
 
     // Set method name
     std::string method_name = "fitMass";
+
+    // Load YAML
+    YAML::Node node;
+    bool loaded_yaml = false;
+    if (yamlfile!="") {
+        try {
+            node = YAML::LoadFile(yamlfile.c_str());
+            loaded_yaml = true;
+        } catch (std::exception& e) {
+            std::cerr<<"WARNING: "<<method_name.c_str()<<": Could not load yaml: "<<yamlfile.c_str()<<std::endl;
+            std::cerr << e.what() << std::endl;
+        }
+    }
+
+    // Parse YAML
+    if (loaded_yaml) {
+
+        // Set parsing parameters
+        std::string message_prefix = "INFO: ";
+        bool verbose = true;
+        std::ostream &yamlargout = out;
+
+        // Parse arguments
+        massfit_pdf_name = saga::util::getYamlArg<std::string>(node, "massfit_pdf_name", massfit_pdf_name, message_prefix, verbose, yamlargout); //NOTE: This must be non-empty!
+        massfit_formula_sg = saga::util::getYamlArg<std::string>(node, "massfit_formula_sg", massfit_formula_sg, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
+        massfit_formula_bg = saga::util::getYamlArg<std::string>(node, "massfit_formula_bg", massfit_formula_bg, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
+        massfit_sgYield_name = saga::util::getYamlArg<std::string>(node, "massfit_sgYield_name", massfit_sgYield_name, message_prefix, verbose, yamlargout);
+        massfit_bgYield_name = saga::util::getYamlArg<std::string>(node, "massfit_bgYield_name", massfit_bgYield_name, message_prefix, verbose, yamlargout);
+        massfit_initsgfrac = saga::util::getYamlArg<double>(node, "massfit_initsgfrac", massfit_initsgfrac, message_prefix, verbose, yamlargout);
+        massfit_parnames_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parnames_sg", massfit_parnames_sg, message_prefix, verbose, yamlargout);
+        massfit_partitles_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_partitles_sg", massfit_partitles_sg, message_prefix, verbose, yamlargout);
+        massfit_parunits_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_sg", massfit_parunits_sg, message_prefix, verbose, yamlargout);
+        massfit_parinits_sg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_sg", massfit_parinits_sg, message_prefix, verbose, yamlargout);
+        massfit_parlims_sg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_sg", massfit_parlims_sg, message_prefix, verbose, yamlargout);
+        massfit_parnames_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parnames_bg", massfit_parnames_bg, message_prefix, verbose, yamlargout);
+        massfit_partitles_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_partitles_bg", massfit_partitles_bg, message_prefix, verbose, yamlargout);
+        massfit_parunits_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_bg", massfit_parunits_bg, message_prefix, verbose, yamlargout);
+        massfit_parinits_bg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_bg", massfit_parinits_bg, message_prefix, verbose, yamlargout);
+        massfit_parlims_bg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_bg", massfit_parlims_bg, message_prefix, verbose, yamlargout);
+        massfit_sgregion_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_sgregion_lims", massfit_sgregion_lims, message_prefix, verbose, yamlargout);
+        massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", massfit_lg_text_size, message_prefix, verbose, yamlargout);
+        massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", massfit_lg_margin, message_prefix, verbose, yamlargout);
+        massfit_lg_ncols = saga::util::getYamlArg<double>(node, "massfit_lg_ncols", massfit_lg_ncols, message_prefix, verbose, yamlargout);
+        massfit_plot_bg_pars = saga::util::getYamlArg<bool>(node, "massfit_plot_bg_pars", massfit_plot_bg_pars, message_prefix, verbose, yamlargout);
+        massfit_use_sumw2error = saga::util::getYamlArg<bool>(node, "massfit_use_sumw2error", massfit_use_sumw2error, message_prefix, verbose, yamlargout);
+        massfit_use_extended_nll = saga::util::getYamlArg<bool>(node, "massfit_use_extended_nll", massfit_use_extended_nll, message_prefix, verbose, yamlargout);
+        massfit_use_binned_fit = saga::util::getYamlArg<bool>(node, "massfit_use_binned_fit", massfit_use_binned_fit, message_prefix, verbose, yamlargout);
+    }
 
     // Switch off histogram stats
     gStyle->SetOptStat(0);
@@ -323,10 +379,10 @@ std::vector<double> fitMass(
     }
 
     // Create mass fit signal parameters
-    int nparams_sg = fitparinits_sg.size();
+    int nparams_sg = massfit_parinits_sg.size();
     RooRealVar *a_sg[nparams_sg];
     for (int aa=0; aa<nparams_sg; aa++) {
-        a_sg[aa] = new RooRealVar(fitparnames_sg[aa].c_str(),fitpartitles_sg[aa].c_str(),fitparinits_sg[aa],fitparlims_sg[aa][0],fitparlims_sg[aa][1]);
+        a_sg[aa] = new RooRealVar(massfit_parnames_sg[aa].c_str(),massfit_partitles_sg[aa].c_str(),massfit_parinits_sg[aa],massfit_parlims_sg[aa][0],massfit_parlims_sg[aa][1]);
     }
 
     // Add parameters to signal argument list in order
@@ -339,10 +395,10 @@ std::vector<double> fitMass(
     }
 
     // Create mass fit background parameters
-    int nparams_bg = fitparinits_bg.size();
+    int nparams_bg = massfit_parinits_bg.size();
     RooRealVar *a_bg[nparams_bg];
     for (int aa=0; aa<nparams_bg; aa++) {
-        a_bg[aa] = new RooRealVar(fitparnames_bg[aa].c_str(),fitpartitles_bg[aa].c_str(),fitparinits_bg[aa],fitparlims_bg[aa][0],fitparlims_bg[aa][1]);
+        a_bg[aa] = new RooRealVar(massfit_parnames_bg[aa].c_str(),massfit_partitles_bg[aa].c_str(),massfit_parinits_bg[aa],massfit_parlims_bg[aa][0],massfit_parlims_bg[aa][1]);
     }
 
     // Add parameters to background argument list in order
@@ -359,15 +415,15 @@ std::vector<double> fitMass(
         w,
         argset_sg,
         argset_bg,
-        pdf_name,
-        sgYield_name,
-        bgYield_name,
+        massfit_pdf_name,
+        massfit_sgYield_name,
+        massfit_bgYield_name,
         binid,
-        fitformula_sg,
-        fitformula_bg,
-        initsgfrac,
+        massfit_formula_sg,
+        massfit_formula_bg,
+        massfit_initsgfrac,
         count,
-        use_extended_nll
+        massfit_use_extended_nll
     );
 
     // Set pdf and variable names for signal+background fit
@@ -386,18 +442,18 @@ std::vector<double> fitMass(
 
     // Fit the PDF to data
     std::unique_ptr<RooFitResult> r;
-    if (use_binned_fit) {
+    if (massfit_use_binned_fit) {
 
         // Create binned data
         std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit PDF
-        r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
+        r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, Save(), SumW2Error(massfit_use_sumw2error), PrintLevel(-1));
 
     } else {
 
         // Fit PDF
-        r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
+        r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, Save(), SumW2Error(massfit_use_sumw2error), PrintLevel(-1));
     }
     
     // Print fit result
@@ -414,19 +470,19 @@ std::vector<double> fitMass(
     covMat.Print();
 
     // Get signal fit parameter values and errors
-    std::vector<double> fitpars_sg;
-    std::vector<double> fitparerrs_sg;
+    std::vector<double> massfit_pars_sg;
+    std::vector<double> massfit_parerrs_sg;
     for (int aa=0; aa<nparams_sg; aa++) {
-        fitpars_sg.push_back((double)a_sg[aa]->getVal());
-        fitparerrs_sg.push_back((double)a_sg[aa]->getError());
+        massfit_pars_sg.push_back((double)a_sg[aa]->getVal());
+        massfit_parerrs_sg.push_back((double)a_sg[aa]->getError());
     }
 
     // Get background fit parameter values and errors
-    std::vector<double> fitpars_bg;
-    std::vector<double> fitparerrs_bg;
+    std::vector<double> massfit_pars_bg;
+    std::vector<double> massfit_parerrs_bg;
     for (int aa=0; aa<nparams_bg; aa++) {
-        fitpars_bg.push_back((double)a_bg[aa]->getVal());
-        fitparerrs_bg.push_back((double)a_bg[aa]->getError());
+        massfit_pars_bg.push_back((double)a_bg[aa]->getVal());
+        massfit_parerrs_bg.push_back((double)a_bg[aa]->getError());
     }
 
     // Compute chi2 from 1D histograms
@@ -440,7 +496,7 @@ std::vector<double> fitMass(
 
         // Compute chi2 value
         OwningPtr<RooAbsReal> chi2 = model->createChi2(*rdhs_1d[i], Range("fullRange"),
-                    Extended(use_extended_nll), DataError(RooAbsData::Poisson));
+                    Extended(massfit_use_extended_nll), DataError(RooAbsData::Poisson));
         int nparameters = (int)model->getParameters(RooArgSet(*f[i]))->size();
         int ndf = f[i]->getBins() - nparameters; //NOTE: ASSUME ALL BINS NONZERO
         double chi2ndf = (double) chi2->getVal()/ndf;
@@ -453,7 +509,7 @@ std::vector<double> fitMass(
     RooArgSet *iset = new RooArgSet();
     RooArgSet *_nset = new RooArgSet();
     for (int i=0; i<fitvars.size(); i++) {
-        f[i]->setRange("signal", sgregion_lims[i][0], sgregion_lims[i][1]);
+        f[i]->setRange("signal", massfit_sgregion_lims[i][0], massfit_sgregion_lims[i][1]);
         iset->add(*f[i]);
         _nset->add(*f[i]);
     }
@@ -478,7 +534,7 @@ std::vector<double> fitMass(
     double int_model_pdf_err = (double)int_model->getPropagatedError(*r, *_nset) * int_model_pdf.getVal(); //NOTE: Need fit result to be saved for this to work!
 
     // Sum on the dataset
-    std::string sgcut = saga::util::addLimitCuts("",fitvars,sgregion_lims);
+    std::string sgcut = saga::util::addLimitCuts("",fitvars,massfit_sgregion_lims);
     double int_ds_val = bin_ds->sumEntries(sgcut.c_str());
     double int_ds_err = TMath::Sqrt(int_ds_val);
 
@@ -520,9 +576,9 @@ std::vector<double> fitMass(
 
         // Create Legend
         TLegend *legend = new TLegend();
-        legend->SetTextSize(lg_text_size);
-        legend->SetMargin(lg_margin);
-        if (lg_ncols>1) legend->SetNColumns(lg_ncols);
+        legend->SetTextSize(massfit_lg_text_size);
+        legend->SetMargin(massfit_lg_margin);
+        if (massfit_lg_ncols>1) legend->SetNColumns(massfit_lg_ncols);
 
         // Create legend entries
         std::string str_chi2 = Form("#chi^{2}/NDF = %.3g",chi2ndfs[i]);
@@ -538,14 +594,14 @@ std::vector<double> fitMass(
 
         // Create and add legend entries for signal PDF parameter values and errors
         for (int i=0; i<nparams_sg; i++) {
-            std::string par_str = Form("%s = %.3g #pm %.3g %s", a_sg[i]->GetTitle(), a_sg[i]->getVal(), a_sg[i]->getError(), fitparunits_sg[i].c_str());
+            std::string par_str = Form("%s = %.3g #pm %.3g %s", a_sg[i]->GetTitle(), a_sg[i]->getVal(), a_sg[i]->getError(), massfit_parunits_sg[i].c_str());
             legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",int_ds_val));
         }
 
         // Optionally create and add legend entries for background PDF parameter values and errors
-        if (plot_bg_pars) {
+        if (massfit_plot_bg_pars) {
             for (int i=0; i<nparams_bg; i++) {
-                std::string par_str = Form("%s = %.3g #pm %.3g %s", a_bg[i]->GetTitle(), a_bg[i]->getVal(), a_bg[i]->getError(), fitparunits_bg[i].c_str());
+                std::string par_str = Form("%s = %.3g #pm %.3g %s", a_bg[i]->GetTitle(), a_bg[i]->getVal(), a_bg[i]->getError(), massfit_parunits_bg[i].c_str());
                 legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",int_ds_val));
             }
         }
@@ -575,31 +631,31 @@ std::vector<double> fitMass(
         if (idx<fitvars.size()-1) { out << " , "; }
     }
     out << "]" << std::endl;
-    out << " fitformula_sg  = " << fitformula_sg.c_str() << std::endl;
+    out << " massfit_formula_sg  = " << massfit_formula_sg.c_str() << std::endl;
     out << " nparams_sg     = " << nparams_sg <<std::endl;
-    out << " fitparinits_sg = [" ;
+    out << " massfit_parinits_sg = [" ;
     for (int idx=0; idx<nparams_sg; idx++) {
-        out << fitparinits_sg[idx];
+        out << massfit_parinits_sg[idx];
         if (idx<nparams_sg-1) { out << " , "; }
     }
     out << "]" << std::endl;
-    out << " fitpars_sg = [" ;
+    out << " massfit_pars_sg = [" ;
     for (int idx=0; idx<nparams_sg; idx++) {
-        out << fitpars_sg[idx] << "±" << fitparerrs_sg[idx];
+        out << massfit_pars_sg[idx] << "±" << massfit_parerrs_sg[idx];
         if (idx<nparams_sg-1) { out << " , "; }
     }
     out << "]" << std::endl;
-    out << " fitformula_bg  = " << fitformula_bg.c_str() << std::endl;
+    out << " massfit_formula_bg  = " << massfit_formula_bg.c_str() << std::endl;
     out << " nparams_bg     = " << nparams_bg <<std::endl;
-    out << " fitparinits_bg = [" ;
+    out << " massfit_parinits_bg = [" ;
     for (int idx=0; idx<nparams_bg; idx++) {
-        out << fitparinits_bg[idx];
+        out << massfit_parinits_bg[idx];
         if (idx<nparams_bg-1) { out << " , "; }
     }
     out << "]" << std::endl;
-    out << " fitpars_bg = [" ;
+    out << " massfit_pars_bg = [" ;
     for (int idx=0; idx<nparams_bg; idx++) {
-        out << fitpars_bg[idx] << "±" << fitparerrs_bg[idx];
+        out << massfit_pars_bg[idx] << "±" << massfit_parerrs_bg[idx];
         if (idx<nparams_bg-1) { out << " , "; }
     }
     out << "]" << std::endl;
@@ -616,7 +672,7 @@ std::vector<double> fitMass(
     out << "--------------------------------------------------" << std::endl;
 
     // Create return array
-    std::vector<double> arr; //NOTE: Dimension = 1(bin count)+8(signal region integration)+6(background fractions)+fitvars.size()+2*binvars.size()+2*fitparinits_sg.size()+2*fitparinits_bg.size()
+    std::vector<double> arr; //NOTE: Dimension = 1(bin count)+8(signal region integration)+6(background fractions)+fitvars.size()+2*binvars.size()+2*massfit_parinits_sg.size()+2*massfit_parinits_bg.size()
 
     // Add total bin count
     arr.push_back(count);
@@ -646,12 +702,12 @@ std::vector<double> fitMass(
         arr.push_back(binvarerrs[idx]);
     }
     for (int idx=0; idx<nparams_sg; idx++) {
-        arr.push_back(fitpars_sg[idx]);
-        arr.push_back(fitparerrs_sg[idx]);
+        arr.push_back(massfit_pars_sg[idx]);
+        arr.push_back(massfit_parerrs_sg[idx]);
     }
     for (int idx=0; idx<nparams_bg; idx++) {
-        arr.push_back(fitpars_bg[idx]);
-        arr.push_back(fitparerrs_bg[idx]);
+        arr.push_back(massfit_pars_bg[idx]);
+        arr.push_back(massfit_parerrs_bg[idx]);
     }
 
     return arr;
@@ -797,7 +853,7 @@ void getMassFitWeightedData(
 /**
 * @brief Apply a generic mass fit and weight a dataset bin by bin.
 *
-* Apply a generic mass fit in each asymmetry fit variable bin
+* Apply a generic mass fit in each asymmetry fit variable bin using `fitMass()`
 * and weight the given dataset in the signal and background regions.
 * Only sideband events will be weighted and the weight \f$W_{sb}\f$ will be computed using the
 * background fraction \f$\varepsilon\f$ taken from the integral of the background PDF
@@ -807,29 +863,32 @@ void getMassFitWeightedData(
 * W_{sb} = - \varepsilon \cdot \frac{N_{sg}}{N_{sb}}.
 * @f]
 *
+* The naming scheme for the bins will be `<binid>__<asymfitvar_binid>`.
+*
 * @param w RooWorkspace in which to work
 * @param dataset_name Dataset name
 * @param binid Bin unique id
 * @param bincut Kinematic variable cut for bin
 * @param binvars List of kinematic binning variables
 * @param fitvars List of mass fit variables
-* @param pdf_name Base name of the combined signal and background pdf.  Note, the actual PDF name will be: `<pdf_name>_<binid>`.
-* @param fitformula_sg The signal PDF formula in ROOT TFormula format
-* @param fitformula_bg The background PDF formula in ROOT TFormula format
-* @param sgYield_name Base name of the signal yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
-* @param bgYield_name Base name of the background yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
-* @param initsgfrac Initial value of the ratio of signal events to total events \f$u\f$ in the dataset
-* @param fitparinits_sg List of signal PDF parameter initial values
-* @param fitparnames_sg List of signal PDF parameter names
-* @param fitpartitles_sg List of signal PDF parameter titles
-* @param fitparunits_sg List of signal PDF parameter unit titles
-* @param fitparlims_sg List of signal PDF parameter minimum and maximum bounds
-* @param fitparinits_bg List of background PDF parameter initial values
-* @param fitparnames_bg List of background PDF parameter names
-* @param fitpartitles_bg List of background PDF parameter titles
-* @param fitparunits_bg List of background PDF parameter unit titles
-* @param fitparlims_bg List of background PDF parameter minimum and maximum bounds
-* @param sgregion_lims List of signal region minimum and maximum bounds for each fit variable
+* @param yamlfile Map of bin ids to paths of YAML files specifying the remaining mass fit arguments
+* @param massfit_pdf_name Base name of the combined signal and background pdf.  Note, the actual PDF name will be: `<massfit_pdf_name>_<binid>`.
+* @param massfit_formula_sg The signal PDF formula in ROOT TFormula format
+* @param massfit_formula_bg The background PDF formula in ROOT TFormula format
+* @param massfit_sgYield_name Base name of the signal yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
+* @param massfit_bgYield_name Base name of the background yield variable for an extended fit, the bin id will be appended for uniqueness in the workspace
+* @param massfit_initsgfrac Initial value of the ratio of signal events to total events \f$u\f$ in the dataset
+* @param massfit_parinits_sg List of signal PDF parameter initial values
+* @param massfit_parnames_sg List of signal PDF parameter names
+* @param massfit_partitles_sg List of signal PDF parameter titles
+* @param massfit_parunits_sg List of signal PDF parameter unit titles
+* @param massfit_parlims_sg List of signal PDF parameter minimum and maximum bounds
+* @param massfit_parinits_bg List of background PDF parameter initial values
+* @param massfit_parnames_bg List of background PDF parameter names
+* @param massfit_partitles_bg List of background PDF parameter titles
+* @param massfit_parunits_bg List of background PDF parameter unit titles
+* @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
+* @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
 * @param frame ROOT RDataframe in which to define the weight variable
 * @param bgcut Background invariant mass region cut
 * @param asymfitvars List of asymmetry fit variables names
@@ -837,56 +896,57 @@ void getMassFitWeightedData(
 * @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
 * @param weightvar Weight variable name
 * @param weightvar_lims Weight variable limits
-* @param plot_bg_pars Option to plot background pdf parameters on TLegend
-* @param lg_text_size Size of TLegend text
-* @param lg_margin Margin of TLegend
-* @param lg_ncols Number of columns in TLegend
-* @param use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
-* @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
-* @param use_binned_fit Option to use a binned fit to the data
+* @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend
+* @param massfit_lg_text_size Size of TLegend text
+* @param massfit_lg_margin Margin of TLegend
+* @param massfit_lg_ncols Number of columns in TLegend
+* @param massfit_use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
+* @param massfit_use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
+* @param massfit_use_binned_fit Option to use a binned fit to the data
 * @param weights_default Weight variable default value for events outside provided cuts
 * @param out Output stream
 */
 void setWeightsFromMassFit(
-        RooWorkspace                    *w, // fitMass() arguments
-        std::string                      dataset_name,
-        std::string                      binid,
-        std::string                      bincut,
-        std::vector<std::string>         binvars,
-        std::vector<std::string>         fitvars,
-        std::string                      pdf_name,
-        std::string                      fitformula_sg,
-        std::string                      fitformula_bg,
-        std::string                      sgYield_name,
-        std::string                      bgYield_name,
-        double                           initsgfrac,
-        std::vector<double>              fitparinits_sg,
-        std::vector<std::string>         fitparnames_sg,
-        std::vector<std::string>         fitpartitles_sg,
-        std::vector<std::string>         fitparunits_sg,
-        std::vector<std::vector<double>> fitparlims_sg,
-        std::vector<double>              fitparinits_bg,
-        std::vector<std::string>         fitparnames_bg,
-        std::vector<std::string>         fitpartitles_bg,
-        std::vector<std::string>         fitparunits_bg,
-        std::vector<std::vector<double>> fitparlims_bg,
-        std::vector<std::vector<double>> sgregion_lims,
-        RNode                            frame, // arguments for this method
-        std::string                      bgcut, 
-        std::vector<std::string>         asymfitvars,
-        std::map<int,std::string>        asymfitvar_bincuts,
-        std::string                      rds_weighted_name,
-        std::string                      weightvar,
-        std::vector<double>              weightvar_lims,
-        double                           lg_text_size     = 0.04, // fitMass() arguments
-        double                           lg_margin        = 0.1,
-        int                              lg_ncols         = 1,
-        bool                             plot_bg_pars     = false,
-        bool                             use_sumw2error   = false,
-        bool                             use_extended_nll = true,
-        bool                             use_binned_fit   = false,
-        double                           weights_default  = 0.0, // arguments for this method
-        std::ostream                    &out              = std::cout
+        RooWorkspace                     *w, // fitMass() arguments
+        std::string                       dataset_name,
+        std::string                       binid,
+        std::string                       bincut,
+        std::vector<std::string>          binvars,
+        std::vector<std::string>          fitvars,
+        std::map<std::string,std::string> yamlfile_map,
+        std::string                       massfit_pdf_name,
+        std::string                       massfit_formula_sg,
+        std::string                       massfit_formula_bg,
+        std::string                       massfit_sgYield_name,
+        std::string                       massfit_bgYield_name,
+        double                            massfit_initsgfrac,
+        std::vector<double>               massfit_parinits_sg,
+        std::vector<std::string>          massfit_parnames_sg,
+        std::vector<std::string>          massfit_partitles_sg,
+        std::vector<std::string>          massfit_parunits_sg,
+        std::vector<std::vector<double>>  massfit_parlims_sg,
+        std::vector<double>               massfit_parinits_bg,
+        std::vector<std::string>          massfit_parnames_bg,
+        std::vector<std::string>          massfit_partitles_bg,
+        std::vector<std::string>          massfit_parunits_bg,
+        std::vector<std::vector<double>>  massfit_parlims_bg,
+        std::vector<std::vector<double>>  massfit_sgregion_lims,
+        RNode                             frame, // arguments for this method
+        std::string                       bgcut, 
+        std::vector<std::string>          asymfitvars,
+        std::map<int,std::string>         asymfitvar_bincuts,
+        std::string                       rds_weighted_name,
+        std::string                       weightvar,
+        std::vector<double>               weightvar_lims,
+        double                            massfit_lg_text_size     = 0.04, // fitMass() arguments
+        double                            massfit_lg_margin        = 0.1,
+        int                               massfit_lg_ncols         = 1,
+        bool                              massfit_plot_bg_pars     = false,
+        bool                              massfit_use_sumw2error   = false,
+        bool                              massfit_use_extended_nll = true,
+        bool                              massfit_use_binned_fit   = false,
+        double                            weights_default          = 0.0, // arguments for this method
+        std::ostream                     &out                      = std::cout
     ) {
 
     // Load asymmetry fit variables from workspace
@@ -921,7 +981,7 @@ void setWeightsFromMassFit(
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
 
     // Get the signal region cut
-    std::string sgcut = saga::util::addLimitCuts("",fitvars,sgregion_lims);
+    std::string sgcut = saga::util::addLimitCuts("",fitvars,massfit_sgregion_lims);
 
     // Loop bins and apply fits recording background fractions and errors
     std::map<int,std::vector<double>> weights_map;
@@ -932,7 +992,7 @@ void setWeightsFromMassFit(
         std::string asymfitvar_bincut = it->second;
 
         // Get bin unique id
-        std::string binid_asymfitvars = Form("%s__asymfitvars_bin_%d",binid.c_str(),id);
+        std::string binid_asymfitvars = Form("%s__%d",binid.c_str(),id);
 
         // Get bin dataset
         RooDataSet *bin_ds_asymfitvar = (RooDataSet*)bin_ds->reduce(asymfitvar_bincut.c_str());
@@ -944,6 +1004,9 @@ void setWeightsFromMassFit(
         // Create full bin cut
         std::string bincut_full = Form("%s && %s", bincut.c_str(), binid_asymfitvars.c_str());
 
+        // Set yaml path for mass fit parameters
+        std::string yamlfile = yamlfile_map[binid_asymfitvars]; //NOTE: This should just return an empty string if not found which will use the default parameters
+
         // Fit the mass spectrum
         std::vector<double> massfit_result = fitMass(
                 w, // RooWorkspace                    *w,
@@ -952,30 +1015,31 @@ void setWeightsFromMassFit(
                 bincut_full, // std::string                      bincut,
                 binvars, // std::vector<std::string>         binvars,
                 fitvars, // std::vector<std::string>         fitvars,
-                pdf_name, // std::string                      pdf_name,
-                fitformula_sg, // std::string                      fitformula_sg,
-                fitformula_bg, // std::string                      fitformula_bg,
-                sgYield_name, // std::string                      sgYield_name,
-                bgYield_name, // std::string                      bgYield_name,
-                initsgfrac, // double                           initsgfrac,
-                fitparinits_sg, // std::vector<double>              fitparinits_sg,
-                fitparnames_sg, // std::vector<std::string>         fitparnames_sg,
-                fitpartitles_sg, // std::vector<std::string>         fitpartitles_sg,
-                fitparunits_sg, // std::vector<std::string>         fitparunits_sg,
-                fitparlims_sg, // std::vector<std::vector<double>> fitparlims_sg,
-                fitparinits_bg, // std::vector<double>              fitparinits_bg,
-                fitparnames_bg, // std::vector<std::string>         fitparnames_bg,
-                fitpartitles_bg, // std::vector<std::string>         fitpartitles_bg,
-                fitparunits_bg, // std::vector<std::string>         fitparunits_bg,
-                fitparlims_bg, // std::vector<std::vector<double>> fitparlims_bg,
-                sgregion_lims, // std::vector<std::vector<double>> sgregion_lims,
-                lg_text_size, // double                           lg_text_size     = 0.04,
-                lg_margin, // double                           lg_margin        = 0.1,
-                lg_ncols, // int                              lg_ncols         = 1,
-                plot_bg_pars, // bool                             plot_bg_pars     = false,
-                use_sumw2error, // bool                             use_sumw2error   = true,
-                use_extended_nll, // bool                             use_extended_nll = false,
-                use_binned_fit, // bool                             use_binned_fit   = false,
+                yamlfile, // std::string                      yamlfile,
+                massfit_pdf_name, // std::string                      massfit_pdf_name,
+                massfit_formula_sg, // std::string                      massfit_formula_sg,
+                massfit_formula_bg, // std::string                      massfit_formula_bg,
+                massfit_sgYield_name, // std::string                      massfit_sgYield_name,
+                massfit_bgYield_name, // std::string                      massfit_bgYield_name,
+                massfit_initsgfrac, // double                           massfit_initsgfrac,
+                massfit_parinits_sg, // std::vector<double>              massfit_parinits_sg,
+                massfit_parnames_sg, // std::vector<std::string>         massfit_parnames_sg,
+                massfit_partitles_sg, // std::vector<std::string>         massfit_partitles_sg,
+                massfit_parunits_sg, // std::vector<std::string>         massfit_parunits_sg,
+                massfit_parlims_sg, // std::vector<std::vector<double>> massfit_parlims_sg,
+                massfit_parinits_bg, // std::vector<double>              massfit_parinits_bg,
+                massfit_parnames_bg, // std::vector<std::string>         massfit_parnames_bg,
+                massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
+                massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
+                massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
+                massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
+                massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
+                massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
+                massfit_lg_ncols, // int                              massfit_lg_ncols         = 1,
+                massfit_plot_bg_pars, // bool                             massfit_plot_bg_pars     = false,
+                massfit_use_sumw2error, // bool                             massfit_use_sumw2error   = true,
+                massfit_use_extended_nll, // bool                             massfit_use_extended_nll = false,
+                massfit_use_binned_fit, // bool                             massfit_use_binned_fit   = false,
                 out // std::ostream                    &out              = std::cout
         );
 

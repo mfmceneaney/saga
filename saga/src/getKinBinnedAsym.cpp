@@ -187,6 +187,7 @@ void execute(const YAML::Node& node) {
 
     //----------------------------------------------------------------------//
     // BEGIN MASS FIT ARGUMENTS
+    std::map<std::string,std::string> massfit_yamlfile_map = saga::util::getYamlArg<std::map<std::string,std::string>>(node, "massfit_yamlfile_map", {}, message_prefix, verbose, yamlargout);
     std::string massfit_pdf_name = saga::util::getYamlArg<std::string>(node, "massfit_pdf_name", "", message_prefix, verbose, yamlargout); //NOTE: A mass fit and background correction will only be run if this is non-empty!
     std::string massfit_formula_sg = saga::util::getYamlArg<std::string>(node, "massfit_formula_sg", "gaus(x[0],x[1],x[2])", message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
     std::string massfit_formula_bg = saga::util::getYamlArg<std::string>(node, "massfit_formula_bg", "cb2(x[0], x[1], x[2])", message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
@@ -571,6 +572,7 @@ void execute(const YAML::Node& node) {
             use_binned_fit, // bool                             use_binned_fit,
 
             // // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+            massfit_yamlfile_map, 
             massfit_pdf_name, // std::string                      massfit_pdf_name,
             massfit_formula_sg, // std::string                      massfit_formula_sg,
             massfit_formula_bg, // std::string                      massfit_formula_bg,

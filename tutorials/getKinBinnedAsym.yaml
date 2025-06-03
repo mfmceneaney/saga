@@ -97,6 +97,7 @@ use_sumw2error: False
 use_average_depol: False
 use_extended_nll: true
 use_binned_fit: false
+massfit_yamlfile_map: #NOTE: You can specify a map of bin scheme (string) unique ids to yaml file paths specifying the remaining massfit arguments {`scheme_<scheme_name>_bin_<bin_idx>(__<asymfitvar_bin_idx>)` -> <YAML_PATH> }.
 massfit_pdf_name: "" #NOTE: A mass fit and background correction will only be used if this is not empty.
 massfit_formula_sg: "gaus(x[0],x[1],x[2])" #NOTE: This is parsed by RooGenericPdf using TFormula
 massfit_formula_bg: "cb2(x[0],x[1],x[2])" #NOTE: This is parsed by RooGenericPdf using TFormula
