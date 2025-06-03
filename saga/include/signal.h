@@ -298,6 +298,7 @@ std::vector<double> fitMass(
     RooRealVar * f[(const int)fitvars.size()];
     for (int i=0; i<fitvars.size(); i++) {
         f[i] = w->var(fitvars[i].c_str());
+        f[i]->setRange("fullRange", f[i]->getMin(), f[i]->getMax());//NOTE: DEFINE FULL RANGE FOR COMPUTING CHI2 VARIABLE.
     }
 
     // Load dataset from workspace
