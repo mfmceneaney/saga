@@ -505,6 +505,7 @@ std::string getSimGenAsymPdf(
 * @param use_average_depol Option to divide out average depolarization in bin instead of including depolarization as an independent variable in the fit
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_binned_fit Option to use a binned fit to the data
+* @param sb_dataset_name Name of the sideband dataset to use for the simultaneous fit of the signal + background and background PDFs
 * @param out Output stream
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
@@ -533,6 +534,7 @@ std::vector<double> fitAsym(
         bool use_average_depol           = false,
         bool use_extended_nll            = false,
         bool use_binned_fit              = false,
+        std::string sb_dataset_name      = "", //NOTE: If this is non-empty, a simultaneous fit of sg+bg and bg PDFs will be applied to the signal and sideband datasets respectively.
         std::ostream &out                = std::cout
     ) {
 
@@ -556,6 +558,30 @@ std::vector<double> fitAsym(
 
     // Apply bin cuts
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
+
+    // Optionally load sideband dataset from workspace and apply bin cuts
+    RooDataSet *ds_sb;
+    RooDataSet *bin_ds_sb;
+    RooCategory *region;
+    RooRealVar *weightvar;
+    if (sb_dataset_name!="") {
+
+        // Load weight variable from workspace
+        weightvar = w->var("weight");
+
+        // Initialize region category
+        region = new RooCategory("region", "region");
+        region->defineType("signal");
+        region->defineType("sideband");
+
+        // Load sideband dataset and apply bin cut
+        ds_sb = (RooDataSet*)w->data(sb_dataset_name.c_str());
+        bin_ds_sb = (RooDataSet*)ds_sb->reduce(bincut.c_str());
+
+        // Construct combined dataset
+        bin_ds = new RooDataSet(bin_ds->GetName(), bin_ds->GetTitle(), *bin_ds->get(), Index(*region),
+                            Import({{"signal", (RooDataSet*)bin_ds->get()}, {"sideband", (RooDataSet*)bin_ds_sb->get()}}));
+    }
 
     // Get count
     auto count = (int)bin_ds->sumEntries();
@@ -612,7 +638,38 @@ std::vector<double> fitAsym(
         }
     }
 
-    // Create and load asymmetry pdf
+    // Create asymmetry amplitude parameters for the background pdf
+    std::vector<std::string> anames_sb;
+    RooRealVar *a_sb[nparams];
+    if (sb_dataset_name!="") {
+        for (int aa=0; aa<nparams; aa++) {
+            std::string aname = Form("a_sb%d",aa);
+            anames_sb.push_back(aname);
+            a_sb[aa] = new RooRealVar(anames_sb[aa].c_str(),anames_sb[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
+        }
+    }
+
+    // Add parameters to argument list in order for the background pdf
+    RooArgSet *argset_sb = new RooArgSet();
+    std::vector<std::string> argnames_sb;
+    if (sb_dataset_name!="") {
+        for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
+            argset_sb->add(*f[ff]);
+            argnames_sb.push_back(f[ff]->GetName());
+        }
+        for (int aa=0; aa<nparams; aa++) { // Fit asymmetry amplitude parameters
+            argset_sb->add(*a[aa]);
+            argnames_sb.push_back(a_sb[aa]->GetName());
+        }
+        if (!use_average_depol) {
+            for (int dd=0; dd<depolvars.size(); dd++) { // Fit depolarization factor variables
+                argset_sb->add(*d[dd]);
+                argnames_sb.push_back(d[dd]->GetName());
+            }
+        }
+    }
+
+    // Create and load asymmetry PDF
     std::string model_name = getSimGenAsymPdf(
         w,
         h,
@@ -632,7 +689,62 @@ std::vector<double> fitAsym(
         count,
         use_extended_nll
     );
-    RooAbsPdf *model = w->pdf(model_name.c_str());
+
+    // Create the asymmetry PDF for the background data in the case of sideband subtraction
+    std::string model_name_bg;
+    std::string binid_sb;
+    if (sb_dataset_name!="") {
+        binid_sb = Form("%s_sb",binid.c_str());
+        model_name_bg = getSimGenAsymPdf(
+            w,
+            h,
+            t,
+            ht,
+            ss,
+            argset_sb,
+            argnames_sb,
+            method_name,
+            binid_sb,
+            fitformula_uu,
+            fitformula_pu,
+            fitformula_up,
+            fitformula_pp,
+            bpol,
+            tpol,
+            count,
+            use_extended_nll
+        );
+    }
+
+    // Load PDFs
+    RooAbsPdf *model;
+    RooAbsPdf *model_sg;
+    RooAbsPdf *model_bg;
+    RooAbsPdf *model_sg_plus_bg;
+
+    // Load the signal PDF
+    if (sb_dataset_name=="") {
+
+        model = w->pdf(model_name.c_str());
+
+    } else {
+
+        // Load signal and background PDFs
+        model_sg = w->pdf(model_name.c_str());
+        model_bg = w->pdf(model_name_bg.c_str());
+
+        // Add signal and background PDFs using the weight variable as the coefficient of the background
+        model_sg_plus_bg = new RooAddPdf(Form("%s_plus_bg", model_name.c_str()), "", RooArgList(*model_sg, *model_bg), RooArgList(*weightvar));
+
+        // Construct a simultaneous PDF for the signal and background regions
+        model = new RooSimultaneous(Form("%s_weighted_sb",model_name.c_str()), "simultaneous pdf",
+                {
+                    {"signal", model_sg_plus_bg},
+                    {"sideband", model_bg}
+                },
+                *region
+        );
+    }
 
     // Fit the pdf to data
     std::unique_ptr<RooFitResult> r;
@@ -1214,8 +1326,10 @@ void getKinBinnedAsym(
         }
 
         // Weight dataset from binned mass fits
+        std::string fit_sb_dataset_name = ""; // -> Use this for sideband weights
         if (use_binned_sb_weights) {
-            std::string rds_weighted_name = (std::string)Form("%s_binned_sb_ws",dataset_name.c_str());
+            std::string rds_weighted_name = (std::string)Form("%s_sg",dataset_name.c_str());
+            std::string sb_rds_weighted_name = (std::string)Form("%s_sb",dataset_name.c_str());
             saga::signal::setWeightsFromMassFit(
                 ws, // RooWorkspace                    *w,
                 dataset_name, // std::string                      dataset_name,
@@ -1247,6 +1361,7 @@ void getKinBinnedAsym(
                 asymfitvars, // std::vector<std::string>         asymfitvars,
                 asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
                 rds_weighted_name, // std::string                      rds_weighted_name,
+                sb_rds_weighted_name, // std::string                   sb_rds_weighted_name,
                 "binned_sb_w", // std::string                      weightvar,
                 {-999.,999.}, // std::vector<double>              weightvar_lims,
 
@@ -1262,6 +1377,7 @@ void getKinBinnedAsym(
                 out // std::ostream                    &out              = std::cout
             );
             fit_dataset_name = rds_weighted_name;
+            fit_sb_dataset_name = sb_rds_weighted_name;
         }
 
         // Create signal region dataset for sideband subtraction
@@ -1322,6 +1438,7 @@ void getKinBinnedAsym(
                                 use_average_depol,
                                 use_extended_nll,
                                 use_binned_fit,
+                                fit_sb_dataset_name,
                                 out
                             );
 
@@ -1389,6 +1506,7 @@ void getKinBinnedAsym(
                                 use_average_depol,
                                 use_extended_nll,
                                 use_binned_fit,
+                                fit_sb_dataset_name,
                                 out
                             );
         }

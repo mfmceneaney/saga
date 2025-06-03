@@ -855,12 +855,14 @@ void getMassFitWeightedData(
 *
 * Apply a generic mass fit in each asymmetry fit variable bin using `fitMass()`
 * and weight the given dataset in the signal and background regions.
-* Only sideband events will be weighted and the weight \f$W_{sb}\f$ will be computed using the
+* Weights will be assigned using the
 * background fraction \f$\varepsilon\f$ taken from the integral of the background PDF
-* and the sum of the dataset within the signal region from the mass fit.  The weights are scaled from sideband to
-* signal region counts to ensure non-negative normalization:
+* and the sum of the dataset within the signal region from the mass fit like so:
 * @f[
-* W_{sb} = - \varepsilon \cdot \frac{N_{sg}}{N_{sb}}.
+* \begin{aligned}
+* W_{sg} = 1 - \varepsilon, \\
+* W_{bg} = \varepsilon.
+* \end{aligned}
 * @f]
 *
 * The naming scheme for the bins will be `<binid>__<asymfitvar_binid>`.
@@ -893,7 +895,8 @@ void getMassFitWeightedData(
 * @param bgcut Background invariant mass region cut
 * @param asymfitvars List of asymmetry fit variables names
 * @param asymfitvar_bincuts Map of unique bin id ints to bin variable cuts for bin
-* @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
+* @param rds_weighted_name Name of weighted signal region RooDataSet under which to import it into the RooWorkspace
+* @param sb_rds_weighted_name Name of weighted sideband region RooDataSet under which to import it into the RooWorkspace
 * @param weightvar Weight variable name
 * @param weightvar_lims Weight variable limits
 * @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend
@@ -936,6 +939,7 @@ void setWeightsFromMassFit(
         std::vector<std::string>          asymfitvars,
         std::map<int,std::string>         asymfitvar_bincuts,
         std::string                       rds_weighted_name,
+        std::string                       sb_rds_weighted_name,
         std::string                       weightvar,
         std::vector<double>               weightvar_lims,
         double                            massfit_lg_text_size     = 0.04, // fitMass() arguments
@@ -983,6 +987,10 @@ void setWeightsFromMassFit(
     // Get the signal region cut
     std::string sgcut = saga::util::addLimitCuts("",fitvars,massfit_sgregion_lims);
 
+    // Get signal and background frames
+    RNode frame_sg = frame.Filter(sgcut.c_str());
+    RNode frame_bg = frame.Filter(bgcut.c_str());
+
     // Loop bins and apply fits recording background fractions and errors
     std::map<int,std::vector<double>> weights_map;
     for (auto it = asymfitvar_bincuts.begin(); it != asymfitvar_bincuts.end(); ++it) {
@@ -996,10 +1004,6 @@ void setWeightsFromMassFit(
 
         // Get bin dataset
         RooDataSet *bin_ds_asymfitvar = (RooDataSet*)bin_ds->reduce(asymfitvar_bincut.c_str());
-
-        // Get the signal and sideband counts
-        int sg_count = (int)bin_ds_asymfitvar->sumEntries(sgcut.c_str());
-        int bg_count = (int)bin_ds_asymfitvar->sumEntries(bgcut.c_str());
 
         // Create full bin cut
         std::string bincut_full = Form("%s && %s", bincut.c_str(), binid_asymfitvars.c_str());
@@ -1045,16 +1049,31 @@ void setWeightsFromMassFit(
 
         // Compute the sideband weights
         double eps = massfit_result[9];//TODO: Maybe add an option to grab the desired background fraction
-        double sb_weight = - eps * sg_count / bg_count;
-        weights_map[id] = {1.0, sb_weight};
+        weights_map[id] = {1.0-eps, eps};
     }
 
-    // Set data set weights from the binned mass fits
+    // Set data set weights from the binned mass fits for the signal region
     getMassFitWeightedData(
         w,
         ds,
-        frame,
+        frame_sg,
         rds_weighted_name,
+        asymfitvar_bincuts,
+        sgcut,
+        bgcut,
+        weightvar,
+        weightvar_lims,
+        weights_map,
+        weights_default,
+        true
+    );
+
+    // Set data set weights from the binned mass fits for the sideband region
+    getMassFitWeightedData(
+        w,
+        ds,
+        frame_bg,
+        sb_rds_weighted_name,
         asymfitvar_bincuts,
         sgcut,
         bgcut,
