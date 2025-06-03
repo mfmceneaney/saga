@@ -504,8 +504,8 @@ std::vector<double> fitMass(
 
         // Plot invariant mass fit from RooFit
         RooPlot *mframe_1d = f[i]->frame(Title(Form("1D PDF fit in %s",f[i]->GetTitle())));
-        bin_ds->plotOn(mframe_1d);
         h->plotOn(mframe_1d, LineStyle(kDashed), LineColor(kBlack));
+        bin_ds->plotOn(mframe_1d);//NOTE: PDF Normalization correspond to the last data object plotted.
         model->plotOn(mframe_1d);
         model->plotOn(mframe_1d, Components(*sg), LineStyle(kDashed), LineColor(kRed));
         model->plotOn(mframe_1d, Components(*bg), LineStyle(kDashed), LineColor(kBlue));
