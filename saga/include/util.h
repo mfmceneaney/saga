@@ -51,83 +51,88 @@ T getYamlArg(
         // Load argument
         arg = node[argname].as<T>();
 
-        // Print argument
-        if (verbose) {
-
-            // Single value numeric
-            if constexpr (std::is_same<T, bool>::value || std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, double>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": " << arg << std::endl;
-            }
-            // Single value string
-            else if constexpr (std::is_same<T, std::string>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": " << arg.c_str() << std::endl;
-            }
-            // Vector numeric
-            else if constexpr (std::is_same<T, std::vector<bool>>::value || std::is_same<T, std::vector<int>>::value || std::is_same<T, std::vector<float>>::value || std::is_same<T, std::vector<double>>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": [ ";
-                for (int idx=0; idx<arg.size(); idx++) {
-                    if (idx!=arg.size()-1) { out << arg[idx] <<", "; }
-                    else { out << arg[idx]; }
-                }
-                out << " ]" << std::endl;
-            }
-            // Vector string
-            else if constexpr (std::is_same<T, std::vector<std::string>>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": [ ";
-                for (int idx=0; idx<arg.size(); idx++) {
-                    if (idx!=arg.size()-1) { out << arg[idx].c_str() <<", "; }
-                    else { out << arg[idx].c_str(); }
-                }
-                out << " ]" << std::endl;
-            }
-            // Vector vector numeric
-            else if constexpr (std::is_same<T, std::vector<std::vector<bool>>>::value || std::is_same<T, std::vector<std::vector<int>>>::value || std::is_same<T, std::vector<std::vector<float>>>::value || std::is_same<T, std::vector<std::vector<double>>>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": [ ";
-                for (int idx=0; idx<arg.size(); idx++) {
-                    out << "\n\t [ ";
-                    for (int idx2=0; idx2<arg[idx].size(); idx2++) {
-                        if (idx2!=arg[idx].size()-1) { out << arg[idx][idx2] <<", "; }
-                        else { out << arg[idx][idx2]; }
-                    }
-                    if (idx!=arg.size()-1) { out <<"],"; }
-                    else { out <<"]\n"; }
-                }
-                out << " ]" << std::endl;
-            }
-            // Vector vector string
-            else if constexpr (std::is_same<T, std::vector<std::vector<std::string>>>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": [ ";
-                for (int idx=0; idx<arg.size(); idx++) {
-                    out << "\n\t [ ";
-                    for (int idx2=0; idx2<arg[idx].size(); idx2++) {
-                        if (idx2!=arg[idx].size()-1) { out << arg[idx][idx2].c_str() <<", "; }
-                        else { out << arg[idx][idx2].c_str(); }
-                    }
-                    if (idx!=arg.size()-1) { out <<"],"; }
-                    else { out <<"]\n"; }
-                }
-                out << " ]" << std::endl;
-            }
-            // Map string numeric
-            else if constexpr (std::is_same<T, std::map<std::string,bool>>::value || std::is_same<T, std::map<std::string,int>>::value || std::is_same<T, std::map<std::string,float>>::value || std::is_same<T, std::map<std::string,double>>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": { ";
-                for (auto it = arg.begin(); it != arg.end(); ++it) {
-                    out << it->first<<" : "<<it->second<<", ";
-                }
-                out << " }" << std::endl;
-            }
-            // Map string string
-            else if constexpr (std::is_same<T, std::map<std::string,std::string>>::value) {
-                out << message_prefix.c_str() << argname.c_str() << ": { ";
-                for (auto it = arg.begin(); it != arg.end(); ++it) {
-                    out << it->first.c_str()<<" : "<<it->second.c_str()<<", ";
-                }
-                out << " }" << std::endl;
-            }
-            else { out << message_prefix.c_str() << argname.c_str() << ": STRING CONVERSION NOT IMPLEMENTED FOR ARGUMENT TYPE" << std::endl; }
-        } // if (verbose) {
-
     } // if (node[argname]) {
+
+    // Print argument
+    if (verbose) {
+
+        // First, set prefix
+        out << message_prefix.c_str();
+        if (!node[argname]) { out << "USE DEFAULT: "; }
+
+        // Single value numeric
+        if constexpr (std::is_same<T, bool>::value || std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, double>::value) {
+            out << argname.c_str() << ": " << arg << std::endl;
+        }
+        // Single value string
+        else if constexpr (std::is_same<T, std::string>::value) {
+            out << argname.c_str() << ": " << arg.c_str() << std::endl;
+        }
+        // Vector numeric
+        else if constexpr (std::is_same<T, std::vector<bool>>::value || std::is_same<T, std::vector<int>>::value || std::is_same<T, std::vector<float>>::value || std::is_same<T, std::vector<double>>::value) {
+            out << argname.c_str() << ": [ ";
+            for (int idx=0; idx<arg.size(); idx++) {
+                if (idx!=arg.size()-1) { out << arg[idx] <<", "; }
+                else { out << arg[idx]; }
+            }
+            out << " ]" << std::endl;
+        }
+        // Vector string
+        else if constexpr (std::is_same<T, std::vector<std::string>>::value) {
+            out << argname.c_str() << ": [ ";
+            for (int idx=0; idx<arg.size(); idx++) {
+                if (idx!=arg.size()-1) { out << arg[idx].c_str() <<", "; }
+                else { out << arg[idx].c_str(); }
+            }
+            out << " ]" << std::endl;
+        }
+        // Vector vector numeric
+        else if constexpr (std::is_same<T, std::vector<std::vector<bool>>>::value || std::is_same<T, std::vector<std::vector<int>>>::value || std::is_same<T, std::vector<std::vector<float>>>::value || std::is_same<T, std::vector<std::vector<double>>>::value) {
+            out << argname.c_str() << ": [ ";
+            for (int idx=0; idx<arg.size(); idx++) {
+                out << "\n\t [ ";
+                for (int idx2=0; idx2<arg[idx].size(); idx2++) {
+                    if (idx2!=arg[idx].size()-1) { out << arg[idx][idx2] <<", "; }
+                    else { out << arg[idx][idx2]; }
+                }
+                if (idx!=arg.size()-1) { out <<"],"; }
+                else { out <<"]\n"; }
+            }
+            out << " ]" << std::endl;
+        }
+        // Vector vector string
+        else if constexpr (std::is_same<T, std::vector<std::vector<std::string>>>::value) {
+            out << argname.c_str() << ": [ ";
+            for (int idx=0; idx<arg.size(); idx++) {
+                out << "\n\t [ ";
+                for (int idx2=0; idx2<arg[idx].size(); idx2++) {
+                    if (idx2!=arg[idx].size()-1) { out << arg[idx][idx2].c_str() <<", "; }
+                    else { out << arg[idx][idx2].c_str(); }
+                }
+                if (idx!=arg.size()-1) { out <<"],"; }
+                else { out <<"]\n"; }
+            }
+            out << " ]" << std::endl;
+        }
+        // Map string numeric
+        else if constexpr (std::is_same<T, std::map<std::string,bool>>::value || std::is_same<T, std::map<std::string,int>>::value || std::is_same<T, std::map<std::string,float>>::value || std::is_same<T, std::map<std::string,double>>::value) {
+            out << argname.c_str() << ": { ";
+            for (auto it = arg.begin(); it != arg.end(); ++it) {
+                out << it->first<<" : "<<it->second<<", ";
+            }
+            out << " }" << std::endl;
+        }
+        // Map string string
+        else if constexpr (std::is_same<T, std::map<std::string,std::string>>::value) {
+            out << argname.c_str() << ": { ";
+            for (auto it = arg.begin(); it != arg.end(); ++it) {
+                out << it->first.c_str()<<" : "<<it->second.c_str()<<", ";
+            }
+            out << " }" << std::endl;
+        }
+        else { out << argname.c_str() << ": STRING CONVERSION NOT IMPLEMENTED FOR ARGUMENT TYPE" << std::endl; }
+    } // if (verbose) {
+
     return arg;
 
 }
