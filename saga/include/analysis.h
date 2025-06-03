@@ -1078,25 +1078,9 @@ void getKinBinnedAsym(
             massfitvar_bins
         );
 
-        // Apply Lambda mass fit to FULL bin frame
-        // RooAbsData *rooDataSetResult = ws->data(dataset_name.c_str());
+        // Apply a generic mass fit to the FULL bin dataset
         std::vector<double> massfit_result;
-        if (massfit_formula_sg.size()>0 && massfit_formula_bg.size()>0 && !use_binned_sb_weights) {  //NOTE: A mass fit in each bin is needed for basic sideband subtraction and splots.
-            // epss = saga::signal::fitMass(
-            //         ws,
-            //         massfitvars,
-            //         rooDataSetResult,
-            //         sgYield_name,
-            //         bgYield_name,
-            //         binframe,
-            //         massfit_nbins_conv,
-            //         massfit_pdf_name,
-            //         massfit_sig_pdf_name,
-            //         massfit_sg_region_min,
-            //         massfit_sg_region_max,
-            //         1,//use_poly4_bg //NEWTODO: Add argument map for polynomial order
-            //         scheme_binid
-            //     );
+        if (massfit_pdf_name!="" && !use_binned_sb_weights) {  //NOTE: A mass fit in each bin is needed for basic sideband subtraction and splots.
 
             // Fit the mass spectrum
             std::vector<double> massfit_result = saga::signal::fitMass(
@@ -1493,7 +1477,7 @@ void getKinBinnedAsym(
         //TODO: Add sideband results to output for backward computations...
 
         // Optionally add mass fit outputs
-        // COLS: {integration values and errors in signal region},{background fraction values and errors},{chi2/ndf},{signal PDF parameterss and errors},{background PDF parameterss and errors}
+        // COLS: {integration values and errors in signal region},{background fraction values and errors},{chi2/ndf},{signal PDF parameters and errors},{background PDF parameters and errors}
         if (massfit_pdf_name!="") {
 
             // Add signal region integration values
