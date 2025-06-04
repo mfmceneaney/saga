@@ -126,7 +126,10 @@ use_splot: false
 massfit_sgcut: "mass_ppim>1.11 && mass_ppim<1.13"
 massfit_bgcut: "(mass_ppim>1.08 && mass_ppim<1.11) || (mass_ppim>1.15 && mass_ppim<1.18)"
 use_sb_subtraction: true
-use_binned_sb_weights: false
+use_binned_sb_bgfracs: false
+bgfracvar: "bgfracvar"
+bgfracvar_lims: [0.0,1.0]
+bgfrac_idx: 0 #NOTE: The index here refers to the formulation of the background fraction from `saga::signal::setBinnedBGFracs()`.
 asymfitvar_binschemes: #NOTE: Structure for asymmetry fit variable bin schemes is { binscheme_name: { binvar_name: [binlimits] } }  #NOTE: binscheme_names MUST match those in the binschemes argument!
   run:
     costhetaT:

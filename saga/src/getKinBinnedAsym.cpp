@@ -222,7 +222,10 @@ void execute(const YAML::Node& node) {
     std::string massfit_sgcut = saga::util::getYamlArg<std::string>(node, "massfit_sgcut", "", message_prefix, verbose, yamlargout);
     std::string massfit_bgcut = saga::util::getYamlArg<std::string>(node, "massfit_bgcut", "", message_prefix, verbose, yamlargout);
     bool use_sb_subtraction = saga::util::getYamlArg<bool>(node, "use_sb_subtraction", false, message_prefix, verbose, yamlargout);
-    bool use_binned_sb_weights = saga::util::getYamlArg<bool>(node, "use_binned_sb_weights", false, message_prefix, verbose, yamlargout);
+    bool use_binned_sb_bgfracs = saga::util::getYamlArg<bool>(node, "use_binned_sb_bgfracs", false, message_prefix, verbose, yamlargout);
+    std::string bgfracvar = saga::util::getYamlArg<std::string>(node, "bgfracvar", "", message_prefix, verbose, yamlargout);
+    std::vector<double> bgfracvar_lims = saga::util::getYamlArg<std::vector<double>>(node, "bgfracvar_lims", {}, message_prefix, verbose, yamlargout);
+    int bgfrac_idx = saga::util::getYamlArg<int>(node, "bgfrac_idx", 0, message_prefix, verbose, yamlargout);
 
     // ASYMFITVAR_BINSCHEMES
     std::map<std::string,std::map<int,std::string>> asymfitvar_bincuts_map;
@@ -504,7 +507,7 @@ void execute(const YAML::Node& node) {
 
         // Get asymmetry fit variables bin scheme
         std::map<int,std::string> asymfitvar_bincuts;
-        if (use_binned_sb_weights) {
+        if (use_binned_sb_bgfracs) {
             asymfitvar_bincuts = asymfitvar_bincuts_map[binscheme_name];
         }
 
@@ -598,8 +601,11 @@ void execute(const YAML::Node& node) {
             massfit_sgcut, // std::string                      massfit_sgcut,
             massfit_bgcut, // std::string                      massfit_bgcut,
             use_sb_subtraction, // bool                             use_sb_subtraction,
-            use_binned_sb_weights, // bool                             use_binned_sb_weights,
+            use_binned_sb_bgfracs, // bool                             use_binned_sb_bgfracs,
             asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
+            bgfracvar, // std::string                      bgfracvar,
+            bgfracvar_lims, // std::vector<double>              bgfracvar_lims,
+            bgfrac_idx, // int                              bgfrac_idx               = 0,
 
             // // Parameters passed to signal::fitMass()
             massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,

@@ -761,109 +761,92 @@ void applySPlot(
 }
 
 /**
-* @brief Weight a dataset bin by bin from a map of bin ids to weight vectors.
+* @brief Set the background fraction of a dataset bin by bin from a map of bin ids to background fraction values.
 *
-* Weight a dataset bin by bin from a map of unique integer bin identifiers to weight vectors.
-* The weights are created first from the RDataFrame since defining a conditional weight variable
-* for a RooDataSet is nigh impossible. Then, they are merged into your dataset and a new
-* weighted dataset is created and uploaded to the workspace.
+* Set the background fractions of a dataset bin by bin from a map of unique integer bin identifiers to vectors of background fraction values.
+* The background fractions are created first from the RDataFrame since defining a conditional variable
+* for a RooDataSet is nigh impossible. Then, they are merged into the existing dataset `rds` and a new
+* dataset containing the background fraction columns is created and uploaded to the workspace.
 *
 * @param w RooWorkspace in which to work
-* @param rds RooDataSet to weight
-* @param frame ROOT RDataframe from which to create weights
-* @param rds_weighted_name Name of weighted RooDataSet under which to import it into the RooWorkspace
+* @param rds RooDataSet to which to add the background fraction columns
+* @param frame ROOT RDataframe from which to define background fraction columns
+* @param rds_out_name Name of the new RooDataSet containing the background fraction columns to import into the RooWorkspace
 * @param bincuts Map of unique bin id ints to bin variable cuts for bin
-* @param sgcut Signal invariant mass region cut
-* @param bgcut Background invariant mass region cut
-* @param weightvar Weight variable name
-* @param weightvar_lims Weight variable limits
-* @param weights_map Map of unique integer bin identifiers to weight vectors
-* @param weights_default Weight variable default value for events outside provided cuts
-* @param use_raw_weights Option to use raw signal and background weights instead of interpreting first entry of weight vectors as the background fraction \f$\varepsilon\f$
+* @param bgfracvar Background fraction variable name
+* @param bgfracs_map Map of unique integer bin identifiers to background fraction values
+* @param bgfrac_idx Index of the background fraction of interest in the vector of background fraction values
+* @param bgfracs_default Weight variable default value for events outside provided cuts
 */
-void getMassFitWeightedData(
-    RooWorkspace                      *w,
-    RooAbsData                        *rds,
-    RNode                             frame,
-    std::string                       rds_weighted_name,
-    std::map<int,std::string>         bincuts,
-    std::string                       sgcut,
-    std::string                       bgcut,
-    std::string                       weightvar,
-    std::vector<double>               weightvar_lims,
-    std::map<int,std::vector<double>> weights_map,
-    double                            weights_default = 0.0,
-    bool                              use_raw_weights = false
+void getBinnedBGFractionsDataset(
+        RooWorkspace                      *w,
+        RooAbsData                        *rds,
+        RNode                             frame,
+        std::string                       rds_out_name,
+        std::map<int,std::string>         bincuts,
+        std::string                       bgfracvar,
+        std::map<int,std::vector<double>> bgfracs_map,
+        int                               bgfrac_idx      = 0,
+        double                            bgfracs_default = 0.0
     ) {
 
-    // Create the conditional weight variable formula
-    std::string weightvar_formula = "";
+    // Create the conditional bgfrac variable formula
+    std::string bgfracvar_formula = "";
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
 
         // Get bin id and cut
         int idx = it->first;
         std::string bincut = it->second;
 
-        // Get signal and background weights directly OR assuming `epss` contains the background fractions eps = N_BG / N_TOT in the massfit signal region
-        double sgweight, bgweight;
-        if (use_raw_weights) {
-            sgweight = weights_map[idx][0];
-            bgweight = weights_map[idx][1];
-        } else {
-            double eps = weights_map[idx][0];
-            sgweight = (eps != 0.0) ? 1.0/(1.0-eps) : 0.0;
-            bgweight = (eps != 0.0) ? -eps/(1.0-eps) : 0.0;
-        }
+        // Get background fraction by index
+        double bgfrac = bgfracs_map[idx][bgfrac_idx];
         
-        // Add to the weight variable formula
-        if (weightvar_formula.size()==0) {
-            weightvar_formula = Form("if (%s && %s) return %.8f; else if (%s && %s) return %.8f;",bincut.c_str(),sgcut.c_str(),sgweight,bincut.c_str(),bgcut.c_str(),bgweight);
+        // Add to the background fraction variable formula
+        if (bgfracvar_formula.size()==0) {
+            bgfracvar_formula = Form("if (%s) return %.8f;",bincut.c_str(),bgfrac);
         } else {
-            std::string bin_condition = Form("else if (%s && %s) return %.8f; else if (%s && %s) return %.8f;",bincut.c_str(),sgcut.c_str(),sgweight,bincut.c_str(),bgcut.c_str(),bgweight);
-            weightvar_formula = Form("%s %s",weightvar_formula.c_str(),bin_condition.c_str());
+            std::string bin_condition = Form("else if (%s) return %.8f;",bincut.c_str(),bgfrac);
+            bgfracvar_formula = Form("%s %s",bgfracvar_formula.c_str(),bin_condition.c_str());
         }
     }
 
-    // Set the default weight condition
-    weightvar_formula = Form("%s else return %.8f;",weightvar_formula.c_str(),weights_default);
+    // Set the default background fraction condition
+    bgfracvar_formula = Form("%s else return %.8f;",bgfracvar_formula.c_str(),bgfracs_default);
 
-    // Define weight in dataframe
-    auto frame_weighted = frame.Define(weightvar.c_str(),weightvar_formula.c_str());
+    // Define background fraction in dataframe
+    auto frame_bgfracs = frame.Define(bgfracvar.c_str(),bgfracvar_formula.c_str());
 
-    // Create weights dataset from dataframe
-    if (weightvar_lims.size()!=2) weightvar_lims = {-9999.,9999.};
-    RooRealVar wv(weightvar.c_str(),weightvar.c_str(),weightvar_lims[0],weightvar_lims[1]);
-    ROOT::RDF::RResultPtr<RooDataSet> rds_weights = frame_weighted.Book<double>(
-                RooDataSetHelper(Form("%s_weights",rds->GetName()),"Data Set Weights",RooArgSet(wv)),
-                {weightvar.c_str()}
+    // Create background fraction dataset from dataframe
+    RooRealVar * bgf = w->var(bgfracvar.c_str());
+    ROOT::RDF::RResultPtr<RooDataSet> rds_bgfracs = frame_bgfracs.Book<double>(
+                RooDataSetHelper(Form("%s_bgfracs",rds->GetName()),"Data Set",RooArgSet(*bgf)),
+                {bgfracvar.c_str()}
             );
 
-    // Merge dataset with weights
-    static_cast<RooDataSet&>(*rds).merge(&static_cast<RooDataSet&>(*rds_weights));
+    // Merge dataset with bgfracs
+    static_cast<RooDataSet&>(*rds).merge(&static_cast<RooDataSet&>(*rds_bgfracs));
 
-    // Create new data set with weights variable
+    // Create new data set with bgfracs variable //NOTE: NOT SURE IF THIS IS NEEDED OR UPDATED THE POINTER IS SUFFICIENT...
     auto& data = static_cast<RooDataSet&>(*rds);
-    RooDataSet rds_weighted{rds_weighted_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, weightvar.c_str()};
+    RooDataSet _rds_bgfracs{rds_out_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, ""}; //NOTE: DO NOT WEIGHT THE DATASET.  LEAVE WEIGHT_VAR_NAME == "".
 
-    // Import weighted dataset into workspace
-    w->import(rds_weighted);
+    // Import dataset with background fraction columns into workspace
+    w->import(_rds_bgfracs);
 
-} // void getMassFitWeightedData()
+} // void getBinnedBGFractionsDataset()
 
 /**
-* @brief Apply a generic mass fit and weight a dataset bin by bin.
+* @brief Apply a generic mass fit and set the background fraction for a dataset bin by bin.
 *
 * Apply a generic mass fit in each asymmetry fit variable bin using `fitMass()`
-* and weight the given dataset in the signal and background regions.
-* Weights will be assigned using the
-* background fraction \f$\varepsilon\f$ taken from the integral of the background PDF
-* and the sum of the dataset within the signal region from the mass fit like so:
-* @f[
-* \begin{aligned}
-* W_{sg} = 1 - \varepsilon, \\
-* W_{bg} = \varepsilon.
-* \end{aligned}
-* @f]
+* and set the background fraction column for the given dataset, which should only contain events from either the signal or sideband region.
+* Background fractions \f$\varepsilon\f$ will be taken from one of three choices specified by index:
+*
+* - `0`: Background fraction \f$\varepsilon_{1} = \frac{N_{BG}^{PDF}}{N^{DS}}\f$ and error
+*
+* - `1`: Background fraction \f$\varepsilon_{2} = 1 - \frac{N_{SG}^{PDF}}{N^{DS}}\f$ and error
+*
+* - `2`: Background fraction \f$\varepsilon_{3} = 1 - \frac{N_{SG}^{PDF}}{N^{PDF}}\f$ and error
 *
 * The naming scheme for the bins will be `<binid>__<asymfitvar_binid>`.
 *
@@ -873,7 +856,7 @@ void getMassFitWeightedData(
 * @param bincut Kinematic variable cut for bin
 * @param binvars List of kinematic binning variables
 * @param fitvars List of mass fit variables
-* @param yamlfile Map of bin ids to paths of YAML files specifying the remaining mass fit arguments
+* @param yamlfile_map Map of bin ids to paths of YAML files specifying the remaining mass fit arguments
 * @param massfit_pdf_name Base name of the combined signal and background pdf.  Note, the actual PDF name will be: `<massfit_pdf_name>_<binid>`.
 * @param massfit_formula_sg The signal PDF formula in ROOT TFormula format
 * @param massfit_formula_bg The background PDF formula in ROOT TFormula format
@@ -891,14 +874,14 @@ void getMassFitWeightedData(
 * @param massfit_parunits_bg List of background PDF parameter unit titles
 * @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
 * @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
-* @param frame ROOT RDataframe in which to define the weight variable
+* @param frame ROOT RDataframe in which to define the background fraction variable
 * @param bgcut Background invariant mass region cut
 * @param asymfitvars List of asymmetry fit variables names
 * @param asymfitvar_bincuts Map of unique bin id ints to bin variable cuts for bin
-* @param rds_weighted_name Name of weighted signal region RooDataSet under which to import it into the RooWorkspace
-* @param sb_rds_weighted_name Name of weighted sideband region RooDataSet under which to import it into the RooWorkspace
-* @param weightvar Weight variable name
-* @param weightvar_lims Weight variable limits
+* @param rds_out_name Name of signal region RooDataSet under which to import it into the RooWorkspace
+* @param sb_rds_out_name Name of sideband region RooDataSet under which to import it into the RooWorkspace
+* @param bgfracvar Background fraction variable name
+* @param bgfracvar_lims Background fraction variable limits
 * @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend
 * @param massfit_lg_text_size Size of TLegend text
 * @param massfit_lg_margin Margin of TLegend
@@ -906,10 +889,11 @@ void getMassFitWeightedData(
 * @param massfit_use_sumw2error Option to use `RooFit::SumW2Error(true)` option when fitting to dataset which is necessary if using a weighted dataset
 * @param massfit_use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param massfit_use_binned_fit Option to use a binned fit to the data
-* @param weights_default Weight variable default value for events outside provided cuts
+* @param bgfrac_idx Index of the background fraction of interest from the available choices
+* @param bgfracs_default Weight variable default value for events outside provided cuts
 * @param out Output stream
 */
-void setWeightsFromMassFit(
+void setBinnedBGFractions(
         RooWorkspace                     *w, // fitMass() arguments
         std::string                       dataset_name,
         std::string                       binid,
@@ -938,10 +922,10 @@ void setWeightsFromMassFit(
         std::string                       bgcut, 
         std::vector<std::string>          asymfitvars,
         std::map<int,std::string>         asymfitvar_bincuts,
-        std::string                       rds_weighted_name,
-        std::string                       sb_rds_weighted_name,
-        std::string                       weightvar,
-        std::vector<double>               weightvar_lims,
+        std::string                       rds_out_name,
+        std::string                       sb_rds_out_name,
+        std::string                       bgfracvar,
+        std::vector<double>               bgfracvar_lims           = {0., 1.0},
         double                            massfit_lg_text_size     = 0.04, // fitMass() arguments
         double                            massfit_lg_margin        = 0.1,
         int                               massfit_lg_ncols         = 1,
@@ -949,7 +933,8 @@ void setWeightsFromMassFit(
         bool                              massfit_use_sumw2error   = false,
         bool                              massfit_use_extended_nll = true,
         bool                              massfit_use_binned_fit   = false,
-        double                            weights_default          = 0.0, // arguments for this method
+        int                               bgfrac_idx               = 0,
+        double                            bgfracs_default          = 0.0, // arguments for this method
         std::ostream                     &out                      = std::cout
     ) {
 
@@ -992,7 +977,7 @@ void setWeightsFromMassFit(
     RNode frame_bg = frame.Filter(bgcut.c_str());
 
     // Loop bins and apply fits recording background fractions and errors
-    std::map<int,std::vector<double>> weights_map;
+    std::map<int,std::vector<double>> bgfracs_map;
     for (auto it = asymfitvar_bincuts.begin(); it != asymfitvar_bincuts.end(); ++it) {
 
         // Get bin id and cut
@@ -1047,44 +1032,44 @@ void setWeightsFromMassFit(
                 out // std::ostream                    &out              = std::cout
         );
 
-        // Compute the sideband weights
-        double eps = massfit_result[9];//TODO: Maybe add an option to grab the desired background fraction
-        weights_map[id] = {1.0-eps, eps};
+        // Compute the background fractions
+        double eps1 = massfit_result[9];
+        double eps2 = massfit_result[11];
+        double eps3 = massfit_result[13];
+        bgfracs_map[id] = {eps1, eps2, eps3};
     }
 
-    // Set data set weights from the binned mass fits for the signal region
-    getMassFitWeightedData(
+    // Create and import background fraction variable so that it is visible to both datasets
+    RooRealVar *bgf = new RooRealVar(bgfracvar.c_str(),bgfracvar.c_str(),bgfracvar_lims[0],bgfracvar_lims[1]);
+    w->import(*bgf);
+
+    // Set data set background fractions from the binned mass fits for the signal region
+    getBinnedBGFractionsDataset(
         w,
         ds,
         frame_sg,
-        rds_weighted_name,
+        rds_out_name,
         asymfitvar_bincuts,
-        sgcut,
-        bgcut,
-        weightvar,
-        weightvar_lims,
-        weights_map,
-        weights_default,
-        true
+        bgfracvar,
+        bgfracs_map,
+        bgfrac_idx,
+        bgfracs_default
     );
 
-    // Set data set weights from the binned mass fits for the sideband region
-    getMassFitWeightedData(
+    // Set data set background fractions from the binned mass fits for the sideband region
+    getBinnedBGFractionsDataset(
         w,
         ds,
         frame_bg,
-        sb_rds_weighted_name,
+        sb_rds_out_name,
         asymfitvar_bincuts,
-        sgcut,
-        bgcut,
-        weightvar,
-        weightvar_lims,
-        weights_map,
-        weights_default,
-        true
+        bgfracvar,
+        bgfracs_map,
+        bgfrac_idx,
+        bgfracs_default
     );
 
-} // void setWeightsFromMassFit(
+} // void setBinnedBGFractions(
 
 } // namespace signal {
 

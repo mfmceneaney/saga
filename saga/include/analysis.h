@@ -482,6 +482,50 @@ std::string getSimGenAsymPdf(
 * The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
 *
+* In the case that a sideband dataset is supplied via `sb_dataset_name`, the initial dataset (`dataset_name`) is taken to be the signal region dataset.
+* Then, a background PDF \f$A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d})\f$ is created identically to the signal PDF \f$A_{SG}(\vec{x}, \vec{a}_{SG}, \vec{d})\f$.
+* The datasets should be created from `saga::signal::setBinnedBGFractions()` so that
+* the background fraction variable \f$\varepsilon\f$ is already be loaded in the workspace and present in the datasets.
+* A simultaneous PDF will be constructed over the combined signal region (\f$SG\f$) and sideband region (\f$SB\f$) datasets with the form:
+* @f[
+* PDF(\vec{x}, \vec{a}, \vec{d}) = 
+* 1 + \bigg{\{}
+* \begin{array}
+* e \varepsilon(\vec{x}) \cdot A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d}) + (1 - \varepsilon(\vec{x})) \cdot A_{SG}(\vec{x}, \vec{a}_{SG}, \vec{d}), & \text{ } \vec{x} \in SG \\
+* A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d}), & \text{ } \vec{x} \in SB \\
+* \end{array}.
+@f]
+*
+* The returned vector will have the following entries:
+*
+* - Bin count
+*
+* - For each bin variable:
+*
+*   - Bin variable mean value
+*
+*   - Bin variable standard deviation
+*
+* - For each depolarization variable:
+*
+*   - Depolarization variable mean value
+*
+*   - Depolarization variable standard deviation
+*
+* - For each asymmetry fit parameter:
+*
+*   - Asymmetry fit parameter mean value
+*
+*   - Asymmetry fit parameter error
+*
+* The following entries will be appended if using sideband subtraction with binned background fractions:
+*
+* - For each background asymmetry fit parameter:
+*
+*   - Asymmetry fit parameter mean value
+*
+*   - Asymmetry fit parameter error
+*
 * @param w RooWorkspace in which to work
 * @param dataset_name Dataset name
 * @param bpol Luminosity averaged beam polarization
@@ -506,6 +550,7 @@ std::string getSimGenAsymPdf(
 * @param use_extended_nll Option to use an extended Negative Log Likelihood function for minimization
 * @param use_binned_fit Option to use a binned fit to the data
 * @param sb_dataset_name Name of the sideband dataset to use for the simultaneous fit of the signal + background and background PDFs
+* @param bgfracvar Name of binned background fraction variable passed to `saga::signal::setBinnedBGFractions()`
 * @param out Output stream
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
@@ -535,6 +580,7 @@ std::vector<double> fitAsym(
         bool use_extended_nll            = false,
         bool use_binned_fit              = false,
         std::string sb_dataset_name      = "", //NOTE: If this is non-empty, a simultaneous fit of sg+bg and bg PDFs will be applied to the signal and sideband datasets respectively.
+        std::string bgfracvar            = "",
         std::ostream &out                = std::cout
     ) {
 
@@ -558,30 +604,6 @@ std::vector<double> fitAsym(
 
     // Apply bin cuts
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
-
-    // Optionally load sideband dataset from workspace and apply bin cuts
-    RooDataSet *ds_sb;
-    RooDataSet *bin_ds_sb;
-    RooCategory *region;
-    RooRealVar *weightvar;
-    if (sb_dataset_name!="") {
-
-        // Load weight variable from workspace
-        weightvar = w->var("weight");
-
-        // Initialize region category
-        region = new RooCategory("region", "region");
-        region->defineType("signal");
-        region->defineType("sideband");
-
-        // Load sideband dataset and apply bin cut
-        ds_sb = (RooDataSet*)w->data(sb_dataset_name.c_str());
-        bin_ds_sb = (RooDataSet*)ds_sb->reduce(bincut.c_str());
-
-        // Construct combined dataset
-        bin_ds = new RooDataSet(bin_ds->GetName(), bin_ds->GetTitle(), *bin_ds->get(), Index(*region),
-                            Import({{"signal", (RooDataSet*)bin_ds->get()}, {"sideband", (RooDataSet*)bin_ds_sb->get()}}));
-    }
 
     // Get count
     auto count = (int)bin_ds->sumEntries();
@@ -638,12 +660,36 @@ std::vector<double> fitAsym(
         }
     }
 
+    // Optionally load sideband dataset from workspace and apply bin cuts //NOTE: DO THIS AFTER GETING THE COUNT, BINVARS, AND DEPOLVARS VALUES AND ERRORS.
+    RooDataSet *ds_sb;
+    RooDataSet *bin_ds_sb;
+    RooCategory *region;
+    RooRealVar *bgf;
+    if (sb_dataset_name!="") {
+
+        // Load bgfrac variable from workspace
+        bgf = w->var(bgfracvar.c_str());
+
+        // Initialize region category
+        region = new RooCategory("region", "region");
+        region->defineType("signal");
+        region->defineType("sideband");
+
+        // Load sideband dataset and apply bin cut
+        ds_sb = (RooDataSet*)w->data(sb_dataset_name.c_str());
+        bin_ds_sb = (RooDataSet*)ds_sb->reduce(bincut.c_str());
+
+        // Construct combined dataset indexed on signal and background
+        bin_ds = new RooDataSet(bin_ds->GetName(), bin_ds->GetTitle(), *bin_ds->get(), Index(*region),
+                            Import({{"signal", (RooDataSet*)bin_ds->get()}, {"sideband", (RooDataSet*)bin_ds_sb->get()}}));
+    }
+
     // Create asymmetry amplitude parameters for the background pdf
     std::vector<std::string> anames_sb;
     RooRealVar *a_sb[nparams];
     if (sb_dataset_name!="") {
         for (int aa=0; aa<nparams; aa++) {
-            std::string aname = Form("a_sb%d",aa);
+            std::string aname = Form("a_bg%d",aa);
             anames_sb.push_back(aname);
             a_sb[aa] = new RooRealVar(anames_sb[aa].c_str(),anames_sb[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
         }
@@ -720,7 +766,7 @@ std::vector<double> fitAsym(
     RooAbsPdf *model;
     RooAbsPdf *model_sg;
     RooAbsPdf *model_bg;
-    RooAbsPdf *model_sg_plus_bg;
+    RooAbsPdf *model_bg_plus_sg;
 
     // Load the signal PDF
     if (sb_dataset_name=="") {
@@ -733,13 +779,14 @@ std::vector<double> fitAsym(
         model_sg = w->pdf(model_name.c_str());
         model_bg = w->pdf(model_name_bg.c_str());
 
-        // Add signal and background PDFs using the weight variable as the coefficient of the background
-        model_sg_plus_bg = new RooAddPdf(Form("%s_plus_bg", model_name.c_str()), "", RooArgList(*model_sg, *model_bg), RooArgList(*weightvar));
+        // Add signal and background PDFs using the bgfrac variable as the coefficient of the background
+        std::string model_bg_plus_sg_name = Form("%s_plus_bg", model_name.c_str());
+        model_bg_plus_sg = new RooAddPdf(model_bg_plus_sg_name.c_str(), model_bg_plus_sg_name.c_str(), RooArgList(*model_bg, *model_sg), RooArgList(*bgf)); //NOTE: ORDER IS IMPORTANT HERE!
 
         // Construct a simultaneous PDF for the signal and background regions
-        model = new RooSimultaneous(Form("%s_weighted_sb",model_name.c_str()), "simultaneous pdf",
+        model = new RooSimultaneous(Form("%s_sb_bgfracs",model_name.c_str()), "simultaneous pdf",
                 {
-                    {"signal", model_sg_plus_bg},
+                    {"signal", model_bg_plus_sg},
                     {"sideband", model_bg}
                 },
                 *region
@@ -806,6 +853,16 @@ std::vector<double> fitAsym(
         paramerrs.push_back((double)a[aa]->getError());
     }
 
+    // Get fit parameter values and errors for background values
+    std::vector<double> params_bg;
+    std::vector<double> paramerrs_bg;
+    if (sb_dataset_name!="") {
+        for (int aa=0; aa<nparams; aa++) {
+            params_bg.push_back((double)a_sb[aa]->getVal());
+            paramerrs_bg.push_back((double)a_sb[aa]->getError());
+        }
+    }
+
     // Print out fit info
     out << "--------------------------------------------------" << std::endl;
     out << " "<<method_name.c_str()<<"():" << std::endl;
@@ -854,6 +911,14 @@ std::vector<double> fitAsym(
         if (idx<nparams-1) { out << " , "; }
     }
     out << "]" << std::endl;
+    if (sb_dataset_name!="") {
+        out << " params_bg = [" ;
+        for (int idx=0; idx<nparams; idx++) {
+            out << params_bg[idx] << "±" << paramerrs_bg[idx];
+            if (idx<nparams-1) { out << " , "; }
+        }
+        out << "]" << std::endl;
+    }
     // if (use_extended_nll) {
     //     out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
     //     out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
@@ -861,7 +926,7 @@ std::vector<double> fitAsym(
     out << "--------------------------------------------------" << std::endl;
 
     // Fill return array
-    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams
+    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams(+2*nparams)
     arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
         arr.push_back(binvarmeans[idx]);
@@ -874,6 +939,12 @@ std::vector<double> fitAsym(
     for (int idx=0; idx<nparams; idx++) {
         arr.push_back(params[idx]);
         arr.push_back(paramerrs[idx]);
+    }
+    if (sb_dataset_name!="") {
+        for (int idx=0; idx<nparams; idx++) {
+            arr.push_back(params_bg[idx]);
+            arr.push_back(paramerrs_bg[idx]);
+        }
     }
 
     return arr;
@@ -1025,8 +1096,11 @@ std::vector<double> fitAsym(
 * @param massfit_sgcut Signal region cut for sideband subtraction background correction.  Note, this will automatically be formed from `massfit_sgregion_lims` if not specified.
 * @param massfit_bgcut Background region cut for sideband subtraction background correction
 * @param use_sb_subtraction Option to use sideband subtraction for background correction
-* @param use_binned_sb_weights Option to use weights from invariant mass fits binned in the asymmetry fit variable for background correction
+* @param use_binned_sb_bgfracs Option to use background fractions from invariant mass fits binned in the asymmetry fit variable for background correction
 * @param asymfitvar_bincuts Map of unique bin id ints to bin variable cuts for asymmetry fit variable bins
+* @param bgfracvar Name of binned background fraction variable
+* @param bgfracvar_lims List of binned background fraction variable minimum and maximum bounds
+* @param bgfrac_idx Index to select which formulation to use for the background fraction in `saga::signal::setBinnedBGFractions()`
 
 * @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend for the signal and background mass fit
 * @param massfit_lg_text_size Size of TLegend text for the signal and background mass fit
@@ -1113,8 +1187,11 @@ void getKinBinnedAsym(
         std::string                      massfit_sgcut,
         std::string                      massfit_bgcut,
         bool                             use_sb_subtraction,
-        bool                             use_binned_sb_weights,
+        bool                             use_binned_sb_bgfracs,
         std::map<int,std::string>        asymfitvar_bincuts,
+        std::string                      bgfracvar,
+        std::vector<double>              bgfracvar_lims,
+        int                              bgfrac_idx               = 0,
 
         // Parameters passed to signal::fitMass()
         double                           massfit_lg_text_size     = 0.04,
@@ -1130,9 +1207,9 @@ void getKinBinnedAsym(
     ) {
 
     // Check arguments
-    if (binvars.size()<1) {std::cerr<<" *** ERROR *** Number of bin variables is <1.  Exiting...\n"; return;}
-    if (depolvars.size()!=asymfitvars.size()) {std::cerr<<" *** WARNING *** depolvars.size() does not match the number of parameters injected."<<std::endl;}
-    if (use_sb_subtraction && use_splot) {std::cerr<<" *** ERROR *** Cannot simultaneously use sideband subtraction and sPlot.  Exiting...\n"; return;}
+    if (binvars.size()<1) {std::cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
+    if (depolvars.size()!=asymfitvars.size()) {std::cerr<<"WARNING: depolvars.size() does not match the number of parameters injected."<<std::endl;}
+    if ((use_sb_subtraction && use_binned_sb_bgfracs) || (use_sb_subtraction && use_splot) || (use_binned_sb_bgfracs && use_splot)) {std::cerr<<"ERROR: Sideband subtraction, sideband subtraction with binned background fractions, and the sPlot method are all mutually exclusive.  Exiting...\n"; return;}
 
     // Starting message
     out << "----------------------- getKinBinnedAsym ----------------------\n";
@@ -1147,7 +1224,8 @@ void getKinBinnedAsym(
     auto frame_sg = (massfit_sgcut.size()>0) ? frame.Filter(massfit_sgcut.c_str()) : frame;
     auto frame_sb = (massfit_bgcut.size()>0) ? frame.Filter(massfit_bgcut.c_str()) : frame;
 
-    bool single_massfit = (massfit_pdf_name!="" && !use_binned_sb_weights);
+    // Set condition for single mass fit
+    bool single_massfit = (massfit_pdf_name!="" && !use_binned_sb_bgfracs && (use_splot || use_sb_subtraction));
 
     // Open output CSV
     std::string csvpath = Form("%s.csv",scheme_name.c_str());
@@ -1170,8 +1248,18 @@ void getKinBinnedAsym(
     for (int aa=0; aa<asymfitpar_inits.size(); aa++) {
         csvout << Form("a%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
         csvout << Form("a%d",aa) << "_err";
-        if (aa<asymfitpar_inits.size()-1 || single_massfit) csvout << csv_separator.c_str();
+        if (aa<asymfitpar_inits.size()-1 || single_massfit || use_binned_sb_bgfracs) csvout << csv_separator.c_str();
         else csvout << std::endl;//NOTE: IMPORTANT!
+    }
+
+    // Optionally add background asymmetries
+    if (use_binned_sb_bgfracs || use_sb_subtraction) {
+        for (int aa=0; aa<asymfitpar_inits.size(); aa++) {
+            csvout << Form("a_bg%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
+            csvout << Form("a_bg%d",aa) << "_err";
+            if (aa<asymfitpar_inits.size()-1 || single_massfit) csvout << csv_separator.c_str();
+            else csvout << std::endl;//NOTE: IMPORTANT!
+        }
     }
 
     // Optionally add mass fit outputs
@@ -1326,11 +1414,11 @@ void getKinBinnedAsym(
         }
 
         // Weight dataset from binned mass fits
-        std::string fit_sb_dataset_name = ""; // -> Use this for sideband weights
-        if (use_binned_sb_weights) {
-            std::string rds_weighted_name = (std::string)Form("%s_sg",dataset_name.c_str());
-            std::string sb_rds_weighted_name = (std::string)Form("%s_sb",dataset_name.c_str());
-            saga::signal::setWeightsFromMassFit(
+        std::string fit_sb_dataset_name = ""; // -> Use this for binned sideband backgrounds
+        if (use_binned_sb_bgfracs) {
+            std::string rds_out_name = (std::string)Form("%s_sg",dataset_name.c_str());
+            std::string sb_rds_out_name = (std::string)Form("%s_sb",dataset_name.c_str());
+            saga::signal::setBinnedBGFractions(
                 ws, // RooWorkspace                    *w,
                 dataset_name, // std::string                      dataset_name,
                 scheme_binid, // std::string                      binid,
@@ -1360,10 +1448,10 @@ void getKinBinnedAsym(
                 massfit_bgcut, // std::string                      bgcut, 
                 asymfitvars, // std::vector<std::string>         asymfitvars,
                 asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
-                rds_weighted_name, // std::string                      rds_weighted_name,
-                sb_rds_weighted_name, // std::string                   sb_rds_weighted_name,
-                "binned_sb_w", // std::string                      weightvar,
-                {-999.,999.}, // std::vector<double>              weightvar_lims,
+                rds_out_name, // std::string                      rds_out_name,
+                sb_rds_out_name, // std::string                   sb_rds_out_name,
+                bgfracvar, // std::string                      bgfracvar,
+                bgfracvar_lims, // std::vector<double>              bgfracvar_lims,
 
                 massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
                 massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
@@ -1373,11 +1461,12 @@ void getKinBinnedAsym(
                 massfit_use_extended_nll, // bool                             massfit_use_extended_nll = true,
                 massfit_use_binned_fit, // bool                             massfit_use_binned_fit   = false,
 
-                0.0, // double                           weights_default  = 0.0 // arguments for this method
+                bgfrac_idx, // int                               bgfrac_idx               = 0,
+                0.0, // double                           bgfracs_default  = 0.0 // arguments for this method
                 out // std::ostream                    &out              = std::cout
             );
-            fit_dataset_name = rds_weighted_name;
-            fit_sb_dataset_name = sb_rds_weighted_name;
+            fit_dataset_name = rds_out_name;
+            fit_sb_dataset_name = sb_rds_out_name;
         }
 
         // Create signal region dataset for sideband subtraction
@@ -1439,6 +1528,7 @@ void getKinBinnedAsym(
                                 use_extended_nll,
                                 use_binned_fit,
                                 fit_sb_dataset_name,
+                                bgfracvar,
                                 out
                             );
 
@@ -1507,6 +1597,7 @@ void getKinBinnedAsym(
                                 use_extended_nll,
                                 use_binned_fit,
                                 fit_sb_dataset_name,
+                                bgfracvar,
                                 out
                             );
         }
@@ -1541,6 +1632,12 @@ void getKinBinnedAsym(
         for (int idx=0; idx<nparams; idx++) {
             ys[idx] = asymfit_result[k++];
             eys[idx] = asymfit_result[k++];
+        }
+        if (use_binned_sb_bgfracs) {
+            for (int idx=0; idx<nparams; idx++) {
+                ys_sb[idx] = asymfit_result[k++];
+                eys_sb[idx] = asymfit_result[k++];
+            }
         }
 
 
@@ -1643,7 +1740,7 @@ void getKinBinnedAsym(
                 out << " eys["<< idx <<"]            = " << eys[idx] << "\n";
                 out << " depols["<< idx <<"]         = " << depols[idx] << "\n";
                 out << " edepols["<< idx <<"]        = " << edepols[idx] << "\n";
-            } if (use_sb_subtraction) {
+            } if (use_sb_subtraction || use_binned_sb_bgfracs) {
                 out << " ys_sb["<< idx <<"]       = " << ys_sb[idx] << "\n";
                 out << " eys_sb["<< idx <<"]      = " << eys_sb[idx] << "\n";
             }
@@ -1653,7 +1750,7 @@ void getKinBinnedAsym(
         out << "---------------------------\n";
 
         // Write out a row of data to csv
-        // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr}
+        // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr}(,{bg_asymfitvar,bg_asymfitvarerr})
         csvout << bin_id << csv_separator.c_str();
         csvout << count << csv_separator.c_str();
         for (int bb=0; bb<binvars.size(); bb++) {
@@ -1667,11 +1764,19 @@ void getKinBinnedAsym(
         for (int aa=0; aa<nparams; aa++) {
             csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
             csvout << eys_corrected[aa];
-            if (aa<nparams-1 || single_massfit) csvout << csv_separator.c_str();
+            if (aa<nparams-1 || single_massfit || use_binned_sb_bgfracs) csvout << csv_separator.c_str();
             else csvout << std::endl;//NOTE: IMPORTANT!
         }
 
-        //TODO: Add sideband results to output for backward computations...
+        // Optionally add background asymmetries
+        if (use_binned_sb_bgfracs || use_sb_subtraction) {
+            for (int aa=0; aa<asymfitpar_inits.size(); aa++) {
+                csvout << ys_sb[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
+                csvout << eys_sb[aa];
+                if (aa<nparams-1 || single_massfit) csvout << csv_separator.c_str();
+                else csvout << std::endl;//NOTE: IMPORTANT!
+            }
+        }
 
         // Optionally add mass fit outputs
         // COLS: {integration values and errors in signal region},{background fraction values and errors},{chi2/ndf},{signal PDF parameters and errors},{background PDF parameters and errors}
