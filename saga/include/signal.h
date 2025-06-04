@@ -991,7 +991,7 @@ void setBinnedBGFractions(
         RooDataSet *bin_ds_asymfitvar = (RooDataSet*)bin_ds->reduce(asymfitvar_bincut.c_str());
 
         // Create full bin cut
-        std::string bincut_full = Form("%s && %s", bincut.c_str(), binid_asymfitvars.c_str());
+        std::string bincut_full = Form("%s && %s", bincut.c_str(), asymfitvar_bincut.c_str());
 
         // Set yaml path for mass fit parameters
         std::string yamlfile = yamlfile_map[binid_asymfitvars]; //NOTE: This should just return an empty string if not found which will use the default parameters
