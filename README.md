@@ -28,8 +28,6 @@ make
 ```
 You should now have several executables in your `build` directory.
 
-TODO: Add directions for adding dependency to another CMake project.
-
 ### Python3 Modules
 
 For now just include these lines in your python code:
@@ -89,35 +87,35 @@ $M[i,j]=\frac{N[\text{Generated in bin }i\text{ and reconstructed in bin }j]}{N[
 Use the `getBinMigration` executable to compute bin migration fractions and save the results to a CSV file.
 
 ### Invariant Mass Signal + Background Fits
-Some physics channels isolate an asymmetry produced from a particle, such as a $\Lambda$ or $\pi^{0}$, which decays before hitting the detector array.  Since we only detect the final state particles one must examine the invariant mass spectrum of the 4-vector sum of the final state particles in order to isolate the contribution of the desired decay channel.  However, since a priori there is no way to know which particles we detect come from the same parent particle there will always be an irreducible combinatoric background under the signal distribution.
+Some physics channels isolate an asymmetry produced from a particle, such as a $\Lambda$ or $\pi^{0}$, which decays before hitting the detector array.  Since we only detect the final state particles, one must examine the invariant mass spectrum of the 4-vector sum of the final state particles in order to isolate the contribution of the desired decay channel.  However, since _a priori_ there is no way to know which particles we detect come from the same parent particle, there will always be an irreducible combinatoric background under the signal distribution.
 
-Only a $\Lambda$ invariant mass signal and background fit tuned specifically for CLAS12 RGA Fall 2018 Data is provided.  However, if you require a different signal and background fit the provided `analysis::applyLambdaMassFit()` method should be straightforward to expand upon.
+The method `saga::signal::fitMass()` allows one to apply a generic signal + background fit to an invariant mass spectrum in one or more variables.  Starting parameters and even PDF formulas for both signal and background may be loaded in a bin dependent way by specifying the `massfit_yamlfile_map` argument mapping bin scheme ids from `saga::analysis::getKinBinnedAsym()` to paths for YAML files containing the appropriate arguments to be loaded by `saga::signal::fitMass()`.
 
-#### Background Correction: Sideband Subtraction and sPlots
+#### Background Correction
 
 To correct for the background contributions to the final results there are two generally accepted methods.
 
-The first, _Sideband Subtraction_ is very straightforward and simply uses a weighted subtraction of the asymmetry result computed in an arbitrary region(s) adjacent to the signal mass region, the sideband(s).  The weight $\varepsilon$ for the background is the relative fraction of background events within the signal region (also with arbitrary limits) computed from the invariant mass fit.  The assumption is that the asymmetry in the sideband region does not vary much from the asymmetry in the background under the signal peak, thus:
+##### Sideband Subtraction
 
-$A_{measured} = (1-\varepsilon)A_{signal} + \varepsilon A_{background}$.
+The first, _Sideband Subtraction_ is very straightforward and simply uses a weighted subtraction of the asymmetry result computed in an arbitrary region(s) adjacent to the signal mass region, the sideband(s).  The weight $\varepsilon$ for the background is the relative fraction of background events within the signal region (also with arbitrary limits) computed from the invariant mass fit.  The assumption is that the asymmetry $A_{BG}$ in the sideband region does not vary much from the asymmetry in the background under the signal peak, thus the observed asymmetry is:
 
-Solving for $A_{signal}$:
+$A_{\text{Obs.}} = (1-\varepsilon)A_{SG} + \varepsilon A_{BG}$.
 
-$A_{signal} = \frac{A_{measured}-\varepsilon A_{background}}{(1-\varepsilon)}$.
+Solving for the signal asymmetry $A_{SG}$:
 
-A variant on sideband subtraction is to fit the combined signal and sideband region data while weighting the sideband events.  In this case, the weight for all signal region events is set to $W_{sg}=1.0$ and the weight for the sideband region events is set to:
+$A_{SG} = \frac{A_{\text{Obs.}}-\varepsilon A_{BG}}{(1-\varepsilon)}$.
 
-$W_{sb} = - \varepsilon \cdot N_{sg} / N_{sb}$
+Of course, the simplest way to apply this is to fit the asymmetry in the signal region and in the sideband region separately, and then find the true signal asymmetry $A_{SG}$ from the above equation.
 
-where $N_{sg}$ is the total number of events in the signal region and $N_{sb}$ is the total number of events in the sideband region.  Assume we have in the signal region:
+However, oftentimes many asymmetry terms will need to be fit simultaneously, and it becomes more reliable to fit both the signal and sideband simultaneously.  This approach also allows one to treat $\varepsilon$ as function of the independent variables.  By fitting the mass spectrum in several different bins across the independent variables of the asymmetry, one may assign values for $\varepsilon$ that depend on the bin.  In this case the asymmetry to be fit is:
 
-$N_{sg} = (1-\varepsilon)N_{sg} + \varepsilon N_{sg} = N_{signal} + N_{background}$,
+$A_{\text{Obs.}} = (1-\varepsilon(\vec{x}))A_{SG}(\vec{x}) + \varepsilon(\vec{x}) A_{BG}(\vec{x})$, for events in the signal region, and:
 
-and assume the $N_{signal}$ events correspond to the asymmetry $A_{signal}$ and the $N_{background}$ **and** $N_{sb}$ events all correspond to the same background asymmetry $A_{background}$.  Then we can subtract out the effect of the $N_{background}$ events by subtracting the sideband events and correcting for the difference in normalizations.  Hence our combined signal and sideband dataset will now have normalization:
+$A_{\text{Obs.}} = A_{BG}(\vec{x})$, for events in the sideband region.
 
-$N_{signal} = (1-\varepsilon)N_{sg} + \varepsilon N_{sg} - \varepsilon \cdot N_{sg} / N_{sb} \cdot N_{sb}$.
+One may then simply read off the fitted values for $A_{SG}$.
 
-This variation is useful in the case $\varepsilon$ has some correlation with the fit variables.  To counteract this effect, one must bin the sideband subtraction in the fit variables which can lead to low event counts in each bin.  Hence, it is more viable to compute $\varepsilon$, $N_{sg}$, $N_{sb}$ in each bin and weight the entire kinematic bin rather than computing asymmetry results for each fit variable bin within each kinematic bin and encountering very low statistics.
+##### sPlots
 
 The second method, $_sPlots$, which you may read about here: [arXiv:physics/0402083](https://arxiv.org/abs/physics/0402083), is a generalized form of sideband subtraction which computes event-level weights to produce the signal distribution in a variable which is _uncorrelated_ with the invariant mass variable.
 
@@ -128,26 +126,44 @@ For a $\chi^{2}$ minimization fit (which is of necessity a binned fit) or a binn
 
 $A=\frac{N^{+}-N^{-}}{N^{+}+N^{-}}$
 
-since the acceptance may reasonably be assumed to not depend on the helicity variable.
+since the acceptance may reasonably be assumed to not depend on the beam helicity $\lambda$ or target spin $S$, whichever is the spin state of interest.
 
 For an unbinned ML fit the acceptance naturally reduces to a relative luminosity factor between the positive and negative helicity subsets of the data ([H. Wollny, Thesis, University of Freiburg, 2010.](https://wwwcompass.cern.ch/compass/publications/theses/2010_phd_wollny.pdf), [G. Smith, Thesis, University of Glasgow, 2008.](https://theses.gla.ac.uk/5042/1/2013SmithPhD.pdf)).  This may usually be assumed to be $\simeq 1.0$.  Here the PDF takes the form:
 
-$PDF(h,P_{b},\vec{x},\vec{a},\vec{d})=1+h\cdot P_{b} \cdot A(\vec{x},\vec{a},\vec{d})$
+$PDF(\lambda,S_{||},\phi_{S},\vec{x},\vec{a},\vec{d}) = 1 + A_{UU} + \lambda \cdot \overline{\lambda^2} \cdot A_{LU} + S_{||} \cdot \overline{S_{||}^2} \cdot D_{T} \cdot A_{UL}$
+$+ \lambda \cdot S_{||} \cdot \overline{\lambda^2} \cdot \overline{S_{||}^2} \cdot D_{T} \cdot A_{LL} + \overline{S_{\perp}^2} \cdot D_{T} \cdot A_{UT}(\phi_{S})$
+$+ \lambda \cdot \overline{\lambda^2} \cdot \overline{S_{\perp}^2} \cdot D_{T} \cdot A_{LT}(\phi_{S})$.
 
-and $P_{b}$ is the polarization and $\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit variables, asymmetry parameters, and depolarization variables (treated as independent variables).  In executables and functions provided by this project, the given asymmetry formula is converted internally to a PDF of this form and a simultaneous fit is done over the different helicity states.  For a dataset of length $N$, the likelihood parameter used for parameter optimization is:
+$\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit variables, asymmetry parameters, and depolarization variables (treated as independent variables). $S_{||}$ is the longitudinal target spin vector parallel to the beam direction, and $S_{\perp}$ is the transverse target spin vector.  $\phi_{S}$ is the azimuthal angle of the target spin in the $\gamma^*N$ Center of Mass frame.  $\overline{\lambda^2}$ is the luminosity averaged beam polarization, and $\overline{S_{||}^2}$ and $\overline{S_{\perp}^2}$ are the luminosity averaged longitudinal and transverse target polarizations.  $D_{T}$ represents the target dilution factor.  In executables and functions provided by this project, the given asymmetry formula is converted internally to a PDF of this form and a simultaneous fit is done over the different spin states.  For a dataset of length $N$, the likelihood parameter used for parameter optimization is:
 
-$\mathcal{L}(\vec{a}) = \prod_{i=1}^{N} PDF(h_i,P_{b},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
+$\mathcal{L}(\vec{a}) = \prod_{i=1}^{N} PDF(\lambda_{i},S_{||,i},\phi_{S,i},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
 An _extended_ ML Fit simply introduces the normalization factor $\mathcal{N}(\vec{a})$ as an optimization parameter assuming a Poissonian distribution so that the extended likelihood becomes:
 
-$\mathcal{L}(\vec{a}) = \frac{\mathcal{N}(\vec{a})^Ne^{-\mathcal{N}(\vec{a})}}{N!}\prod_{i=1}^{N} PDF(h_i,P_{b},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
+$\mathcal{L}(\vec{a}) = \frac{\mathcal{N}(\vec{a})^Ne^{-\mathcal{N}(\vec{a})}}{N!}\prod_{i=1}^{N} PDF(\lambda_{i},S_{||,i},\phi_{S,i},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
-Use the `getKinBinnedAsym` executable to run a set of generically binned asymmetry fits and save the results to a CSV file.
+Use the `getKinBinnedAsym` executable to run a set of generically binned ML asymmetry fits and save the results to a CSV file.
 
 ### Injecting Asymmetries
-To evaluate the effectiveness of your asymmetry extraction chain with all its fits and corrections, it is useful to _inject_ an artificial asymmetry into simulated data where the event-level truth is known for each event.  To do this one assigns a helicity $h \in [-1,1]$ for each event with a probability of a positive helicity taken from the asymmetry PDF.  In our provided executables this is done by generating a variable $r$ from a random uniform distribution for each event and then assigning a positive helicity if
+To evaluate the effectiveness of your asymmetry extraction chain with all its fits and corrections, it is useful to _inject_ an artificial asymmetry into simulated data where the event-level truth is known for each event.  The injection algorithm proceeds as follows.
+For each event, a random number $r\in[0,1)$, beam helicity $\lambda\in(-1,0,1)$, and target spin $S\in(-1,0,1)$ are all randomly generated.
+A non-zero $\lambda$ and $S$ are generated with probabilities taken from the beam and target polarizations respectively:
 
-$r<\frac{1}{2}PDF(h=1)=\frac{1}{2}(1+P_{b}\cdot Asymmetry(\vec{x}, \vec{a}, \vec{d}))$.
+$P(\lambda \neq 0) = \overline{\lambda^2}$, and
+
+$P(S \neq 0) = \overline{S^2}$.
+
+The event weight $w$ is computed as:
+
+$w = \frac{1}{2} (1 + A_{UU} + A_{UT}(\phi_{S}) + \lambda \cdot (A_{LU} + A_{LT}(\phi_{S})) + S_{||} A_{UL} + \lambda S_{||} A_{LL})$,
+
+where $A_{UU}$, $A_{UT}$ are the unpolarized and (only) transverse target spin dependent asymmetry terms
+and $A_{LU}$, $A_{LT}$, $A_{UL}$, and $A_{LL}$ are the asymmetry terms
+dependent on beam helicity, target spin, or both.
+Note that the asymmetry terms will taken from either the signal or background asymmetries
+depending on whether the event has been marked as signal or background.
+If $w>r$ the beam helicity and target spin values for that event are accepted,
+otherwise all random values are regenerated and the process repeats until $w>r$.
 
 ### Scaling MC for Future Experiments
 To make projections of the uncertainties on planned asymmetry measurements for future experiments one must scale, in a sense "convert", uncertainties from simulated data to real data.  This requires one to compute the uncertainties on an existing simulation dataset and its corresponding real dataset.  These should provide a realistic comparison with the planned experiment.  For example, one might use CLAS12 RGC simulation and data to obtain CLAS12 RGH projections since both use a polarized target.
@@ -156,19 +172,19 @@ To scale these uncertainties, one first assumes Poissonian statistics so
 
 $\delta N = \frac{1}{\sqrt{N}}$.
 
-You must also compute ratio of the acceptance ratios
+You must also compute ratio of the acceptance ratios, that is, the ratio of reconstructed to generated counts:
 
-$R=\frac{N_{Reconstructed}}{N_{Generated}}$
+$R=\frac{N_{Rec}}{N_{Gen}}$
 
 for the two simulation samples and then the projected statistics in a given kinematic bin $i$ are given by:
 
-$N_{New Data,i} = N_{Old Data,i} \cdot \frac{R_{New Sim.,i}}{R_{Old Sim.,i}} \cdot \frac{\mathcal{L_{New}}}{\mathcal{L_{Old}}}$,
+$N_{New, Data,i} = N_{Old, Data,i} \cdot \frac{R_{New, Sim.,i}}{R_{Old, Sim.,i}} \cdot \frac{\mathcal{L_{New}}}{\mathcal{L_{Old}}}$,
 
 where $\mathcal{L}$ denotes the integrated luminosity of each dataset.
 
-In practice, rather than computing $N_{Generated}$ in each bin it is easier to divide $N_{Reconstructed}$ by the integrated cross-section ($XS$) since this should be directly proportional to $N_{Generated}$ and we take the ratio of the acceptance ratios so any extraneous units drop out anyway.  In this case you would compute:
+In practice, rather than computing $N_{Gen}$ in each bin it is easier to divide $N_{Rec}$ by the integrated cross-section ($XS$) since this should be directly proportional to $N_{Gen}$ and we take the ratio of the acceptance ratios so any extraneous units drop out anyway.  In this case you would compute:
 
-$N_{New Data,i} = N_{Old Data,i} \cdot \frac{N_{Reconstructed,New Sim.,i}}{N_{Reconstructed, Old Sim.,i}} \cdot \bigg{(}\frac{XS_{New Sim.,i}}{XS_{Old Sim.,i}}\bigg{)}^{-1} \cdot \frac{\mathcal{L_{New}}}{\mathcal{L_{Old}}}$.
+$N_{New, Data,i} = N_{Old, Data,i} \cdot \frac{N_{Rec, New, Sim.,i}}{N_{Rec, Old, Sim.,i}} \cdot \bigg{(}\frac{XS_{New, Sim.,i}}{XS_{Old, Sim.,i}}\bigg{)}^{-1} \cdot \frac{\mathcal{L_{New}}}{\mathcal{L_{Old}}}$.
 
 #
 
