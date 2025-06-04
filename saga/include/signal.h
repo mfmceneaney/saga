@@ -819,7 +819,7 @@ void getBinnedBGFractionsDataset(
     // Create background fraction dataset from dataframe
     RooRealVar * bgf = w->var(bgfracvar.c_str());
     ROOT::RDF::RResultPtr<RooDataSet> rds_bgfracs = frame_bgfracs.Book<double>(
-                RooDataSetHelper(Form("%s_bgfracs",rds->GetName()),"Data Set",RooArgSet(*bgf)),
+                RooDataSetHelper(rds_out_name.c_str(),rds_out_name.c_str(),RooArgSet(*bgf)),
                 {bgfracvar.c_str()}
             );
 
