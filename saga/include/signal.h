@@ -823,15 +823,11 @@ void getBinnedBGFractionsDataset(
                 {bgfracvar.c_str()}
             );
 
-    // Merge dataset with bgfracs
-    static_cast<RooDataSet&>(*rds).merge(&static_cast<RooDataSet&>(*rds_bgfracs));
-
-    // Create new data set with bgfracs variable //NOTE: NOT SURE IF THIS IS NEEDED OR UPDATED THE POINTER IS SUFFICIENT...
-    auto& data = static_cast<RooDataSet&>(*rds);
-    RooDataSet _rds_bgfracs{rds_out_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, ""}; //NOTE: DO NOT WEIGHT THE DATASET.  LEAVE WEIGHT_VAR_NAME == "".
+    // Merge dataset into dataset with bgfracs
+    static_cast<RooDataSet&>(*rds_bgfracs).merge(&static_cast<RooDataSet&>(*rds));
 
     // Import dataset with background fraction columns into workspace
-    w->import(_rds_bgfracs);
+    w->import(*rds_bgfracs);
 
 } // void getBinnedBGFractionsDataset()
 
@@ -968,13 +964,16 @@ void setBinnedBGFractions(
 
     // Apply bin cuts
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
+    RNode bin_frame = frame.Filter(bincut.c_str());
 
     // Get the signal region cut
     std::string sgcut = saga::util::addLimitCuts("",fitvars,massfit_sgregion_lims);
 
-    // Get signal and background frames
-    RNode frame_sg = frame.Filter(sgcut.c_str());
-    RNode frame_bg = frame.Filter(bgcut.c_str());
+    // Apply signal and background cuts
+    RooDataSet *sg_bin_ds = (RooDataSet*)bin_ds->reduce(sgcut.c_str());
+    RNode sg_bin_frame = bin_frame.Filter(sgcut.c_str());
+    RooDataSet *bg_bin_ds = (RooDataSet*)bin_ds->reduce(bgcut.c_str());
+    RNode bg_bin_frame = bin_frame.Filter(bgcut.c_str());
 
     // Loop bins and apply fits recording background fractions and errors
     std::map<int,std::vector<double>> bgfracs_map;
@@ -986,9 +985,6 @@ void setBinnedBGFractions(
 
         // Get bin unique id
         std::string binid_asymfitvars = Form("%s__%d",binid.c_str(),id);
-
-        // Get bin dataset
-        RooDataSet *bin_ds_asymfitvar = (RooDataSet*)bin_ds->reduce(asymfitvar_bincut.c_str());
 
         // Create full bin cut
         std::string bincut_full = Form("%s && %s", bincut.c_str(), asymfitvar_bincut.c_str());
@@ -1046,8 +1042,8 @@ void setBinnedBGFractions(
     // Set data set background fractions from the binned mass fits for the signal region
     getBinnedBGFractionsDataset(
         w,
-        ds,
-        frame_sg,
+        sg_bin_ds,
+        sg_bin_frame,
         rds_out_name,
         asymfitvar_bincuts,
         bgfracvar,
@@ -1059,8 +1055,8 @@ void setBinnedBGFractions(
     // Set data set background fractions from the binned mass fits for the sideband region
     getBinnedBGFractionsDataset(
         w,
-        ds,
-        frame_bg,
+        bg_bin_ds,
+        bg_bin_frame,
         sb_rds_out_name,
         asymfitvar_bincuts,
         bgfracvar,
