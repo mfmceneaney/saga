@@ -704,7 +704,7 @@ std::vector<double> fitAsym(
             argnames_sb.push_back(f[ff]->GetName());
         }
         for (int aa=0; aa<nparams; aa++) { // Fit asymmetry amplitude parameters
-            argset_sb->add(*a[aa]);
+            argset_sb->add(*a_sb[aa]);
             argnames_sb.push_back(a_sb[aa]->GetName());
         }
         if (!use_average_depol) {
