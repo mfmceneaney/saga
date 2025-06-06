@@ -1733,7 +1733,7 @@ void getKinBinnedAsym(
         }
 
         // Output message
-        out << "--- Accpetance, background, and depolarization corrected signal ---\n";
+        out << "--- Acceptance, background, and depolarization corrected signal ---\n";
         for (int idx=0; idx<nparams; idx++) {
             if (use_average_depol) {
                 out << " ys["<< idx <<"]             = " << ys[idx] << "\n";
