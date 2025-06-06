@@ -681,7 +681,7 @@ std::vector<double> fitAsym(
 
         // Construct combined dataset indexed on signal and background
         bin_ds = new RooDataSet(bin_ds->GetName(), bin_ds->GetTitle(), *bin_ds->get(), Index(*region),
-                            Import({{"signal", (RooDataSet*)bin_ds->get()}, {"sideband", (RooDataSet*)bin_ds_sb->get()}}));
+                            Import({{"signal", bin_ds}, {"sideband", bin_ds_sb}}));
     }
 
     // Create asymmetry amplitude parameters for the background pdf
