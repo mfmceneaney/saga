@@ -11,10 +11,10 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <TAxis.h>
-#include <TLegend.h>
+// #include <TLegend.h>
 #include <TH1.h>
 #include <ROOT/RDataFrame.hxx>
-#include <TLatex.h>
+// #include <TLatex.h>
 
 // Local includes
 #include <util.h>
@@ -270,14 +270,12 @@ std::vector<double> getBinLims(
 * Recursively set a list of bin cuts given a YAML node defining a nested bin scheme.
 * Note that this will set cuts for all bins within the nested bin scheme.
 *
-* @param cuts List of nested binning cuts
+* @param cuts List of nested binning cuts to set
 * @param node YAML node defining a nested bin scheme
 * @param node_name Name of nested YAML node
 * @param old_cuts Old list of cuts from previous recursion level
 * @param lims_key YAML key for bin limits
 * @param nested_key YAML key for nested binning
-*
-* @return List of bin cuts for nested binning scheme
 */
 void setNestedBinCuts(
         std::vector<std::string> &cuts, //NOTE: List to set.

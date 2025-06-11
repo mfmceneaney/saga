@@ -41,16 +41,16 @@ add_executable(getKinBinnedAsym ${EXECUTABLES_DIR}/getKinBinnedAsym.cpp)
 target_link_libraries(getKinBinnedAsym PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::RooStats ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(findBinLims ${EXECUTABLES_DIR}/findBinLims.cpp)
-target_link_libraries(findBinLims PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+target_link_libraries(findBinLims PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(getBinMigration ${EXECUTABLES_DIR}/getBinMigration.cpp)
-target_link_libraries(getBinMigration PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+target_link_libraries(getBinMigration PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(getBinKinematics ${EXECUTABLES_DIR}/getBinKinematics.cpp)
-target_link_libraries(getBinKinematics PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+target_link_libraries(getBinKinematics PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(getBinKinematicsTH1Ds ${EXECUTABLES_DIR}/getBinKinematicsTH1Ds.cpp)
-target_link_libraries(getBinKinematicsTH1Ds PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+target_link_libraries(getBinKinematicsTH1Ds PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(getBinKinematicsTH2Ds ${EXECUTABLES_DIR}/getBinKinematicsTH2Ds.cpp)
-target_link_libraries(getBinKinematicsTH2Ds PUBLIC ROOT::RIO ROOT::Net ROOT::ROOTDataFrame yaml-cpp)
+target_link_libraries(getBinKinematicsTH2Ds PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)

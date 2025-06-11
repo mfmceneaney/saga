@@ -13,96 +13,34 @@
 
 // Project Includes
 #include <bins.h>
+#include <data.h>
 #include <util.h>
 
 void execute(const YAML::Node& node) {
 
     // Process arguments
-
-    // OUTPATH
-    std::string baseoutpath = "";//NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>_kinematics.csv`.
-    if (node["baseoutpath"]) {
-        baseoutpath = node["baseoutpath"].as<std::string>();
-    }
-    std::cout << "INFO: baseoutpath: " << baseoutpath << std::endl;
-
-    // INPATH
-    std::string inpath = "";
-    if (node["inpath"]) {
-        inpath = node["inpath"].as<std::string>();
-    }
-    std::cout << "INFO: inpath: " << inpath << std::endl;
-
-    // TREE
-    std::string tree = "";
-    if (node["tree"]) {
-        tree = node["tree"].as<std::string>();
-    }
-    std::cout << "INFO: tree: " << tree << std::endl;
-
-    // NTHREADS
-    int nthreads = 1;
-    if (node["nthreads"]) {
-        nthreads = node["nthreads"].as<int>();
-    }
-    std::cout << "INFO: nthreads: " << nthreads << std::endl;
-
-    // SAVE_PDFS
-    bool save_pdfs = false;
-    if (node["save_pdfs"]) {
-        save_pdfs = node["save_pdfs"].as<bool>();
-    }
-    std::cout << "INFO: save_pdfs: " << save_pdfs << std::endl;
-
-    // SAVE_CSVS
-    bool save_csvs = false;
-    if (node["save_csvs"]) {
-        save_csvs = node["save_csvs"].as<bool>();
-    }
-    std::cout << "INFO: save_csvs: " << save_csvs << std::endl;
-
-    // CUTS
-    std::string cuts = "";
-    if (node["cuts"]) {
-        cuts = node["cuts"].as<std::string>();
-    }
-    std::cout << "INFO: cuts: " << cuts << std::endl;
+    std::string   message_prefix  = "INFO: ";
+    bool          verbose         = true;
+    std::ostream &yamlargout      = std::cout;
 
     //----------------------------------------------------------------------//
-    // BEGIN ASYMMETRY INJECTION ARGUMENTS
+    // BEGIN ARGUMENTS
+    std::string baseoutpath = saga::util::getYamlArg<std::string>(node,"baseoutpath","",message_prefix,verbose,yamlargout); //NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>.csv`.
+    std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose,yamlargout);
+    std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose,yamlargout);
+    int nthreads = saga::util::getYamlArg<int>(node,"nthreads",1,message_prefix,verbose,yamlargout);
+    bool save_pdfs = saga::util::getYamlArg<bool>(node, "save_pdfs", false, message_prefix, verbose, yamlargout);
+    bool save_csvs = saga::util::getYamlArg<bool>(node, "save_csvs", false, message_prefix, verbose, yamlargout);
+    std::string cuts = saga::util::getYamlArg<std::string>(node,"cuts","",message_prefix,verbose,yamlargout);
 
-    // MC_CUTS
-    std::string mc_cuts = "Q2>1"; //NOTE: This may not be empty!
-    if (node["mc_cuts"]) {
-        mc_cuts = node["mc_cuts"].as<std::string>();
-    }
-    std::cout << "INFO: mc_cuts: " << mc_cuts << std::endl;
-
-    // PARTICLE_SUFFIXES -> For MC matching with mc_sg_match cut
-    std::vector<std::string> particle_suffixes;
-    if (node["particle_suffixes"]) {
-        particle_suffixes = node["particle_suffixes"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: particle_suffixes: [ ";
-    for (int idx=0; idx<particle_suffixes.size(); idx++) {
-        if (idx!=particle_suffixes.size()-1) { std::cout << particle_suffixes[idx]<<", "; }
-        else { std::cout << particle_suffixes[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // END ASYMMETRY INJECTION ARGUMENTS
     //----------------------------------------------------------------------//
+    // BEGIN MC MATCHING ARGUMENTS
+    std::string mc_cuts = saga::util::getYamlArg<std::string>(node,"mc_cuts","Q2>1",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
+    std::vector<std::string> particle_suffixes = saga::util::getYamlArg<std::vector<std::string>>(node, "particle_suffixes", {}, message_prefix, verbose, yamlargout); // -> For MC matching with mc_sg_match cut
 
+    //----------------------------------------------------------------------//
     // VAR_FORMULAS
-    std::vector<std::vector<std::string>> var_formulas;
-    if (node["var_formulas"]) {
-        var_formulas = node["var_formulas"].as<std::vector<std::vector<std::string>>>();
-    }
-    std::cout << "INFO: var_formulas: { \n";
-    for (int idx=0; idx<var_formulas.size(); idx++) {
-        std::cout << "\t[ " << var_formulas[idx][0].c_str() << " : " << var_formulas[idx][1].c_str() << " ],\n";
-    }
-    std::cout << " }" << std::endl;
+    std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN BINNING SCHEME ARGUMENTS
@@ -122,13 +60,13 @@ void execute(const YAML::Node& node) {
     } else if (node["binschemes_paths"]) {
         
         // Get list of paths to yamls containing bin scheme definitions 
-        std::vector<std::string> binschemes_paths = node["binschemes_paths"].as<std::vector<std::string>>();
+        std::vector<std::string> binschemes_paths = saga::util::getYamlArg<std::vector<std::string>>(node, "binschemes_paths", {}, message_prefix, verbose, yamlargout);
 
         // Loop paths and add bin schemes
         for (int idx=0; idx<binschemes_paths.size(); idx++) {
 
             // Load YAML file and get bin cuts maps
-            std::cout<<"INFO: Loading bin scheme from : "<<binschemes_paths[idx].c_str()<<std::endl;
+            if (verbose) yamlargout << message_prefix.c_str() << "Loading bin scheme from : " <<binschemes_paths[idx].c_str() << std::endl;
             YAML::Node bincut_config = YAML::LoadFile(binschemes_paths[idx].c_str());
             std::map<std::string,std::map<int,std::string>> new_bincuts_map = saga::bins::getBinCutsMap(bincut_config);
             bincuts_map.insert(new_bincuts_map.begin(), new_bincuts_map.end());
@@ -136,171 +74,54 @@ void execute(const YAML::Node& node) {
             binschemes_vars.insert(new_binschemes_vars.begin(), new_binschemes_vars.end());
         }
     }
+
+    // Reduce bin cuts map into a single batch for parallelization
+    if (node["nbatches"] && node["ibatch"]) {
+        int nbatches = saga::util::getYamlArg<int>(node, "nbatches", 1, message_prefix, verbose, yamlargout);
+        int ibatch   = saga::util::getYamlArg<int>(node, "ibatch", 0, message_prefix, verbose, yamlargout);
+        if (nbatches>1 && ibatch>=0 && ibatch<nbatches) bincuts_map = saga::bins::getBinCutsMapBatch(bincuts_map, nbatches, ibatch);
+    }
+
+    // Show bin cuts map
+    if (verbose) {
+        for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
+            yamlargout << message_prefix.c_str() << "bincuts_map["<<it->first<<"]: { \n";
+            for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                yamlargout <<"\t\t"<< it2->first<<": "<<it2->second<<", \n";
+            }
+            yamlargout << "}" << std::endl;
+        }
+    }
+
     // END BINNING SCHEME ARGUMENTS
     //----------------------------------------------------------------------//
 
     //----------------------------------------------------------------------//
     // BEGIN BIN VARIABLES
-
-    // BINVARS
-    std::vector<std::string> binvars;
-    if (node["binvars"]) {
-        binvars = node["binvars"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: binvars: [ ";
-    for (int idx=0; idx<binvars.size(); idx++) {
-        if (idx!=binvars.size()-1) { std::cout << binvars[idx]<<", "; }
-        else { std::cout << binvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // BINVAR_LIMS
-    std::vector<std::vector<double>> binvar_lims;
-    if (node["binvar_lims"]) {
-        binvar_lims = node["binvar_lims"].as<std::vector<std::vector<double>>>();
-    }
-    std::cout << "INFO: binvar_lims: [ ";
-    for (int idx=0; idx<binvar_lims.size(); idx++) {
-        if (idx!=binvar_lims.size()-1) { std::cout << "[ " << binvar_lims[idx][0] << ", " << binvar_lims[idx][1] << " ], "; }
-        else { std::cout << "[ " << binvar_lims[idx][0] << ", " << binvar_lims[idx][1] << " ] "; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // END BIN VARIABLES
-    //----------------------------------------------------------------------//
+    std::vector<std::string> binvars = saga::util::getYamlArg<std::vector<std::string>>(node, "binvars", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::vector<double>> binvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "binvar_lims", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN DEPOLARIZATION VARIABLES
-
-    // DEPOLVARS
-    std::vector<std::string> depolvars;
-    if (node["depolvars"]) {
-        depolvars = node["depolvars"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: depolvars: [ ";
-    for (int idx=0; idx<depolvars.size(); idx++) {
-        if (idx!=depolvars.size()-1) { std::cout << depolvars[idx]<<", "; }
-        else { std::cout << depolvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // DEPOLVAR_LIMS
-    std::vector<std::vector<double>> depolvar_lims;
-    if (node["depolvar_lims"]) {
-        depolvar_lims = node["depolvar_lims"].as<std::vector<std::vector<double>>>();
-    }
-    std::cout << "INFO: depolvar_lims: [ ";
-    for (int idx=0; idx<depolvar_lims.size(); idx++) {
-        if (idx!=depolvar_lims.size()-1) { std::cout << "[ " << depolvar_lims[idx][0] << ", " << depolvar_lims[idx][1] << " ], "; }
-        else { std::cout << "[ " << depolvar_lims[idx][0] << ", " << depolvar_lims[idx][1] << " ] "; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // END DEPOLARIZATION VARIABLES
-    //----------------------------------------------------------------------//
+    std::vector<std::string> depolvars = saga::util::getYamlArg<std::vector<std::string>>(node, "depolvars", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::vector<double>> depolvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "depolvar_lims", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN ASYMMETRY FIT VARIABLES
-
-    // ASYMFITVARS
-    std::vector<std::string> asymfitvars;
-    if (node["asymfitvars"]) {
-        asymfitvars = node["asymfitvars"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: asymfitvars: [ ";
-    for (int idx=0; idx<asymfitvars.size(); idx++) {
-        if (idx!=asymfitvars.size()-1) { std::cout << asymfitvars[idx]<<", "; }
-        else { std::cout << asymfitvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // ASYMFITVAR_LIMS
-    std::vector<std::vector<double>> asymfitvar_lims;
-    if (node["asymfitvar_lims"]) {
-        asymfitvar_lims = node["asymfitvar_lims"].as<std::vector<std::vector<double>>>();
-    }
-    std::cout << "INFO: asymfitvar_lims: [ ";
-    for (int idx=0; idx<asymfitvar_lims.size(); idx++) {
-        if (idx!=asymfitvar_lims.size()-1) { std::cout << "[ " << asymfitvar_lims[idx][0] << ", " << asymfitvar_lims[idx][1] << " ], "; }
-        else { std::cout << "[ " << asymfitvar_lims[idx][0] << ", " << asymfitvar_lims[idx][1] << " ] "; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // END ASYMMETRY FIT VARIABLES
-    //----------------------------------------------------------------------//
+    std::vector<std::string> asymfitvars = saga::util::getYamlArg<std::vector<std::string>>(node, "asymfitvars", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::vector<double>> asymfitvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "asymfitvar_lims", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN MASS FIT VARIABLES
-
-    // MASSFITVARS
-    std::vector<std::string> massfitvars;
-    if (node["massfitvars"]) {
-        massfitvars = node["massfitvars"].as<std::vector<std::string>>();
-    }
-    std::cout << "INFO: massfitvars: [ ";
-    for (int idx=0; idx<massfitvars.size(); idx++) {
-        if (idx!=massfitvars.size()-1) { std::cout << massfitvars[idx]<<", "; }
-        else { std::cout << massfitvars[idx]; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // MASSFITVAR_LIMS
-    std::vector<std::vector<double>> massfitvar_lims;
-    if (node["massfitvar_lims"]) {
-        massfitvar_lims = node["massfitvar_lims"].as<std::vector<std::vector<double>>>();
-    }
-    std::cout << "INFO: massfitvar_lims: [ ";
-    for (int idx=0; idx<massfitvar_lims.size(); idx++) {
-        if (idx!=massfitvar_lims.size()-1) { std::cout << "[ " << massfitvar_lims[idx][0] << ", " << massfitvar_lims[idx][1] << " ], "; }
-        else { std::cout << "[ " << massfitvar_lims[idx][0] << ", " << massfitvar_lims[idx][1] << " ] "; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // END MASS FIT VARIABLES
-    //----------------------------------------------------------------------//
-
+    std::vector<std::string> massfitvars = saga::util::getYamlArg<std::vector<std::string>>(node, "massfitvars", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::vector<double>> massfitvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfitvar_lims", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN KINEMATIC VARIABLES
-
-    // KINVARS
-    std::vector<std::vector<std::string>> kinvars;
-    if (node["kinvars"]) {
-        kinvars = node["kinvars"].as<std::vector<std::vector<std::string>>>();
-    }
-    std::cout << "INFO: kinvars: [ ";
-    for (int idx=0; idx<kinvars.size(); idx++) {
-        if (idx!=kinvars.size()-1) { std::cout << "\n\t[" << kinvars[idx][0].c_str() << " , " << kinvars[idx][1].c_str() <<" ],"; }
-        else { std::cout << "\n\t[" << kinvars[idx][0].c_str() << " , " << kinvars[idx][1].c_str() <<" ]\n"; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // KINVAR_LIMS
-    std::vector<std::vector<std::vector<double>>> kinvar_lims;
-    if (node["kinvar_lims"]) {
-        kinvar_lims = node["kinvar_lims"].as<std::vector<std::vector<std::vector<double>>>>();
-    }
-    std::cout << "INFO: kinvar_lims: [ ";
-    for (int idx=0; idx<kinvar_lims.size(); idx++) {
-        if (idx!=kinvar_lims.size()-1) { std::cout << "\n\t[" << "\n\t\t[ " << kinvar_lims[idx][0][0] << ", " << kinvar_lims[idx][0][1] << " ]," << "\n\t\t[ " << kinvar_lims[idx][1][0] << ", " << kinvar_lims[idx][1][1] << " ], " << "\n\t],"; }
-        else { std::cout << "\n\t[" << "\n\t\t[ " << kinvar_lims[idx][0][0] << ", " << kinvar_lims[idx][0][1] << " ], " << "\n\t\t[ " << kinvar_lims[idx][1][0] << ", " << kinvar_lims[idx][1][1] << " ], " << "\n"; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // KINVAR_BINS
-    std::vector<std::vector<int>> kinvar_bins;
-    if (node["kinvar_bins"]) {
-        kinvar_bins = node["kinvar_bins"].as<std::vector<std::vector<int>>>();
-    }
-    std::cout << "INFO: kinvar_bins: [ ";
-    for (int idx=0; idx<kinvar_bins.size(); idx++) {
-        if (idx!=kinvar_bins.size()-1) { std::cout << "\n\t[" << kinvar_bins[idx][0] << " , " << kinvar_bins[idx][1] <<" ],"; }
-        else { std::cout << "\n\t[" << kinvar_bins[idx][0] << " , " << kinvar_bins[idx][1] <<" ]\n"; }
-    }
-    std::cout << " ]" << std::endl;
-
-    // END KINEMATIC VARIABLES
-    //----------------------------------------------------------------------//
+    std::vector<std::vector<std::string>> kinvars = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "kinvars", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> kinvar_titles = saga::util::getYamlArg<std::vector<std::string>>(node, "kinvar_titles", {}, message_prefix, verbose, yamlargout); //NOTE: DEFAULT TO ACTUAL VARIABLE NAMES
+    std::vector<std::vector<std::vector<double>>> kinvar_lims = saga::util::getYamlArg<std::vector<std::vector<std::vector<double>>>>(node, "kinvar_lims", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::vector<int>> kinvar_bins = saga::util::getYamlArg<std::vector<std::vector<int>>>(node, "kinvar_bins", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------------------------------------//
     // ANALYSIS
@@ -314,7 +135,7 @@ void execute(const YAML::Node& node) {
     cuts = saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
     cuts = saga::util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
     cuts = saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
-    std::cout << "INFO: cuts: "<<cuts.c_str() << std::endl;
+    yamlargout << message_prefix.c_str() << "cuts: "<<cuts.c_str() << std::endl;
 
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
@@ -323,37 +144,15 @@ void execute(const YAML::Node& node) {
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
     for (int idx=0; idx<var_formulas.size(); idx++) {
         d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
-        std::cout<<"INFO: Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
+        yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
 
     // Apply overall cuts AFTER defining depolarization and fit variables
     std::string all_cuts = (mc_cuts.size()>0) ? Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()) : cuts;
     auto d2_filtered = d2.Filter(all_cuts.c_str());
 
-    // Define MC matching variable names
-    std::vector<std::string> theta_vars;
-    std::vector<std::string> phi_vars;
-    std::vector<std::string> theta_mc_vars;
-    std::vector<std::string> phi_mc_vars;
-    std::vector<std::string> dtheta_vars;
-    std::vector<std::string> dphi_vars;
-    for (int idx=0; idx<particle_suffixes.size(); idx++) {
-        theta_vars.push_back(Form("theta%s",particle_suffixes[idx].c_str()));
-        phi_vars.push_back(Form("phi%s",particle_suffixes[idx].c_str()));
-        theta_mc_vars.push_back(Form("theta%s_mc",particle_suffixes[idx].c_str()));
-        phi_mc_vars.push_back(Form("phi%s_mc",particle_suffixes[idx].c_str()));
-        dtheta_vars.push_back(Form("dtheta%s",particle_suffixes[idx].c_str()));
-        dphi_vars.push_back(Form("dphi%s",particle_suffixes[idx].c_str()));
-    }
-
-    // Define MC matching angular difference variable branches
-    for (int idx=0; idx<particle_suffixes.size(); idx++) {
-        d2_filtered = d2_filtered.Define(dtheta_vars[idx].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[idx].c_str(),theta_mc_vars[idx].c_str()})
-            .Define(dphi_vars[idx].c_str(),[](float phi, float phi_mc){
-                return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
-                ? TMath::Abs(phi-phi_mc) : 2*TMath::Pi() - TMath::Abs(phi-phi_mc));
-                },{phi_vars[idx].c_str(),phi_mc_vars[idx].c_str()});
-    }
+    // Define angular difference variables
+    if (mc_cuts.size()>0) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
     //TODO: Add output message about defined branches
  
     // Loop bin schemes
