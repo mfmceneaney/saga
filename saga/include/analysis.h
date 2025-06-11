@@ -177,6 +177,12 @@ std::string getSubFormula(
 *
 * When using a single fit formula the indexing of parameters in the fit formula is straightforward.
 * However, when using all three fit formulas, the indexing is global across all three formulas.
+*
+* The returned list contains:
+*
+* - The name of the full model in the workspace
+*
+* - The name of each yield variable in the workspace in the case of an extended NLL fit
 * 
 * @param w RooWorkspace in which to work
 * @param h Beam helicity \f$h_b\in(-1,0,1)\f$
@@ -196,9 +202,9 @@ std::string getSubFormula(
 * @param count Bin count
 * @param use_extended_nll Option to use an extended likelihood term
 * 
-* @return std::string
+* @return List of model name and all yield variable names
 */
-std::string getSimGenAsymPdf(
+std::vector<std::string> getSimGenAsymPdf(
     RooWorkspace *w,
     RooCategory *h,
     RooCategory *t,
@@ -236,6 +242,8 @@ std::string getSimGenAsymPdf(
     // Create simultaneous pdf
     RooSimultaneous * model;
     std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
+    std::vector<std::string> model_and_yield_names;
+    model_and_yield_names.push_back(model_name);
 
     //NOTE: `_<int><int>` on the variables below correspond to beam helicity and target spin states (+1) respectively, i.e., (-1,0,1) -> (0,1,2).
 
@@ -377,6 +385,9 @@ std::string getSimGenAsymPdf(
                 {h->lookupName(1), &model_21}, {h->lookupName(0), &model_11}, {h->lookupName(-1), &model_01}
             },
             *h);
+            model_and_yield_names.push_back(nsig_21.GetName());
+            model_and_yield_names.push_back(nsig_11.GetName());
+            model_and_yield_names.push_back(nsig_01.GetName());
         }
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
@@ -397,6 +408,9 @@ std::string getSimGenAsymPdf(
                 {t->lookupName(1), &model_12}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_10}
             },
             *t);
+            model_and_yield_names.push_back(nsig_12.GetName());
+            model_and_yield_names.push_back(nsig_11.GetName());
+            model_and_yield_names.push_back(nsig_10.GetName());
         }
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
@@ -417,6 +431,9 @@ std::string getSimGenAsymPdf(
                 {ht->lookupName(1), &model_22_00}, {ht->lookupName(0), &model_11}, {ht->lookupName(-1), &model_20_02}
             },
             *ht);
+            model_and_yield_names.push_back(nsig_22_00.GetName());
+            model_and_yield_names.push_back(nsig_11.GetName());
+            model_and_yield_names.push_back(nsig_20_02.GetName());
         }
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
@@ -433,32 +450,37 @@ std::string getSimGenAsymPdf(
         // Create the simultaneous pdf
         if (use_extended_nll) {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
-                {
-                    {ss->lookupName(11), &model_11}, // Polarization states: UU
-                    {ss->lookupName(21), &model_21}, {ss->lookupName(1),  &model_01}, // Polarization states: PU
-                    {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
-                    {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: UP
-                    {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: UP
-                },
-                *ss);
+            {
+                {ss->lookupName(11), &model_11}, // Polarization states: UU
+                {ss->lookupName(21), &model_21}, {ss->lookupName(1),  &model_01}, // Polarization states: PU
+                {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
+                {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: UP
+                {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: UP
+            },
+            *ss);
+            model_and_yield_names.push_back(nsig_11.GetName());
+            model_and_yield_names.push_back(nsig_21.GetName()); model_and_yield_names.push_back(nsig_01.GetName());
+            model_and_yield_names.push_back(nsig_12.GetName()); model_and_yield_names.push_back(nsig_10.GetName());
+            model_and_yield_names.push_back(nsig_22.GetName()); model_and_yield_names.push_back(nsig_00.GetName());
+            model_and_yield_names.push_back(nsig_02.GetName()); model_and_yield_names.push_back(nsig_20.GetName());            
         }
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
-                {
-                    {ss->lookupName(11), &_model_11}, // Polarization states: UU
-                    {ss->lookupName(21), &_model_21}, {ss->lookupName(1),  &_model_01}, // Polarization states: PU
-                    {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
-                    {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: UP
-                    {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: UP
-                },
-                *ss);
+            {
+                {ss->lookupName(11), &_model_11}, // Polarization states: UU
+                {ss->lookupName(21), &_model_21}, {ss->lookupName(1),  &_model_01}, // Polarization states: PU
+                {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
+                {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: UP
+                {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: UP
+            },
+            *ss);
         }
     }
 
     w->import(*model);
-    return model_name;
+    return model_and_yield_names;
 
-} // std::string getSimGenAsymPdf()
+} // std::vector<std::string> getSimGenAsymPdf()
 
 /**
 * @brief Fit an asymmetry.
@@ -716,7 +738,7 @@ std::vector<double> fitAsym(
     }
 
     // Create and load asymmetry PDF
-    std::string model_name = getSimGenAsymPdf(
+    std::vector<std::string> model_and_yield_names = getSimGenAsymPdf(
         w,
         h,
         t,
@@ -735,13 +757,15 @@ std::vector<double> fitAsym(
         count,
         use_extended_nll
     );
+    std::string model_name = model_and_yield_names[0];
 
     // Create the asymmetry PDF for the background data in the case of sideband subtraction
+    std::vector<std::string> model_and_yield_names_bg;
     std::string model_name_bg;
     std::string binid_sb;
     if (sb_dataset_name!="") {
         binid_sb = Form("%s_sb",binid.c_str());
-        model_name_bg = getSimGenAsymPdf(
+        model_and_yield_names_bg = getSimGenAsymPdf(
             w,
             h,
             t,
@@ -760,6 +784,7 @@ std::vector<double> fitAsym(
             count,
             use_extended_nll
         );
+        model_name_bg = model_and_yield_names_bg[0];
     }
 
     // Load PDFs
@@ -849,8 +874,9 @@ std::vector<double> fitAsym(
     std::vector<double> params;
     std::vector<double> paramerrs;
     for (int aa=0; aa<nparams; aa++) {
-        params.push_back((double)a[aa]->getVal());
-        paramerrs.push_back((double)a[aa]->getError());
+        RooRealVar *avar = (RooRealVar*)w->var(a[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
+        params.push_back((double)avar->getVal());
+        paramerrs.push_back((double)avar->getError());
     }
 
     // Get fit parameter values and errors for background values
@@ -858,8 +884,9 @@ std::vector<double> fitAsym(
     std::vector<double> paramerrs_bg;
     if (sb_dataset_name!="") {
         for (int aa=0; aa<nparams; aa++) {
-            params_bg.push_back((double)a_sb[aa]->getVal());
-            paramerrs_bg.push_back((double)a_sb[aa]->getError());
+            RooRealVar *avar_sb = (RooRealVar*)w->var(a_sb[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
+            params_bg.push_back((double)avar_sb->getVal());
+            paramerrs_bg.push_back((double)avar_sb->getError());
         }
     }
 
@@ -919,10 +946,15 @@ std::vector<double> fitAsym(
         }
         out << "]" << std::endl;
     }
-    // if (use_extended_nll) {
-    //     out << " nsig_pos = " << (double)nsig_pos.getVal() << "±" << (double)nsig_pos.getError() << std::endl;
-    //     out << " nsig_neg = " << (double)nsig_neg.getVal() << "±" << (double)nsig_neg.getError() << std::endl;
-    // }
+    if (use_extended_nll) {
+        out << " yields = [" ;
+        for (int idx=1; idx<model_and_yield_names_bg.size(); idx++) {
+            RooRealVar *yield = (RooRealVar*)w->var(model_and_yield_names_bg[idx].c_str());
+            out << yield->getVal() << "±" << yield->getError();
+            if (idx<nparams-1) { out << " , "; }
+        }
+        out << "]" << std::endl;
+    }
     out << "--------------------------------------------------" << std::endl;
 
     // Fill return array

@@ -427,9 +427,9 @@ std::vector<double> fitMass(
     );
 
     // Set pdf and variable names for signal+background fit
-    std::string model_name   = ws_obj_names[0];
-    std::string sg_name      = ws_obj_names[1];
-    std::string bg_name      = ws_obj_names[2];
+    std::string model_name    = ws_obj_names[0];
+    std::string sg_name       = ws_obj_names[1];
+    std::string bg_name       = ws_obj_names[2];
     std::string _sgYield_name = ws_obj_names[3];
     std::string _bgYield_name = ws_obj_names[4];
 
@@ -473,16 +473,18 @@ std::vector<double> fitMass(
     std::vector<double> massfit_pars_sg;
     std::vector<double> massfit_parerrs_sg;
     for (int aa=0; aa<nparams_sg; aa++) {
-        massfit_pars_sg.push_back((double)a_sg[aa]->getVal());
-        massfit_parerrs_sg.push_back((double)a_sg[aa]->getError());
+        RooRealVar *avar_sg = (RooRealVar*)w->var(a_sg[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
+        massfit_pars_sg.push_back((double)avar_sg->getVal());
+        massfit_parerrs_sg.push_back((double)avar_sg->getError());
     }
 
     // Get background fit parameter values and errors
     std::vector<double> massfit_pars_bg;
     std::vector<double> massfit_parerrs_bg;
     for (int aa=0; aa<nparams_bg; aa++) {
-        massfit_pars_bg.push_back((double)a_bg[aa]->getVal());
-        massfit_parerrs_bg.push_back((double)a_bg[aa]->getError());
+        RooRealVar *avar_bg = (RooRealVar*)w->var(a_bg[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
+        massfit_pars_bg.push_back((double)avar_bg->getVal());
+        massfit_parerrs_bg.push_back((double)avar_bg->getError());
     }
 
     // Compute chi2 from 1D histograms
