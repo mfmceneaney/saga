@@ -26,6 +26,8 @@ htspin_states:
   zero: 0
   minus: -1
 var_formulas: #NOTE: Variable definitions will be applied in order in case of dependencies, and they should follow the form [variable_name,formula].
+  - ["p_p","(float)(sqrt(px_p*px_p+py_p*py_p+pz_p*pz_p))"]
+  - ["p_pim","(float)(sqrt(px_pim*px_pim+py_pim*py_pim+pz_pim*pz_pim))"]
   - ["p_p_mc","(float)(sqrt(px_p_mc*px_p_mc+py_p_mc*py_p_mc+pz_p_mc*pz_p_mc))"]
   - ["p_pim_mc","(float)(sqrt(px_pim_mc*px_pim_mc+py_pim_mc*py_pim_mc+pz_pim_mc*pz_pim_mc))"]
   - ["dp_p","(float)((p_p-p_p_mc)/(p_p_mc))"]
@@ -48,7 +50,7 @@ depolvar_lims: [[0,1],[0,1]]
 depolvar_bins: [16,16]
 resfitvars: ["dp_p","dp_pim","dtheta_p","dtheta_pim","dphi_p","dphi_pim"]
 resfitvar_titles: ["#Delta p_{p} / p_{p,MC}","#Delta p_{#pi^{-}} / p_{#pi^{-},MC}","#Delta #theta_{p}","#Delta #theta_{#pi^{-}}","#Delta #phi_{p}","#Delta #phi_{#pi^{-}}"]
-resfitvar_lims: [[-1,1],]
+resfitvar_lims: [[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]]
 resfitvar_bins: [16,16,16,16,16,16]
 massfitvars: ["mass_ppim"]
 massfitvar_titles: ["M_{p#pi^{-}} (GeV)"]
