@@ -36,6 +36,7 @@ void execute(const YAML::Node& node) {
     // BEGIN MC MATCHING ARGUMENTS
     std::string mc_cuts = saga::util::getYamlArg<std::string>(node,"mc_cuts","Q2>1",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
     std::vector<std::string> particle_suffixes = saga::util::getYamlArg<std::vector<std::string>>(node, "particle_suffixes", {}, message_prefix, verbose, yamlargout); // -> For MC matching with mc_match cut
+    std::string combined_spin_state = saga::util::getYamlArg<std::string>(node, "combined_spin_state", "ss", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
 
     //----------------------------------------------------------------------//
     // VAR_FORMULAS
@@ -53,7 +54,6 @@ void execute(const YAML::Node& node) {
     std::map<std::string,int> tspin_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "tspin_states", {{"plus", 1}, {"zero", 0}, {"minus", -1}}, message_prefix, verbose, yamlargout);
     std::string htspin_name = saga::util::getYamlArg<std::string>(node, "htspin_name", "htspin", message_prefix, verbose, yamlargout);
     std::map<std::string,int> htspin_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "htspin_states", {{"plus", 1}, {"zero", 0}, {"minus", -1}}, message_prefix, verbose, yamlargout);
-    std::string combined_spin_state = saga::util::getYamlArg<std::string>(node, "combined_spin_state", "ss", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
 
     //----------------------------------------------------------------------//
     // BEGIN BINNING SCHEME ARGUMENTS
