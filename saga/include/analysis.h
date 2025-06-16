@@ -1436,7 +1436,7 @@ void getKinBinnedAsym(
             saga::signal::applySPlot(
                 ws,
                 dataset_name,
-                Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
+                Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getSimGenAsymPdf() renames these variables to ensure workspace uniqueness
                 Form("%s_%s",massfit_bgYield_name.c_str(),scheme_binid.c_str()),
                 Form("%s_%s",massfit_pdf_name.c_str(),scheme_binid.c_str()),
                 dataset_sg_name,

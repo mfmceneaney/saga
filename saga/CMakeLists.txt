@@ -54,3 +54,6 @@ target_link_libraries(getBinKinematicsTH1Ds PUBLIC ROOT::RIO ROOT::Net ROOT::Roo
 
 add_executable(getBinKinematicsTH2Ds ${EXECUTABLES_DIR}/getBinKinematicsTH2Ds.cpp)
 target_link_libraries(getBinKinematicsTH2Ds PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
+
+add_executable(getKinBinnedResolutions ${EXECUTABLES_DIR}/getKinBinnedResolutions.cpp)
+target_link_libraries(getKinBinnedResolutions PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
