@@ -40,14 +40,14 @@ binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name:
 binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
 nbatches: 1 #NOTE: You can batch all bin schemes if they are large to allow for parellelization
 ibatch: 0 #NOTE: Specify the bin scheme batch index here
-binvars: ["run","x","xF_ppim","z_ppim"]
-binvar_titles: ["run","x","x_{F p#pi^{-}}","z_{p#pi^{-}}"]
-binvar_lims: [[1,100],[0,1],[0,1],[0,1]]
-binvar_bins: [16,16,16,16]
-depolvars: ["depol0","depol1"]
-depolvar_titles: ["depol0","depol1"]
-depolvar_lims: [[0,1],[0,1]]
-depolvar_bins: [16,16]
+binvars: ["p_p_mc","p_pim_mc"]
+binvar_titles: ["p_{p,MC}","p_{#pi^{-},MC}"]
+binvar_lims: [[0,11],[0,11]]
+binvar_bins: [16,16]
+depolvars: ["y"]
+depolvar_titles: ["y"]
+depolvar_lims: [[0,1]]
+depolvar_bins: [16]
 resfitvars: ["dp_p","dp_pim","dtheta_p","dtheta_pim","dphi_p","dphi_pim"]
 resfitvar_titles: ["#Delta p_{p} / p_{p,MC}","#Delta p_{#pi^{-}} / p_{#pi^{-},MC}","#Delta #theta_{p}","#Delta #theta_{#pi^{-}}","#Delta #phi_{p}","#Delta #phi_{#pi^{-}}"]
 resfitvar_lims: [[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]]
