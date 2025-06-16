@@ -171,9 +171,12 @@ void execute(const YAML::Node& node) {
     // Add all absolute variable limits to overall cuts
     cuts = saga::util::addLimitCuts(cuts,binvars,binvar_lims);
     cuts = saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
-    cuts = saga::util::addLimitCuts(cuts,resfitvars,resfitvar_lims);
     cuts = saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
     yamlargout << message_prefix.c_str() << "cuts: "<<cuts.c_str() << std::endl;
+
+    // Add resolution fit variable cuts to MC cuts since they depend on MC variables.
+    mc_cuts = saga::util::addLimitCuts(mc_cuts,resfitvars,resfitvar_lims);
+    yamlargout << message_prefix.c_str() << "mc_cuts: "<<mc_cuts.c_str() << std::endl;
 
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
@@ -186,11 +189,13 @@ void execute(const YAML::Node& node) {
     }
 
     // Apply overall cuts AFTER defining depolarization and fit variables
-    auto d2_filtered = d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
+    auto d2_filtered = d2.Filter(cuts.c_str());
 
     // Define angular difference variables
-    if (mc_cuts.size()>0) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
-    //TODO: Add output message about defined branches
+    if (mc_cuts.size()>0) {
+        d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
+        d2_filtered = d2_filtered.Filter(mc_cuts.c_str());//TODO: Add output message about defined branches
+    }
 
     // Define beam helicity and target spin variables
     std::string combined_spin_state_formula  = Form("(int)(10*(%s+1)+%s+1)",helicity_name.c_str(),tspin_name.c_str());
