@@ -35,12 +35,10 @@ var_formulas: #NOTE: Variable definitions will be applied in order in case of de
 binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
   p_p_mc:
     p_p_mc: [0.0, 0.2, 0.4, 0.5, 0.8, 2.0, 11.0]
-  p_pim_mc:
-    p_pim_mc: [0.0, 0.2, 0.4, 0.5, 0.8, 2.0, 11.0]
 binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
 nbatches: 1 #NOTE: You can batch all bin schemes if they are large to allow for parellelization
 ibatch: 0 #NOTE: Specify the bin scheme batch index here
-binvars: ["p_p_mc","p_pim_mc"]
+binvars: ["p_p_mc"]
 binvar_titles: ["p_{p,MC}","p_{#pi^{-},MC}"]
 binvar_lims: [[0,11],[0,11]]
 binvar_bins: [16,16]
@@ -48,10 +46,10 @@ depolvars: ["y"]
 depolvar_titles: ["y"]
 depolvar_lims: [[0,1]]
 depolvar_bins: [16]
-resfitvars: ["dp_p","dp_pim","dtheta_p","dtheta_pim","dphi_p","dphi_pim"]
-resfitvar_titles: ["#Delta p_{p} / p_{p,MC}","#Delta p_{#pi^{-}} / p_{#pi^{-},MC}","#Delta #theta_{p}","#Delta #theta_{#pi^{-}}","#Delta #phi_{p}","#Delta #phi_{#pi^{-}}"]
-resfitvar_lims: [[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]]
-resfitvar_bins: [16,16,16,16,16,16]
+resfitvars: ["dp_p"]
+resfitvar_titles: ["#Delta p_{p} / p_{p,MC}"]
+resfitvar_lims: [[-1,1]]
+resfitvar_bins: [16]
 massfitvars: ["mass_ppim"]
 massfitvar_titles: ["M_{p#pi^{-}} (GeV)"]
 massfitvar_lims: [[1.08,1.24]]
