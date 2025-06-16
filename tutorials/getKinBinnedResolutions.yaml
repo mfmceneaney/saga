@@ -46,7 +46,7 @@ depolvars: ["y"]
 depolvar_titles: ["y"]
 depolvar_lims: [[0,1]]
 depolvar_bins: [16]
-resfitvars: ["dp_p"]
+resfitvars: ["dp_p"] #NOTE: delta theta and delta phi variables are automatically defined.
 resfitvar_titles: ["#Delta p_{p} / p_{p,MC}"]
 resfitvar_lims: [[-1,1]]
 resfitvar_bins: [16]
