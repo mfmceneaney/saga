@@ -34,7 +34,7 @@ var_formulas: #NOTE: Variable definitions will be applied in order in case of de
   - ["dp_pim","(float)((p_pim-p_pim_mc)/(p_pim_mc))"]
 binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
   p_p_mc:
-    p_p_mc: [0.0, 0.2, 0.4, 0.5, 0.8, 2.0, 11.0]
+    p_p_mc: [0.0, 11.0]
 binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
 nbatches: 1 #NOTE: You can batch all bin schemes if they are large to allow for parellelization
 ibatch: 0 #NOTE: Specify the bin scheme batch index here
@@ -61,13 +61,13 @@ fitformula: "gaus(x[0],x[1],x[2],x[3])" #NOTE: This is parsed by RooGenericPdf u
 parnames: ["constant","mu","sigma"]
 partitles: ["C","#mu","#sigma"]
 parunits: ["","",""]
-parinits: [0.0, 0.1]
-parlims: [ [-1.0, 1.0], [0.0, 1.0] ]
+parinits: [1.0, 0.0, 0.1]
+parlims: [ [1.0, 1.0], [-1.0, 1.0], [0.0, 1.0] ]
 lg_text_size: 0.04
 lg_margin: 0.1
 lg_ncols: 1
 plot_bg_pars: false
 use_sumw2error: false
-use_extended_nll: true
+use_extended_nll: false
 use_binned_fit: false
 logpath: "out.txt"
