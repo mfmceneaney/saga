@@ -1620,19 +1620,19 @@ def save_graph_to_csv(
     filename : str, required
         Output file name
     ct : list, required
-        Graph count values with shape :obj:`(N)`
+        Graph count values with shape :obj:`(nbins)`
     x : list, required
-        Graph x values with shape :obj:`(N)`
+        Graph x values with shape :obj:`(nbins)`
     y : list, required
-        Graph y values with shape :obj:`(N)`
+        Graph y values with shape :obj:`(nbins)`
     xerr : list, optional
-        Graph x error values with shape :obj:`(N)`
+        Graph x error values with shape :obj:`(nbins)`
     yerr : list, optional
-        Graph y error values with shape :obj:`(N)`
+        Graph y error values with shape :obj:`(nbins)`
     xerr_syst : list, optional
-        Graph x systematic error values with shape :obj:`(N)` or :obj:`(N,2)`
+        Graph x systematic error values with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     yerr_syst : list, optional
-        Graph y systematic error values with shape :obj:`(N)` or :obj:`(N,2)`
+        Graph y systematic error values with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     delimiter : str, optional
         CSV format delimiter
     header : str, optional
@@ -1645,7 +1645,7 @@ def save_graph_to_csv(
     Raises
     ------
     ValueError
-        Raise an error if the shape of the systematics arrays do not match :obj:`(nbins,)` or :obj:`(nbins,2)`.
+        Raise an error if the shape of the systematics arrays do not match :obj:`(nbins)` or :obj:`(nbins,2)`.
 
 
     Description
@@ -1674,7 +1674,7 @@ def save_graph_to_csv(
         elif len(xerr_syst_shape)==2 and xerr_syst_shape[1]==2 and len(yerr_syst_shape)==2 and yerr_syst_shape[1]==2:
             data_i.extend([xerr_syst[i][0], xerr_syst[i][1], yerr_syst[i][0], yerr_syst[i][1]])
         else:
-            raise ValueError(f"ERROR: xerr_syst_shape={xerr_syst_shape} or yerr_syst_shape={yerr_syst_shape} does not have shape (N,) or (N,2).")
+            raise ValueError(f"ERROR: xerr_syst_shape={xerr_syst_shape} or yerr_syst_shape={yerr_syst_shape} does not have shape (nbins) or (nbins,2).")
         data.append(data_i)
     data = np.array(data)
 
@@ -1696,9 +1696,9 @@ def save_graph_systematics_to_csv(
     filename : str, required
         Output file name
     x : list, required
-        Graph x values with shape :obj:`(N)`
+        Graph x values with shape :obj:`(nbins)`
     yerr_syst : list, optional
-        Graph y systematic error values decomposed into the different sources of systematic error with shape (N,nsources,) or (N,nsources,2)
+        Graph y systematic error values decomposed into the different sources of systematic error with shape :obj:`(nbins,nsources)` or :obj:`(nbins,nsources,2)`
     delimiter : str, optional
         CSV format delimiter
     header : str, optional
@@ -2661,33 +2661,33 @@ def plot_results(
     ax1 : matplotlib.axes._axes.Axes, required
         Matplotlib.pyplot figure axis
     ct_mean : list, optional
-        Count mean values for each bin with shape :obj:`(N)`
+        Count mean values for each bin with shape :obj:`(nbins)`
     x_mean : list, optional
-        x mean values for each bin with shape :obj:`(N)`
+        x mean values for each bin with shape :obj:`(nbins)`
     y_mean : list, optional
-        y mean values for each bin with shape :obj:`(N)`
+        y mean values for each bin with shape :obj:`(nbins)`
     xerr_mean : list, optional
-        x error alues for each bin with shape :obj:`(N)`
+        x error alues for each bin with shape :obj:`(nbins)`
     yerr_mean : list, optional
-        y error values for each bin with shape :obj:`(N)`
+        y error values for each bin with shape :obj:`(nbins)`
     xerr_syst : list, optional
-        x systematic error alues for each bin with shape :obj:`(N)` or :obj:`(N,2)`
+        x systematic error alues for each bin with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     yerr_syst : list, optional
-        y systematic error values for each bin, with shape :obj:`(N)` or :obj:`(N,2)`
+        y systematic error values for each bin, with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     y_min : list, optional
-        y minimum values for each bin with shape :obj:`(N)`
+        y minimum values for each bin with shape :obj:`(nbins)`
     y_max : list, optional
-        y maximum values for each bin with shape :obj:`(N)`
+        y maximum values for each bin with shape :obj:`(nbins)`
     y_std : list, optional
-        y standard deviation values for each bin with shape :obj:`(N)`
+        y standard deviation values for each bin with shape :obj:`(nbins)`
     ydiff_mean : list, optional
-        y difference from injected signal asymmetry mean values for each bin
+        y difference from injected signal asymmetry mean values for each bin with shape :obj:`(nbins)`
     ydiff_std : list, optional
-        y difference from injected signal asymmetry standard deviation values for each bin
+        y difference from injected signal asymmetry standard deviation values for each bin with shape :obj:`(nbins)`
     ydiff_min : list, optional
-        y difference from injected signal asymmetry minimum values for each bin
+        y difference from injected signal asymmetry minimum values for each bin with shape :obj:`(nbins)`
     ydiff_max : list, optional
-        y difference from injected signal asymmetry maximum values for each bin
+        y difference from injected signal asymmetry maximum values for each bin with shape :obj:`(nbins)`
     xlims : tuple, optional
         x limits for plotting
     ylims : tuple, optional
