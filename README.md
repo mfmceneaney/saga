@@ -30,13 +30,13 @@ You should now have several executables in your `build` directory.
 
 ### Python3 Modules
 
-For now just include these lines in your python code:
+You may install via pip using the path to the top-level repository directory:
+```bash
+pip install -e /path/to/saga
+```
+Then you can import the libraries in your python code with:
 ```python
-import sys
-
-sys.path.append('/path/to/saga/py')
-
-from saga import orchestrate, aggregate
+import saga
 ```
 
 ## Documentation
