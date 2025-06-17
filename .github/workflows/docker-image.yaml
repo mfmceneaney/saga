@@ -15,4 +15,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
+      with:
+        submodules: recursive
       run: docker build . --file Dockerfile --tag saga:$(date +%s)
