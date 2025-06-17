@@ -1620,19 +1620,19 @@ def save_graph_to_csv(
     filename : str, required
         Output file name
     ct : list, required
-        Graph count values
+        Graph count values with shape :obj:`(nbins)`
     x : list, required
-        Graph x values
+        Graph x values with shape :obj:`(nbins)`
     y : list, required
-        Graph y values
+        Graph y values with shape :obj:`(nbins)`
     xerr : list, optional
-        Graph x error values
+        Graph x error values with shape :obj:`(nbins)`
     yerr : list, optional
-        Graph y error values
+        Graph y error values with shape :obj:`(nbins)`
     xerr_syst : list, optional
-        Graph x systematic error values
+        Graph x systematic error values with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     yerr_syst : list, optional
-        Graph y systematic error values
+        Graph y systematic error values with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     delimiter : str, optional
         CSV format delimiter
     header : str, optional
@@ -1642,9 +1642,16 @@ def save_graph_to_csv(
     comments : str, optional
         CSV comments
 
+    Raises
+    ------
+    ValueError
+        Raise an error if the shape of the systematics arrays do not match :obj:`(nbins)` or :obj:`(nbins,2)`.
+
+
     Description
     -----------
     Write a graph to a CSV file with optional errors and systematic errors.
+    Systematic errors may have high and low values.
     """
 
     # Create data array
@@ -1654,8 +1661,21 @@ def save_graph_to_csv(
     if yerr is None or len(yerr)==0: yerr = [0.0 for el in x]
     if xerr_syst is None or len(xerr_syst)==0: xerr_syst = [0.0 for el in x]
     if yerr_syst is None or len(yerr_syst)==0: yerr_syst = [0.0 for el in x]
+    xerr_syst_shape = np.shape(xerr_syst)
+    yerr_syst_shape = np.shape(yerr_syst)
     for i, el in enumerate(x):
-        data.append([i, ct[i], x[i], y[i], xerr[i], yerr[i], xerr_syst[i], yerr_syst[i]])
+        data_i = [i, ct[i], x[i], y[i], xerr[i], yerr[i]]
+        if len(xerr_syst_shape)==1 and len(yerr_syst_shape)==1:
+            data_i.extend([xerr_syst[i], yerr_syst[i]])
+        elif len(xerr_syst_shape)==2 and xerr_syst_shape[1]==2 and len(yerr_syst_shape)==1:
+            data_i.extend([xerr_syst[i][0], xerr_syst[i][1], yerr_syst[i]])
+        elif len(xerr_syst_shape)==1 and len(yerr_syst_shape)==2 and yerr_syst_shape[1]==2:
+            data_i.extend([xerr_syst[i], yerr_syst[i][0], yerr_syst[i][1]])
+        elif len(xerr_syst_shape)==2 and xerr_syst_shape[1]==2 and len(yerr_syst_shape)==2 and yerr_syst_shape[1]==2:
+            data_i.extend([xerr_syst[i][0], xerr_syst[i][1], yerr_syst[i][0], yerr_syst[i][1]])
+        else:
+            raise ValueError(f"ERROR: xerr_syst_shape={xerr_syst_shape} or yerr_syst_shape={yerr_syst_shape} does not have shape (nbins) or (nbins,2).")
+        data.append(data_i)
     data = np.array(data)
 
     # Save data to file
@@ -1676,9 +1696,9 @@ def save_graph_systematics_to_csv(
     filename : str, required
         Output file name
     x : list, required
-        Graph x values
+        Graph x values with shape :obj:`(nbins)`
     yerr_syst : list, optional
-        Graph y systematic error values decomposed into the different sources of systematic error
+        Graph y systematic error values decomposed into the different sources of systematic error with shape :obj:`(nbins,nsources)` or :obj:`(nbins,nsources,2)`
     delimiter : str, optional
         CSV format delimiter
     header : str, optional
@@ -1688,18 +1708,33 @@ def save_graph_systematics_to_csv(
     comments : str, optional
         CSV comments
 
+    Raises
+    ------
+    ValueError
+        Raise an error if the shape of the systematics is does not match :obj:`(nbins,nsources)` or :obj:`(nbins, nsources,2)`.
+
     Description
     -----------
-    Write a set of graph y systematic errors to a CSV file with the systematic error values broken down by source.
-    This means the argument :obj:`yerr_syst` should have shape :obj:`(nbins, nsources)` where :obj:`nbins` is the number of 
-    kinematic bins and :obj:`nsources` is the number of sources of systematic error.
+    Write a set of graph y systematic errors to a CSV file with the systematic error values broken down by source and allowing high and low errors.
+    This means the argument :obj:`yerr_syst` should have shape :obj:`(nbins, nsources)` or :obj:`(nbins, nsources,2)`
+    where :obj:`nbins` is the number of kinematic bins and :obj:`nsources` is the number of sources of systematic error.
     """
 
     # Create data array
     data = []
     if yerrs_syst is None or len(yerrs_syst)==0: yerrs_syst = [[0.0] for el in x]
-    for i, el in enumerate(x):
-        data.append([i, x[i], *yerrs_syst[i]])
+    yerrs_syst_shape = np.shape(yerrs_syst)        
+    if yerrs_syst_shape[0]==len(x) and len(yerrs_syst_shape)==2:
+        for i, el in enumerate(x):
+            data.append([i, x[i], *yerrs_syst[i]])
+    elif yerrs_syst_shape[0]==len(x) and (len(yerrs_syst_shape)==3 and yerrs_syst_shape[2]==2):
+        for i, el in enumerate(x):
+            data_i = [i, x[i]]
+            for source in yerrs_syst[i]:
+                data_i.extend(*source)
+            data.append(data_i)
+    else:
+        raise ValueError(f"ERROR: yerrs_syst has shape {yerrs_syst} but allowed shapes are ({len(x)},*) and ({len(x)},*,2).")
     data = np.array(data)
 
     # Save data to file
@@ -2493,7 +2528,7 @@ def plot_systematics(
     Description
     -----------
     Plot the systematic error for each bin in a 1D binning scheme broken down by sources of systematic error.
-    Save systematics breakdowns to CSV in :obj:`<outpath>.csv`.
+    Save systematics breakdowns to CSV in :obj:`<outpath>.csv`.  Note that this does **not** allow for asymmetric errors.
     """
 
     # Set color palette
@@ -2626,33 +2661,33 @@ def plot_results(
     ax1 : matplotlib.axes._axes.Axes, required
         Matplotlib.pyplot figure axis
     ct_mean : list, optional
-        Count mean values for each bin
+        Count mean values for each bin with shape :obj:`(nbins)`
     x_mean : list, optional
-        x mean values for each bin
+        x mean values for each bin with shape :obj:`(nbins)`
     y_mean : list, optional
-        y mean values for each bin
+        y mean values for each bin with shape :obj:`(nbins)`
     xerr_mean : list, optional
-        x error alues for each bin
+        x error alues for each bin with shape :obj:`(nbins)`
     yerr_mean : list, optional
-        y error values for each bin
+        y error values for each bin with shape :obj:`(nbins)`
     xerr_syst : list, optional
-        x systematic error alues for each bin
+        x systematic error alues for each bin with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     yerr_syst : list, optional
-        y systematic error values for each bin
+        y systematic error values for each bin, with shape :obj:`(nbins)` or :obj:`(nbins,2)`
     y_min : list, optional
-        y minimum values for each bin
+        y minimum values for each bin with shape :obj:`(nbins)`
     y_max : list, optional
-        y maximum values for each bin
+        y maximum values for each bin with shape :obj:`(nbins)`
     y_std : list, optional
-        y standard deviation values for each bin
+        y standard deviation values for each bin with shape :obj:`(nbins)`
     ydiff_mean : list, optional
-        y difference from injected signal asymmetry mean values for each bin
+        y difference from injected signal asymmetry mean values for each bin with shape :obj:`(nbins)`
     ydiff_std : list, optional
-        y difference from injected signal asymmetry standard deviation values for each bin
+        y difference from injected signal asymmetry standard deviation values for each bin with shape :obj:`(nbins)`
     ydiff_min : list, optional
-        y difference from injected signal asymmetry minimum values for each bin
+        y difference from injected signal asymmetry minimum values for each bin with shape :obj:`(nbins)`
     ydiff_max : list, optional
-        y difference from injected signal asymmetry maximum values for each bin
+        y difference from injected signal asymmetry maximum values for each bin with shape :obj:`(nbins)`
     xlims : tuple, optional
         x limits for plotting
     ylims : tuple, optional
@@ -2911,6 +2946,14 @@ def plot_results(
     # Save plot data to csv
     delimiter = ","
     cols      = ["bin","count","x","y","xerr","yerr","xerrsyst","yerrsyst"] if not rescale else ["bin","count","x","y","xerr","yerr","acceptanceratio","scaling"]
+    xerr_syst_shape = np.shape(xerr_syst)
+    yerr_syst_shape = np.shape(yerr_syst)
+    if (len(xerr_syst_shape)==2):
+        cols = ["bin","count","x","y","xerr","yerr","xerrsystlow","xerrsysthigh","yerrsyst"]
+    if (len(yerr_syst_shape)==2):
+        cols = ["bin","count","x","y","xerr","yerr","xerrsyst","xerrsyst","yerrsystlow","yerrsysthigh"]
+    if (len(xerr_syst_shape)==2 and len(yerr_syst_shape)==2):
+        cols = ["bin","count","x","y","xerr","yerr","xerrsystlow","xerrsysthigh","yerrsystlow","yerrsysthigh"]
     header    = delimiter.join(cols) #NOTE: CAN'T HAVE UNDERSCORE IN COLUMN NAMES FOR LATEX CSVSIMPLE
     fmt       = ["%.3g" for i in range(len(cols)-2)]
     fmt       = ["%d","%d",*fmt]
