@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append('../py')
-
 from saga.orchestrate import create_jobs, submit_jobs
 
 # Create job submission structure

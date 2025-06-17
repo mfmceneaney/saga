@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saga"
+version = "0.0.0"
+description = "Python SAGA -- Spin Asymmetry Generic Analysis -- Postprocessing Library"
+authors = [
+    { name = "Matthew F. McEneaney", email = "matthew.mceneaney@duke.edu" }
+]
+readme = "README.md"
+requires-python = ">=3.7.3"
+dependencies = [
+    "numpy",
+    "pandas",
+    "uproot",
+    "matplotlib",
+    "seaborn",
+    "pyyaml"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black"]
+
+[tool.setuptools]
+package-dir = {"" = "py"}
+
+[tool.setuptools.packages.find]
+where = ["py"]

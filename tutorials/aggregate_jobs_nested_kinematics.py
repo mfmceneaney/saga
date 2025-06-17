@@ -1,9 +1,6 @@
 import numpy as np
 import os
-import sys
 import pandas as pd
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'../py')))
 
 import saga.aggregate as sagas
 
