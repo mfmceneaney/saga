@@ -1,32 +1,42 @@
+[![ROOT-latest](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml)
+
 # Spin Asymmetry Generic Analysis (SAGA)
 
 Run a generic SIDIS asymmetry analysis with CLAS12 data.
 
 Use [CLAS12-Analysis](https://github.com/mfmceneaney/CLAS12-Analysis.git) or your own software to produce the input ROOT trees with event by event kinematics selecting all unique $e^{-}+X$ combinations.
 
-## Prerequisites
+## Install from source
+
+Begin by cloning the repository:
+```bash
+git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
+```
+
+### Prerequisites
 
 * Python >=3.7.3
 * A compiler with C++11 support
 * Pip 10+ or CMake >= 3.4 (or 3.14+ on Windows, which was the first version to support VS 2019)
 * [ROOT](https://root.cern.ch)
 
-## Installation
-
-Begin by cloning this repository:
-```bash
-git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
-```
-
 ### C++ Libraries
-This is a CMake project so you can build wherever but this is probably the simplest way to go:
+This is a CMake project so you can build wherever but this is probably the simplest way to go.  From the top-level project directory run:
 ```bash
-mkdir build
-cd build
-cmake .. -DBUILD_DOXYGEN=FALSE
-make
+cmake -S . -B build -DBUILD_DOXYGEN=FALSE
+cmake --build build
+cmake --install build --prefix $PWD/bin
 ```
-You should now have several executables in your `build` directory.
+
+You should now have several executables in your `bin` directory.
+
+You can manually source the environment scripts or add the following to your startup script to include these executables on your `$PATH`:
+```bash
+# Add SAGA environment variables: https://github.com/mfmceneaney/saga.git
+cd /path/to/saga
+source bin/env.sh
+cd -
+``` 
 
 ### Python3 Modules
 
@@ -38,6 +48,35 @@ Then you can import the libraries in your python code with:
 ```python
 import saga
 ```
+
+## Install via Docker
+
+You may also install and run the project as a [Docker](https://www.docker.com) container.
+
+Begin as above by cloning the repository:
+```bash
+git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
+```
+
+Then build the project with:
+```bash
+docker build -t saga-project /path/to/saga
+```
+and run it with:
+```bash
+docker run --rm -it saga-project
+```
+The `--rm` option tells docker to remove the container and its data once it is shut down.
+To retain the container data though, you can mount a local directory (`src`) to a directory (`dst`)
+inside the container with the following:
+```bash
+docker run --rm -it -v <src>:<dst> saga-project
+```
+Once you start the container you should have the following environment variables:
+- `SAGA_HOME`
+- `SAGA_BUILD`
+- `SAGA_BIN`
+Furthermore, the project executables in `$SAGA_BIN` should be available from your `$PATH`.
 
 ## Documentation
 Check out the documentation page on [Read The Docs](https://saga.readthedocs.io/en/latest/)!

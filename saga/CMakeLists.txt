@@ -57,3 +57,12 @@ target_link_libraries(getBinKinematicsTH2Ds PUBLIC ROOT::RIO ROOT::Net ROOT::Roo
 
 add_executable(getKinBinnedResolutions ${EXECUTABLES_DIR}/getKinBinnedResolutions.cpp)
 target_link_libraries(getKinBinnedResolutions PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
+
+#----------------------------------------------------------------------#
+# INSTALL EXECUTABLES AND LIBRARY
+install(TARGETS saga getKinBinnedAsym findBinLims getBinMigration
+        getBinKinematics getBinKinematicsTH1Ds getBinKinematicsTH2Ds getKinBinnedResolutions
+        RUNTIME DESTINATION .)
+
+# Include library headers
+install(DIRECTORY include/ DESTINATION include)

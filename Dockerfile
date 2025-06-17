@@ -1,5 +1,5 @@
-# Start from ROOT base image
-FROM rootproject/root:latest
+# Start from ROOT base image #NOTE: If you are using podman to emulate docker then you must use the below ROOT specification form.
+FROM docker.io/rootproject/root:6.36.00-ubuntu25.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -9,6 +9,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Install build tools, Doxygen, venv support
 RUN apt-get update && \
     apt-get install -y \
+        bash \
         cmake \
         g++ \
         git \
@@ -22,7 +23,7 @@ RUN apt-get update && \
 RUN python3 -m venv $VIRTUAL_ENV
 
 # Set working directory
-WORKDIR /usr/src/app
+WORKDIR /usr/src/saga
 COPY . .
 
 # Install pip packages for docs
@@ -31,9 +32,11 @@ RUN pip install --upgrade pip && \
     if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
 # Build project and docs with CMake
-RUN cmake -S . -B build -DBUILD_DOXYGEN=TRUE && cmake --build build
+RUN cmake -S . -B build -DBUILD_DOXYGEN=TRUE && \
+    cmake --build build && \
+    cmake --install build --prefix bin
 
 # Install python modules
 RUN if [ -f pyproject.toml ]; then pip install -e .; fi
 
-CMD ["/bin/bash"]
+CMD ["/bin/bash","-c","source /usr/src/saga/bin/env.sh && exec bash"]
