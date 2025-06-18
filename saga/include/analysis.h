@@ -444,7 +444,7 @@ std::vector<std::string> getSimGenAsymPdf(
         }
     }
 
-    // Construct FULL beam helicity and target spin dependent pdf
+    // Construct FULL beam helicity and target spin dependent pdf **WITHOUT** PU asymmetries
     if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp!="") {
 
         // Create the simultaneous pdf
@@ -453,8 +453,8 @@ std::vector<std::string> getSimGenAsymPdf(
             {
                 {ss->lookupName(11), &model_11}, // Polarization states: UU
                 {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
-                {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: UP
-                {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: UP
+                {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: PP
+                {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: PP
             },
             *ss);
             model_and_yield_names.push_back(nsig_11.GetName());
@@ -467,8 +467,8 @@ std::vector<std::string> getSimGenAsymPdf(
             {
                 {ss->lookupName(11), &_model_11}, // Polarization states: UU
                 {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
-                {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: UP
-                {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: UP
+                {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: PP
+                {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: PP
             },
             *ss);
         }
@@ -484,8 +484,8 @@ std::vector<std::string> getSimGenAsymPdf(
                 {ss->lookupName(11), &model_11}, // Polarization states: UU
                 {ss->lookupName(21), &model_21}, {ss->lookupName(1),  &model_01}, // Polarization states: PU
                 {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
-                {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: UP
-                {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: UP
+                {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: PP
+                {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: PP
             },
             *ss);
             model_and_yield_names.push_back(nsig_11.GetName());
@@ -500,8 +500,8 @@ std::vector<std::string> getSimGenAsymPdf(
                 {ss->lookupName(11), &_model_11}, // Polarization states: UU
                 {ss->lookupName(21), &_model_21}, {ss->lookupName(1),  &_model_01}, // Polarization states: PU
                 {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
-                {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: UP
-                {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: UP
+                {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: PP
+                {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: PP
             },
             *ss);
         }
