@@ -19,7 +19,7 @@ import sys
 def get_config_str(
         config,
         sep='_',
-        aliases={}
+        aliases=None
     ):
     """
     Parameters
@@ -41,7 +41,7 @@ def get_config_str(
     Create a string representation of a configuration.  Note that aliases of nonhashable types, e.g., :obj:`list` or :obj:`dict`
     will be accessed by the string representation of the aliased object :obj:`str(<object>)`.
     """
-
+    if aliases is None: aliases = {}
     return (sep+sep).join([
                 aliases[key][config[key]] if (key in aliases and (type(config[key]) in (str,float,int)) and config[key] in aliases[key])
                 else aliases[key][str(config[key])] if (key in aliases and (type(config[key]) not in (str,float,int)) and str(config[key]) in aliases[key])
