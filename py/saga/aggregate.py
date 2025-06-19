@@ -1599,7 +1599,8 @@ def save_txt(
     """
 
     # Save to CSV
-    if header is None: header = ' '+delimiter+delimiter.join([str(i+1) for i in range(len(data))])#NOTE: ASSUME DATA HAS DIMENSION: [NCOL,NROWS]
+    if header is None: header = delimiter.join([str(i) for i in range(len(data))])#NOTE: ASSUME DATA HAS DIMENSION: [NCOL,NROWS]
+    if fmt is None: fmt = delimiter.join(["%.3g" for el in data])
     np.savetxt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
 
 def save_graph_to_csv(
