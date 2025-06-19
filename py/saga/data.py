@@ -5,6 +5,7 @@ supplied in yaml files.
 
 # Author: Matthew F. McEneaney (2024, Duke University)
 """
+
 import os
 import yaml
 import uproot as ur
@@ -12,10 +13,8 @@ import numpy as np
 import pandas as pd
 from .aggregate import get_config_list, get_config_str
 
-def load_th1(
-        path,
-        name = "h1"
-    ):
+
+def load_th1(path, name="h1"):
     """
     Parameters
     ----------
@@ -36,7 +35,7 @@ def load_th1(
     """
 
     # Get TH1 from ROOT file
-    if path=="":
+    if path == "":
         return []
     try:
         f = ur.open(path)
@@ -44,13 +43,12 @@ def load_th1(
         return g
 
     except FileNotFoundError:
-        print("FileNotFoundError: ",path)
+        print("FileNotFoundError: ", path)
         print("\t Returning empty list")
         return []
 
-def load_yaml(
-        path
-    ):
+
+def load_yaml(path):
     """
     Parameters
     ----------
@@ -68,19 +66,20 @@ def load_yaml(
     """
 
     yaml_args = {}
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding="utf-8") as f:
         yaml_args = yaml.safe_load(f)
     return yaml_args
 
+
 def load_csv(
-        path,
-        old_path=None,
-        new_path=None,
-        config=None,
-        aggregate_config=None,
-        chain_configs=None,
-        aliases=None,
-    ):
+    path,
+    old_path=None,
+    new_path=None,
+    config=None,
+    aggregate_config=None,
+    chain_configs=None,
+    aliases=None,
+):
     """
     Parameters
     ----------
@@ -113,23 +112,28 @@ def load_csv(
     # Set input path
     inpath = path
     if old_path is not None and new_path is not None:
-        inpath = path.replace(old_path,new_path)
+        inpath = path.replace(old_path, new_path)
 
     # Chain CSVs across the given keys
-    if config is not None and len(config)>0 and chain_configs is not None and len(chain_configs)>0:
+    if (
+        config is not None
+        and len(config) > 0
+        and chain_configs is not None
+        and len(chain_configs) > 0
+    ):
 
         # Get the full batch config
         aggregate_configs = {}
         if aggregate_config is not None:
-            aggregate_configs = {key:[aggregate_config[key]] for key in aggregate_config}
+            aggregate_configs = {
+                key: [aggregate_config[key]] for key in aggregate_config
+            }
         configs = dict(
-            {key:[config[key]] for key in config},
-            **chain_configs,
-            **aggregate_configs
+            {key: [config[key]] for key in config}, **chain_configs, **aggregate_configs
         )
 
         # Get a list of all possible option value combinations from configs
-        config_list = get_config_list(configs,aggregate_keys=[])
+        config_list = get_config_list(configs, aggregate_keys=[])
 
         # Set csv list
         csv_list = []
@@ -138,10 +142,10 @@ def load_csv(
         for config_list_i in config_list:
 
             # Get job directory
-            config_str = get_config_str(config_list_i,aliases=aliases)
+            config_str = get_config_str(config_list_i, aliases=aliases)
 
             # Get base job directory
-            base_config_str = get_config_str(config,aliases=aliases)
+            base_config_str = get_config_str(config, aliases=aliases)
 
             # Modify path for chain element
             inpath_i = inpath.replace(base_config_str, config_str)
@@ -156,14 +160,15 @@ def load_csv(
     # Return csv
     return pd.read_csv(inpath)
 
+
 def save_txt(
-        filename,
-        data,
-        delimiter=",",
-        header=None,
-        fmt=None,
-        comments='',
-    ):
+    filename,
+    data,
+    delimiter=",",
+    header=None,
+    fmt=None,
+    comments="",
+):
     """
     Parameters
     ----------
@@ -186,26 +191,29 @@ def save_txt(
     """
 
     # Save to CSV
-    if header is None: #NOTE: ASSUME DATA HAS DIMENSION: [NCOL,NROWS]
+    if header is None:  # NOTE: ASSUME DATA HAS DIMENSION: [NCOL,NROWS]
         header = delimiter.join([str(i) for i in range(len(data))])
     if fmt is None:
         fmt = delimiter.join(["%.3g" for el in data])
-    np.savetxt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
+    np.savetxt(
+        filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments
+    )
+
 
 def save_graph_to_csv(
-        filename,
-        ct,
-        x,
-        y,
-        xerr=None,
-        yerr=None,
-        xerr_syst=None,
-        yerr_syst=None,
-        delimiter=",",
-        header=None,
-        fmt=None,
-        comments='',
-    ):
+    filename,
+    ct,
+    x,
+    y,
+    xerr=None,
+    yerr=None,
+    xerr_syst=None,
+    yerr_syst=None,
+    delimiter=",",
+    header=None,
+    fmt=None,
+    comments="",
+):
     """
     Parameters
     ----------
@@ -249,49 +257,60 @@ def save_graph_to_csv(
 
     # Create data array
     data = []
-    if ct is None or len(ct)==0:
+    if ct is None or len(ct) == 0:
         ct = [0.0 for el in x]
-    if xerr is None or len(xerr)==0:
+    if xerr is None or len(xerr) == 0:
         xerr = [0.0 for el in x]
-    if yerr is None or len(yerr)==0:
+    if yerr is None or len(yerr) == 0:
         yerr = [0.0 for el in x]
-    if xerr_syst is None or len(xerr_syst)==0:
+    if xerr_syst is None or len(xerr_syst) == 0:
         xerr_syst = [0.0 for el in x]
-    if yerr_syst is None or len(yerr_syst)==0:
+    if yerr_syst is None or len(yerr_syst) == 0:
         yerr_syst = [0.0 for el in x]
     xerr_syst_shape = np.shape(xerr_syst)
     yerr_syst_shape = np.shape(yerr_syst)
     for i, el in enumerate(x):
         data_i = [i, ct[i], x[i], y[i], xerr[i], yerr[i]]
-        if len(xerr_syst_shape)==1 and len(yerr_syst_shape)==1:
+        if len(xerr_syst_shape) == 1 and len(yerr_syst_shape) == 1:
             data_i.extend([xerr_syst[i], yerr_syst[i]])
-        elif len(xerr_syst_shape)==2 and xerr_syst_shape[1]==2 and len(yerr_syst_shape)==1:
+        elif (
+            len(xerr_syst_shape) == 2
+            and xerr_syst_shape[1] == 2
+            and len(yerr_syst_shape) == 1
+        ):
             data_i.extend([xerr_syst[i][0], xerr_syst[i][1], yerr_syst[i]])
-        elif len(xerr_syst_shape)==1 and len(yerr_syst_shape)==2 and yerr_syst_shape[1]==2:
+        elif (
+            len(xerr_syst_shape) == 1
+            and len(yerr_syst_shape) == 2
+            and yerr_syst_shape[1] == 2
+        ):
             data_i.extend([xerr_syst[i], yerr_syst[i][0], yerr_syst[i][1]])
-        elif len(xerr_syst_shape)==2 and xerr_syst_shape[1]==2 and \
-            len(yerr_syst_shape)==2 and yerr_syst_shape[1]==2:
-            data_i.extend([xerr_syst[i][0], xerr_syst[i][1], yerr_syst[i][0], yerr_syst[i][1]])
+        elif (
+            len(xerr_syst_shape) == 2
+            and xerr_syst_shape[1] == 2
+            and len(yerr_syst_shape) == 2
+            and yerr_syst_shape[1] == 2
+        ):
+            data_i.extend(
+                [xerr_syst[i][0], xerr_syst[i][1], yerr_syst[i][0], yerr_syst[i][1]]
+            )
         else:
             raise ValueError(
-                f"ERROR: xerr_syst_shape={xerr_syst_shape} or yerr_syst_shape={yerr_syst_shape} " +
-                "does not have shape (nbins) or (nbins,2)."
+                f"ERROR: xerr_syst_shape={xerr_syst_shape} or yerr_syst_shape={yerr_syst_shape} "
+                + "does not have shape (nbins) or (nbins,2)."
             )
         data.append(data_i)
     data = np.array(data)
 
     # Save data to file
-    save_txt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
+    save_txt(
+        filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments
+    )
+
 
 def save_graph_systematics_to_csv(
-        filename,
-        x,
-        yerrs_syst=None,
-        delimiter=",",
-        header=None,
-        fmt=None,
-        comments=''
-    ):
+    filename, x, yerrs_syst=None, delimiter=",", header=None, fmt=None, comments=""
+):
     """
     Parameters
     ----------
@@ -328,13 +347,15 @@ def save_graph_systematics_to_csv(
 
     # Create data array
     data = []
-    if yerrs_syst is None or len(yerrs_syst)==0:
+    if yerrs_syst is None or len(yerrs_syst) == 0:
         yerrs_syst = [[0.0] for el in x]
     yerrs_syst_shape = np.shape(yerrs_syst)
-    if yerrs_syst_shape[0]==len(x) and len(yerrs_syst_shape)==2:
+    if yerrs_syst_shape[0] == len(x) and len(yerrs_syst_shape) == 2:
         for i, el in enumerate(x):
             data.append([i, el, *yerrs_syst[i]])
-    elif yerrs_syst_shape[0]==len(x) and (len(yerrs_syst_shape)==3 and yerrs_syst_shape[2]==2):
+    elif yerrs_syst_shape[0] == len(x) and (
+        len(yerrs_syst_shape) == 3 and yerrs_syst_shape[2] == 2
+    ):
         for i, el in enumerate(x):
             data_i = [i, el]
             for source in yerrs_syst[i]:
@@ -342,23 +363,26 @@ def save_graph_systematics_to_csv(
             data.append(data_i)
     else:
         raise ValueError(
-            f"ERROR: yerrs_syst has shape {yerrs_syst} " +
-            f"but allowed shapes are ({len(x)},*) and ({len(x)},*,2)."
+            f"ERROR: yerrs_syst has shape {yerrs_syst} "
+            + f"but allowed shapes are ({len(x)},*) and ({len(x)},*,2)."
         )
     data = np.array(data)
 
     # Save data to file
-    save_txt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
+    save_txt(
+        filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments
+    )
+
 
 def save_bin_mig_mat_to_csv(
-        bin_mig_mat,
-        base_dir='./',
-        basename='',
-        delimiter=",",
-        header=None,
-        fmt=None,
-        comments='',
-    ):
+    bin_mig_mat,
+    base_dir="./",
+    basename="",
+    delimiter=",",
+    header=None,
+    fmt=None,
+    comments="",
+):
     """
     Parameters
     ----------
@@ -390,27 +414,32 @@ def save_bin_mig_mat_to_csv(
     """
 
     # Check bin migration matrix shape
-    if np.shape(bin_mig_mat)[0]!=np.shape(bin_mig_mat)[1] or len(np.shape(bin_mig_mat))!=2:
+    if (
+        np.shape(bin_mig_mat)[0] != np.shape(bin_mig_mat)[1]
+        or len(np.shape(bin_mig_mat)) != 2
+    ):
         raise TypeError(
-            "Bin migration matrix must be square but has shape "+
-            str(np.shape(bin_mig_mat))
-            )
+            "Bin migration matrix must be square but has shape "
+            + str(np.shape(bin_mig_mat))
+        )
 
     # Set output filename
-    filename = 'bin_mig_mat_'+basename+'.csv'
-    filename = os.path.join(base_dir,filename)
+    filename = "bin_mig_mat_" + basename + ".csv"
+    filename = os.path.join(base_dir, filename)
 
     # Create new table with int bin labels
     nbins = np.shape(bin_mig_mat)[0]
-    new_shape = list(np.shape(bin_mig_mat)) #NOTE: List is important here!
-    new_shape[1] += 1 #NOTE: Add bin numbers.
+    new_shape = list(np.shape(bin_mig_mat))  # NOTE: List is important here!
+    new_shape[1] += 1  # NOTE: Add bin numbers.
     data = np.zeros(new_shape)
-    data[:,0] = list(range(1, nbins + 1))
-    data[0:,1:] = bin_mig_mat
+    data[:, 0] = list(range(1, nbins + 1))
+    data[0:, 1:] = bin_mig_mat
 
     # Set column formats if not given
     if fmt is None:
         fmt = ["%.3g" for i in range(np.shape(bin_mig_mat)[0])]
-        fmt = ["%d",*fmt]
+        fmt = ["%d", *fmt]
 
-    save_txt(filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments)
+    save_txt(
+        filename, data, header=header, delimiter=delimiter, fmt=fmt, comments=comments
+    )
