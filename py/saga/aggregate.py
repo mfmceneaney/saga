@@ -250,6 +250,7 @@ def load_th1(
     """
 
     # Get TH1 from ROOT file
+    if path=="" return []
     try:
         f = ur.open(path)
         g = f[name].to_numpy()
