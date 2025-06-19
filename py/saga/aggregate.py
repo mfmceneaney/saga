@@ -143,11 +143,13 @@ def get_config_list(
 
     # Create map of elements of elements of configs and combine completely into each other for one list
     data_list = []
-    for i, key in enumerate(configs):
+    first = True
+    for key in configs:
         if key in aggregate_keys: continue
-        if i==0:
-                for el in configs[key]:
-                    data_list.append({key: el})
+        if first:
+            for el in configs[key]:
+                data_list.append({key: el})
+            first = False
         else:
             data_list_new = []
             for d in data_list:
@@ -590,7 +592,6 @@ def get_nested_scheme_shape(
     # Case you do not have a nested bin scheme
     else:
         raise ValueError("`node` must define have a 2D nested bin scheme structure")
-
 
 def get_binscheme_cuts_and_ids(
         binscheme,
