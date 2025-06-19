@@ -21,7 +21,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "black"]
+dev = ["pytest>=8.0", "black"]
+test = [
+    "pytest>=8.0",
+    "pylint",
+    "black",
+    "numpy",
+    "pandas",
+    "uproot",
+    "pyyaml"
+]
 
 [tool.setuptools]
 package-dir = {"" = "py"}
