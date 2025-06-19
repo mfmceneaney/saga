@@ -1,21 +1,19 @@
 """
 This module implements methods for aggregating output
 from slurm jobs for all possible option combinations
-supplied in yaml files. It also offers methods for 
+supplied in yaml files. It also offers methods for
 manipulating, plotting, and saving the outputs.
 
 # Author: Matthew F. McEneaney (2024, Duke University)
 """
+
 import os
 import numpy as np
 import pandas as pd
 from .data import load_csv
 
-def get_config_str(
-        config,
-        sep='_',
-        aliases=None
-    ):
+
+def get_config_str(config, sep="_", aliases=None):
     """
     Parameters
     ----------
@@ -41,23 +39,48 @@ def get_config_str(
     if aliases is None:
         aliases = {}
 
-    return (sep+sep).join([
-                aliases[key][config[key]] if (key in aliases and (type(config[key]) in (str,float,int)) and config[key] in aliases[key])
-                else aliases[key][str(config[key])] if (key in aliases and (type(config[key]) not in (str,float,int)) and str(config[key]) in aliases[key])
-                else sep.join([
-                    key,sep.join([str(ele) for ele in config[key]]) if isinstance(config[key],list) else str(config[key])
-                ]) for key in sorted(config)
-                ])
+    return (sep + sep).join(
+        [
+            (
+                aliases[key][config[key]]
+                if (
+                    key in aliases
+                    and (type(config[key]) in (str, float, int))
+                    and config[key] in aliases[key]
+                )
+                else (
+                    aliases[key][str(config[key])]
+                    if (
+                        key in aliases
+                        and (type(config[key]) not in (str, float, int))
+                        and str(config[key]) in aliases[key]
+                    )
+                    else sep.join(
+                        [
+                            key,
+                            (
+                                sep.join([str(ele) for ele in config[key]])
+                                if isinstance(config[key], list)
+                                else str(config[key])
+                            ),
+                        ]
+                    )
+                )
+            )
+            for key in sorted(config)
+        ]
+    )
+
 
 def get_config_out_path(
-        base_dir,
-        aggregate_keys,
-        result_name,
-        config,
-        sep='_',
-        aliases=None,
-        ext='.pdf',
-    ):
+    base_dir,
+    aggregate_keys,
+    result_name,
+    config,
+    sep="_",
+    aliases=None,
+    ext=".pdf",
+):
     """
     Parameters
     ----------
@@ -86,19 +109,22 @@ def get_config_out_path(
     Get a unique output file name for a given configuration.
     """
 
-    job_config_name  = 'aggregate'+sep+sep+sep+(sep+sep).join([str(key) for key in sorted(aggregate_keys)])+(sep+sep+sep)
-    job_config_name += get_config_str(config,sep=sep,aliases=aliases)
-    job_config_name += (sep+sep+sep)+result_name+ext
-    outpath = os.path.abspath(os.path.join(base_dir,job_config_name))
+    job_config_name = (
+        "aggregate"
+        + sep
+        + sep
+        + sep
+        + (sep + sep).join([str(key) for key in sorted(aggregate_keys)])
+        + (sep + sep + sep)
+    )
+    job_config_name += get_config_str(config, sep=sep, aliases=aliases)
+    job_config_name += (sep + sep + sep) + result_name + ext
+    outpath = os.path.abspath(os.path.join(base_dir, job_config_name))
 
     return outpath
 
-def get_out_file_name(
-        base_dir = None,
-        base_name='',
-        binscheme_name='x',
-        ext='.csv'
-    ):
+
+def get_out_file_name(base_dir=None, base_name="", binscheme_name="x", ext=".csv"):
     """
     Parameters
     ----------
@@ -120,13 +146,11 @@ def get_out_file_name(
     -----------
     Get output file name for a generic kinematic binning scheme passed to an executable constructed as :obj:`baseoutpath+binscheme_name+ext`.
     """
-    out_file_name = ''.join([base_name,binscheme_name,ext])
-    return out_file_name if base_dir is None else os.path.join(base_dir,out_file_name)
+    out_file_name = "".join([base_name, binscheme_name, ext])
+    return out_file_name if base_dir is None else os.path.join(base_dir, out_file_name)
 
-def get_config_list(
-        configs,
-        aggregate_keys=None
-    ):
+
+def get_config_list(configs, aggregate_keys=None):
     """
     Parameters
     ----------
@@ -164,12 +188,8 @@ def get_config_list(
 
     return data_list
 
-def get_out_dirs_list(
-        configs,
-        base_dir,
-        aggregate_keys=None,
-        aliases=None
-    ):
+
+def get_out_dirs_list(configs, base_dir, aggregate_keys=None, aliases=None):
     """
     Parameters
     ----------
@@ -198,7 +218,7 @@ def get_out_dirs_list(
         aggregate_keys = []
 
     # Get a list of all possible option value combinations from configs
-    config_list = get_config_list(configs,aggregate_keys=aggregate_keys)
+    config_list = get_config_list(configs, aggregate_keys=aggregate_keys)
 
     # Create list for output directories lists
     out_dirs_list = []
@@ -210,11 +230,11 @@ def get_out_dirs_list(
         output_dirs = []
 
         # Check if aggregate keys is empty
-        if len(aggregate_keys)==0:
+        if len(aggregate_keys) == 0:
 
             # Get job directory
-            config_str = get_config_str(config_list_i,aliases=aliases)
-            job_dir = os.path.abspath(os.path.join(base_dir,config_str))
+            config_str = get_config_str(config_list_i, aliases=aliases)
+            job_dir = os.path.abspath(os.path.join(base_dir, config_str))
             output_dirs.append(job_dir)
 
         # Loop aggregate keys and build file list for current binning
@@ -222,12 +242,14 @@ def get_out_dirs_list(
             for value in configs[key]:
 
                 # Set the aggregate key value
-                config_list_i_val = dict(config_list_i) #NOTE: Clone dictionary so that you only edit the local one.
+                config_list_i_val = dict(
+                    config_list_i
+                )  # NOTE: Clone dictionary so that you only edit the local one.
                 config_list_i_val[key] = value
 
                 # Get job directory
-                config_str = get_config_str(config_list_i_val,aliases=aliases)
-                job_dir = os.path.abspath(os.path.join(base_dir,config_str))
+                config_str = get_config_str(config_list_i_val, aliases=aliases)
+                job_dir = os.path.abspath(os.path.join(base_dir, config_str))
                 output_dirs.append(job_dir)
 
         # Now add the list of output directories to the overall list
@@ -235,20 +257,20 @@ def get_out_dirs_list(
 
     return out_dirs_list
 
-def set_nested_bin_cuts(
-        cuts,
-        cut_titles,
-        ids,
-        node,
-        old_cuts       = None,
-        old_cut_titles = None,
-        old_ids        = None,
-        var            = "",
-        lims_key       = "lims",
-        nested_key     = "nested",
-        binvar_titles  = None
-    ):
 
+def set_nested_bin_cuts(
+    cuts,
+    cut_titles,
+    ids,
+    node,
+    old_cuts=None,
+    old_cut_titles=None,
+    old_ids=None,
+    var="",
+    lims_key="lims",
+    nested_key="nested",
+    binvar_titles=None,
+):
     """
     Parameters
     ----------
@@ -290,39 +312,62 @@ def set_nested_bin_cuts(
         binvar_titles = {}
 
     # Check the YAML node
-    if isinstance(node,dict):
+    if isinstance(node, dict):
 
         # Check for bin limits
         lims = []
-        if lims_key in node.keys() and isinstance(node[lims_key],list):
+        if lims_key in node.keys() and isinstance(node[lims_key], list):
             lims = node[lims_key]
 
         # Set nbins lower limit to 0 since you allow passing limits with length 0
-        nbins = max(len(lims)-1,0)
+        nbins = max(len(lims) - 1, 0)
 
         # Get bin variable title
         var_title = var if var not in binvar_titles else binvar_titles[var]
 
         # Loop bins and get bin cuts
-        varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
-        varids  = list(range(nbins))
-        varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
-        varcut_titles = [f"${varlims[idx][0]} \\leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+        varlims = [[lims[idx], lims[idx + 1]] for idx in range(nbins)]
+        varids = list(range(nbins))
+        varcuts = [
+            f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})"
+            for idx in range(nbins)
+        ]
+        varcut_titles = [
+            f"${varlims[idx][0]} \\leq {var_title} < {varlims[idx][1]}$"
+            for idx in range(nbins)
+        ]
 
         # Expand bin cuts and cut titles and projection ids maps
-        old_cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in old_cuts] if len(old_cuts)>0 else varcuts
-        old_cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in old_cut_titles] \
-                    if len(old_cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
-        old_ids = [dict({var:varid},**id_map) for varid in varids for id_map in old_ids] if len(old_ids)>0 else [{var:el} for el in varids]
+        old_cuts = (
+            [f"{varcut} && {cut}" for varcut in varcuts for cut in old_cuts]
+            if len(old_cuts) > 0
+            else varcuts
+        )
+        old_cut_titles = (
+            [
+                f"{var} : {varcut_title} && {cut_title}"
+                for varcut_title in varcut_titles
+                for cut_title in old_cut_titles
+            ]
+            if len(old_cut_titles) > 0
+            else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
+        )
+        old_ids = (
+            [dict({var: varid}, **id_map) for varid in varids for id_map in old_ids]
+            if len(old_ids) > 0
+            else [{var: el} for el in varids]
+        )
 
         # Check for nested binning
-        if nested_key in node and isinstance(node[nested_key],list):
+        if nested_key in node and isinstance(node[nested_key], list):
 
             # Get nested YAML node
             node_nested = node[nested_key]
 
             # Loop nested bins
-            for ibin, node_nested_bin in enumerate(node_nested): #NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
+            for ibin, node_nested_bin in enumerate(
+                node_nested
+            ):  # NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
 
                 # Loop nested bin variables (only expect one!)
                 for it_key in node_nested_bin:
@@ -334,7 +379,7 @@ def set_nested_bin_cuts(
                     new_old_cuts = []
                     new_old_cut_titles = []
                     new_old_ids = []
-                    if ibin<len(old_cuts):
+                    if ibin < len(old_cuts):
                         new_old_cuts = [old_cuts[ibin]]
                         new_old_cut_titles = [old_cut_titles[ibin]]
                         new_old_ids = [old_ids[ibin]]
@@ -350,7 +395,7 @@ def set_nested_bin_cuts(
                         new_old_ids,
                         it_key,
                         lims_key,
-                        nested_key
+                        nested_key,
                     )
 
                     # Break on first nested variable found
@@ -366,10 +411,8 @@ def set_nested_bin_cuts(
     else:
         return
 
-def get_scheme_vars(
-        node,
-        nested_key = "nested"
-    ):
+
+def get_scheme_vars(node, nested_key="nested"):
     """
     Parameters
     ----------
@@ -387,13 +430,23 @@ def get_scheme_vars(
     binscheme_vars = []
 
     # Check for nested bin scheme
-    if isinstance(node,dict) and nested_key in node and isinstance(node[nested_key],list) and isinstance(node[nested_key][0],dict):
+    if (
+        isinstance(node, dict)
+        and nested_key in node
+        and isinstance(node[nested_key], list)
+        and isinstance(node[nested_key][0], dict)
+    ):
 
         # Get nested node
         node_nested = dict(node)
 
         # Loop nested nodes
-        while isinstance(node_nested,dict) and nested_key in node_nested and isinstance(node_nested[nested_key],list) and isinstance(node_nested[nested_key][0],dict):
+        while (
+            isinstance(node_nested, dict)
+            and nested_key in node_nested
+            and isinstance(node_nested[nested_key], list)
+            and isinstance(node_nested[nested_key][0], dict)
+        ):
 
             binvar = list(node_nested[nested_key][0].keys())[0]
             binscheme_vars.append(binvar)
@@ -404,11 +457,8 @@ def get_scheme_vars(
     # Default to case you have a grid scheme
     return list(node.keys())
 
-def get_nested_scheme_shape(
-        node,
-        lims_key   = "lims",
-        nested_key = "nested"
-    ):
+
+def get_nested_scheme_shape(node, lims_key="lims", nested_key="nested"):
     """
     Parameters
     ----------
@@ -439,29 +489,41 @@ def get_nested_scheme_shape(
     binscheme_shape = []
 
     # Check for nested bin scheme
-    if not (isinstance(node,dict) and nested_key in node and isinstance(node[nested_key],list) and isinstance(node[nested_key][0],dict)):
-        raise ValueError(f"`node` must have a 2D nested bin scheme structure, but node = {node}")
+    if not (
+        isinstance(node, dict)
+        and nested_key in node
+        and isinstance(node[nested_key], list)
+        and isinstance(node[nested_key][0], dict)
+    ):
+        raise ValueError(
+            f"`node` must have a 2D nested bin scheme structure, but node = {node}"
+        )
 
     # Get nested node
     node_nested = dict(node)
 
     # Loop nested node
     depth = 0
-    while isinstance(node_nested,dict) and nested_key in node_nested and isinstance(node_nested[nested_key],list) and isinstance(node_nested[nested_key][0],dict):
+    while (
+        isinstance(node_nested, dict)
+        and nested_key in node_nested
+        and isinstance(node_nested[nested_key], list)
+        and isinstance(node_nested[nested_key][0], dict)
+    ):
 
         # Get bin variable
         binvar = list(node_nested[nested_key][0].keys())[0]
 
         # Increment and cheeck depth
         depth += 1
-        if depth>=2:
+        if depth >= 2:
 
             # Add shapes to list at a recursion depth of 2 and exit loop
             for idx in range(len(node_nested[nested_key])):
                 shape = 0
                 if lims_key in node_nested[nested_key][idx][binvar].keys():
-                    shape = len(node_nested[nested_key][idx][binvar][lims_key])-1
-                    shape = max(0,shape)
+                    shape = len(node_nested[nested_key][idx][binvar][lims_key]) - 1
+                    shape = max(0, shape)
                 binscheme_shape.append(shape)
             break
 
@@ -472,11 +534,11 @@ def get_nested_scheme_shape(
 
 
 def get_binscheme_cuts_and_ids(
-        binscheme,
-        start_idx=0,
-        id_key='bin_id',
-        binvar_titles = None,
-    ):
+    binscheme,
+    start_idx=0,
+    id_key="bin_id",
+    binvar_titles=None,
+):
     """
     Parameters
     ----------
@@ -507,18 +569,23 @@ def get_binscheme_cuts_and_ids(
     # Initialize arrays
     cuts = []
     cut_titles = []
-    ids  = []
+    ids = []
 
     # Initialize nested shape
     nested_grid_shape = None
 
     # Set titles using raw bin variable names if no titles are provided
-    binscheme_vars = get_scheme_vars(binscheme,nested_key='nested')
-    if binvar_titles is None or len(binvar_titles)!=len(binscheme_vars):
+    binscheme_vars = get_scheme_vars(binscheme, nested_key="nested")
+    if binvar_titles is None or len(binvar_titles) != len(binscheme_vars):
         binvar_titles = list(binscheme_vars)
 
     # Check for nested bin scheme
-    if isinstance(binscheme,dict) and 'nested' in binscheme and isinstance(binscheme['nested'],list) and isinstance(binscheme['nested'][0],dict):
+    if (
+        isinstance(binscheme, dict)
+        and "nested" in binscheme
+        and isinstance(binscheme["nested"], list)
+        and isinstance(binscheme["nested"][0], dict)
+    ):
 
         # Recursively set bin scheme cuts map
         set_nested_bin_cuts(
@@ -526,15 +593,13 @@ def get_binscheme_cuts_and_ids(
             cut_titles,
             ids,
             binscheme,
-            lims_key      = 'lims',
-            nested_key    = 'nested',
-            binvar_titles = binvar_titles
+            lims_key="lims",
+            nested_key="nested",
+            binvar_titles=binvar_titles,
         )
 
         nested_grid_shape = get_nested_scheme_shape(
-            binscheme,
-            lims_key   = 'lims',
-            nested_key = 'nested'
+            binscheme, lims_key="lims", nested_key="nested"
         )
 
     # Grid bin scheme case
@@ -544,31 +609,67 @@ def get_binscheme_cuts_and_ids(
         for var_idx, var in enumerate(binscheme):
 
             # Set the variable title
-            var_title  = binvar_titles[var_idx]
+            var_title = binvar_titles[var_idx]
 
             # Get bin variable limits, projection ids, cuts and cut titles
-            nbins = len(binscheme[var])-1
+            nbins = len(binscheme[var]) - 1
             lims = binscheme[var]
-            if isinstance(binscheme[var],dict) and 'nbins' in binscheme[var] and 'lims' in binscheme[var]:
-                nbins = binscheme[var]['nbins']
-                lims = [(binscheme[var]['lims'][1]-binscheme[var]['lims'][0])/nbins * i + binscheme[var]['lims'][0] for i in range(nbins+1)]
-            varlims = [[lims[idx],lims[idx+1]] for idx in range(nbins)]
-            varids  = list(range(nbins))
-            varcuts = [f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})" for idx in range(nbins)]
-            varcut_titles = [f"${varlims[idx][0]} \\leq {var_title} < {varlims[idx][1]}$" for idx in range(nbins)]
+            if (
+                isinstance(binscheme[var], dict)
+                and "nbins" in binscheme[var]
+                and "lims" in binscheme[var]
+            ):
+                nbins = binscheme[var]["nbins"]
+                lims = [
+                    (binscheme[var]["lims"][1] - binscheme[var]["lims"][0]) / nbins * i
+                    + binscheme[var]["lims"][0]
+                    for i in range(nbins + 1)
+                ]
+            varlims = [[lims[idx], lims[idx + 1]] for idx in range(nbins)]
+            varids = list(range(nbins))
+            varcuts = [
+                f"({var}>={varlims[idx][0]} && {var}<{varlims[idx][1]})"
+                for idx in range(nbins)
+            ]
+            varcut_titles = [
+                f"${varlims[idx][0]} \\leq {var_title} < {varlims[idx][1]}$"
+                for idx in range(nbins)
+            ]
 
             # Expand bin cuts and cut titles and projection ids maps
-            cuts = [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts] if len(cuts)>0 else varcuts
-            cut_titles = [f"{var} : {varcut_title} && {cut_title}" for varcut_title in varcut_titles for cut_title in cut_titles] \
-                        if len(cut_titles)>0 else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
-            ids  = [dict({var:varid},**id_map) for varid in varids for id_map in ids] if len(ids)>0 else [{var:el} for el in varids]
+            cuts = (
+                [f"{varcut} && {cut}" for varcut in varcuts for cut in cuts]
+                if len(cuts) > 0
+                else varcuts
+            )
+            cut_titles = (
+                [
+                    f"{var} : {varcut_title} && {cut_title}"
+                    for varcut_title in varcut_titles
+                    for cut_title in cut_titles
+                ]
+                if len(cut_titles) > 0
+                else [f"{var} : {varcut_title}" for varcut_title in varcut_titles]
+            )
+            ids = (
+                [dict({var: varid}, **id_map) for varid in varids for id_map in ids]
+                if len(ids) > 0
+                else [{var: el} for el in varids]
+            )
 
     # Turn cuts and cuts_titles into maps
-    cuts = {start_idx+idx: cuts[idx] for idx in range(len(cuts))}
-    cut_titles = {start_idx+idx: {el.split(" : ")[0]:el.split(" : ")[1] for el in cut_titles[idx].split(" && ")} for idx in range(len(cut_titles))}
+    cuts = {start_idx + idx: cuts[idx] for idx in range(len(cuts))}
+    cut_titles = {
+        start_idx
+        + idx: {
+            el.split(" : ")[0]: el.split(" : ")[1]
+            for el in cut_titles[idx].split(" && ")
+        }
+        for idx in range(len(cut_titles))
+    }
 
     # Set up data frame
-    df = {id_key:[]}
+    df = {id_key: []}
     for var in binscheme_vars:
         df[var] = []
 
@@ -584,11 +685,12 @@ def get_binscheme_cuts_and_ids(
 
     return cuts, cut_titles, df, nested_grid_shape
 
+
 def reshape_nested_grid(
-        proj_ids,
-        nested_grid_shape,
-        fill_value = None,
-    ):
+    proj_ids,
+    nested_grid_shape,
+    fill_value=None,
+):
     """
     Parameters
     ----------
@@ -617,20 +719,22 @@ def reshape_nested_grid(
     """
 
     # Get the shape of the new array and instantiate it
-    shape = [len(nested_grid_shape),max(nested_grid_shape)]
+    shape = [len(nested_grid_shape), max(nested_grid_shape)]
     reshaped_proj_ids = [[fill_value for i in range(shape[1])] for j in range(shape[0])]
 
     # Check the nested grid shape
     if nested_grid_shape is None:
         return proj_ids
-    if not isinstance(nested_grid_shape,list):
-        raise TypeError('`nested_grid_shape` must be a list of integers')
-    if len(nested_grid_shape)==0:
-        raise ValueError('`nested_grid_shape` must be a non-empty list')
-    if not isinstance(nested_grid_shape[0],int):
-        raise TypeError('`nested_grid_shape` must be a list of integers')
-    if sum(nested_grid_shape)!=len(proj_ids):
-        raise ValueError('`sum(nested_grid_shape)` must be the same length as the number of projections in `proj_ids`')
+    if not isinstance(nested_grid_shape, list):
+        raise TypeError("`nested_grid_shape` must be a list of integers")
+    if len(nested_grid_shape) == 0:
+        raise ValueError("`nested_grid_shape` must be a non-empty list")
+    if not isinstance(nested_grid_shape[0], int):
+        raise TypeError("`nested_grid_shape` must be a list of integers")
+    if sum(nested_grid_shape) != len(proj_ids):
+        raise ValueError(
+            "`sum(nested_grid_shape)` must be the same length as the number of projections in `proj_ids`"
+        )
 
     # Loop projection ids and set your new grid array values
     counter = 0
@@ -641,14 +745,15 @@ def reshape_nested_grid(
 
     return reshaped_proj_ids
 
+
 def get_projection_ids(
-        df,
-        proj_vars,
-        arr_vars = None,
-        id_key='bin_id',
-        arr_var_bins=None,
-        nested_grid_shape=None,
-    ):
+    df,
+    proj_vars,
+    arr_vars=None,
+    id_key="bin_id",
+    arr_var_bins=None,
+    nested_grid_shape=None,
+):
     """
     Parameters
     ----------
@@ -692,36 +797,45 @@ def get_projection_ids(
         arr_var_bins = {}
 
     # Check projection variables
-    if len(proj_vars)>2:
-        print('WARNING: `get_projection_ids` : Are you sure you want more than 2 projection variables?')
+    if len(proj_vars) > 2:
+        print(
+            "WARNING: `get_projection_ids` : Are you sure you want more than 2 projection variables?"
+        )
 
     # Get list of grouping variables
     for key in df.keys():
-        if key!=id_key and key not in proj_vars and key not in arr_var_bins and len(arr_vars)==0:
+        if (
+            key != id_key
+            and key not in proj_vars
+            and key not in arr_var_bins
+            and len(arr_vars) == 0
+        ):
             arr_vars.append(key)
 
     # Check array variable bins argument
     if np.any([el in proj_vars for el in arr_vars]):
-        raise TypeError('`proj_vars` entries are not allowed in `arr_vars`.')
+        raise TypeError("`proj_vars` entries are not allowed in `arr_vars`.")
 
     # Check array variable bins argument
     if np.any([el in proj_vars for el in arr_var_bins]):
-        raise TypeError('`proj_vars` entries are not allowed in `arr_var_bins`.')
+        raise TypeError("`proj_vars` entries are not allowed in `arr_var_bins`.")
 
     # Get cut for array variable bins
-    arr_var_bins_cut = ' and '.join([f'{key}=={arr_var_bins[key]}' for key in arr_var_bins])
+    arr_var_bins_cut = " and ".join(
+        [f"{key}=={arr_var_bins[key]}" for key in arr_var_bins]
+    )
 
     # Get unique projection bin ids for each projection variable
     unique_bin_ids = [df[var].unique() for var in proj_vars]
     nbins = [len(el) for el in unique_bin_ids]
     unique_arr_bin_ids = [df[var].unique() for var in arr_vars]
     nbins_arr = [len(el) for el in unique_arr_bin_ids]
-    grid_shape = [*nbins_arr,*nbins]
+    grid_shape = [*nbins_arr, *nbins]
 
     # Get map of starting bins and bin and projection indices
-    query = ' and '.join([f'{proj_var}=={0}' for proj_var in proj_vars])
-    if arr_var_bins_cut!='':
-        query = ' and '.join([query,arr_var_bins_cut])
+    query = " and ".join([f"{proj_var}=={0}" for proj_var in proj_vars])
+    if arr_var_bins_cut != "":
+        query = " and ".join([query, arr_var_bins_cut])
     start_bins_slice = df.query(query)
 
     # Loop starting bins and create projection lists
@@ -731,29 +845,40 @@ def get_projection_ids(
 
         # Find bins that match starting bin in array bin variable indices
         arr_var_ids = [start_bins_slice[arr_var].iloc[proj_idx] for arr_var in arr_vars]
-        query = ' and '.join([f'{arr_vars[idx]}=={arr_var_ids[idx]}' for idx in range(len(arr_var_ids))])
-        if arr_var_bins_cut!='':
-            query = ' and '.join([query,arr_var_bins_cut])
+        query = " and ".join(
+            [f"{arr_vars[idx]}=={arr_var_ids[idx]}" for idx in range(len(arr_var_ids))]
+        )
+        if arr_var_bins_cut != "":
+            query = " and ".join([query, arr_var_bins_cut])
         proj_ids = df.query(query)
-        proj_ids = proj_ids.sort_values(proj_vars)[id_key].values #NOTE: SORT BY PROJECTION VARIABLE BINS
-        proj_ids = proj_ids.reshape(nbins) #NOTE: RESIZE BY APPROPRIATE NUMBER OF BINS IF REQUESTED.
+        proj_ids = proj_ids.sort_values(proj_vars)[
+            id_key
+        ].values  # NOTE: SORT BY PROJECTION VARIABLE BINS
+        proj_ids = proj_ids.reshape(
+            nbins
+        )  # NOTE: RESIZE BY APPROPRIATE NUMBER OF BINS IF REQUESTED.
         all_proj_ids.append(proj_ids.tolist())
         all_proj_arr_var_ids.append(arr_var_ids)
 
-    all_proj_ids = np.reshape(all_proj_ids,grid_shape) if nested_grid_shape is None else reshape_nested_grid(all_proj_ids, nested_grid_shape)
-    all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids,(*nbins_arr,len(arr_vars)))
+    all_proj_ids = (
+        np.reshape(all_proj_ids, grid_shape)
+        if nested_grid_shape is None
+        else reshape_nested_grid(all_proj_ids, nested_grid_shape)
+    )
+    all_proj_arr_var_ids = np.reshape(all_proj_arr_var_ids, (*nbins_arr, len(arr_vars)))
 
     return all_proj_ids, arr_vars, all_proj_arr_var_ids
 
+
 def get_graph_data(
-                    df,
-                    bin_ids,
-                    id_key='bin_id',
-                    count_key='count',
-                    xvar_keys=None,
-                    asym_key='a0',
-                    err_ext='err'
-    ):
+    df,
+    bin_ids,
+    id_key="bin_id",
+    count_key="count",
+    xvar_keys=None,
+    asym_key="a0",
+    err_ext="err",
+):
     """
     Parameters
     ----------
@@ -787,39 +912,41 @@ def get_graph_data(
         xvar_keys = []
 
     # Initialize arrays
-    cts  = []
-    y    = []
+    cts = []
+    y = []
     yerr = []
-    x    = []
+    x = []
     xerr = []
 
     # Check if bin_ids is multi-dimensional
     bin_ids_shape = np.shape(bin_ids)
-    if len(bin_ids_shape)>1:
+    if len(bin_ids_shape) > 1:
         bin_ids = np.array(bin_ids).flatten()
 
     # Loop bins
     for bin_raw_idx, bin_id in enumerate(bin_ids):
 
         # Get bin data
-        bin_data = df.loc[df[id_key]==bin_id]
+        bin_data = df.loc[df[id_key] == bin_id]
 
         # Get bin count
         cts.append(bin_data[count_key].item())
 
         # Get bin asymmetry value and error
         y.append(bin_data[asym_key].item())
-        yerr.append(bin_data[asym_key+err_ext].item())
+        yerr.append(bin_data[asym_key + err_ext].item())
 
         # Loop bin variables
         for xvar_idx, xvar_key in enumerate(xvar_keys):
 
             # Get bin variable data
             bin_x = bin_data[xvar_key].item()
-            bin_x_err = bin_data[xvar_key+err_ext].item()#NOTE< MAAYBE USSE .LOC HERE???!?!?!?
+            bin_x_err = bin_data[
+                xvar_key + err_ext
+            ].item()  # NOTE< MAAYBE USSE .LOC HERE???!?!?!?
 
             # Add bin variable mean and error
-            if bin_raw_idx==0:
+            if bin_raw_idx == 0:
                 x.append([bin_x])
                 xerr.append([bin_x_err])
             else:
@@ -827,33 +954,28 @@ def get_graph_data(
                 xerr[xvar_idx].append(bin_x_err)
 
     # Reshape data
-    if len(bin_ids_shape)>1:
+    if len(bin_ids_shape) > 1:
 
         # Reshape bin counts
-        cts   = np.reshape(cts,bin_ids_shape)
+        cts = np.reshape(cts, bin_ids_shape)
 
         # Reshape bin asymmetry value and error
-        y    = np.reshape(y,bin_ids_shape)
-        yerr = np.reshape(yerr,bin_ids_shape)
+        y = np.reshape(y, bin_ids_shape)
+        yerr = np.reshape(yerr, bin_ids_shape)
 
         # Reshape bin variable statistics
         for xvar_idx, xvar_key in enumerate(xvar_keys):
-            x[xvar_idx]    = np.reshape(x[xvar_idx],bin_ids_shape)
-            xerr[xvar_idx] = np.reshape(xerr[xvar_idx],bin_ids_shape)
+            x[xvar_idx] = np.reshape(x[xvar_idx], bin_ids_shape)
+            xerr[xvar_idx] = np.reshape(xerr[xvar_idx], bin_ids_shape)
 
-    return np.array([
-        cts,
-        y,
-        yerr,
-        *x,
-        *xerr
-    ])
+    return np.array([cts, y, yerr, *x, *xerr])
+
 
 def get_aggregate_graph(
-        graph_list,
-        xvar_keys=None,
-        sgasym=0.0,
-    ):
+    graph_list,
+    xvar_keys=None,
+    sgasym=0.0,
+):
     """
     Parameters
     ----------
@@ -881,75 +1003,88 @@ def get_aggregate_graph(
 
     # Setup return dictionary
     graph = {
-            'ct_mean':[],
-            'y_mean':[],
-            'yerr_mean':[],
-            'y_std':[],
-            'y_min':[],
-            'y_max':[],
-            'ydiff_mean':[],
-            'ydiff_std':[],
-            'ydiff_min':[],
-            'ydiff_max':[],
-            'x_mean':[],
-            'xerr_mean':[]
-            }
+        "ct_mean": [],
+        "y_mean": [],
+        "yerr_mean": [],
+        "y_std": [],
+        "y_min": [],
+        "y_max": [],
+        "ydiff_mean": [],
+        "ydiff_std": [],
+        "ydiff_min": [],
+        "ydiff_max": [],
+        "x_mean": [],
+        "xerr_mean": [],
+    }
 
     # Check if graph list is empty
-    if len(graph_list)==0:
+    if len(graph_list) == 0:
         print("WARNING: len(graph_list)==0.  Returning empty graph.")
         return graph
 
     # Format graph list
-    graph_list  = np.array(graph_list)
-    graph_list  = np.swapaxes(graph_list,0,1) #NOTE: INCOMING LIST SHOULD GO FROM DIMENSION (N_GRAPHS, 2*(1+N_XVAR_KEYS), N_BIN_IDS) -> (2*(1+N_XVAR_KEYS), N_GRAPHS, N_BIN_IDS)
+    graph_list = np.array(graph_list)
+    graph_list = np.swapaxes(
+        graph_list, 0, 1
+    )  # NOTE: INCOMING LIST SHOULD GO FROM DIMENSION (N_GRAPHS, 2*(1+N_XVAR_KEYS), N_BIN_IDS) -> (2*(1+N_XVAR_KEYS), N_GRAPHS, N_BIN_IDS)
 
     # Extract aggregate asymmetry statistics
-    ct_idx   = 0
-    y_idx    = 1
+    ct_idx = 0
+    y_idx = 1
     yerr_idx = 2
-    graph['ct_mean']      = np.mean(graph_list[ct_idx],axis=0)
-    graph['y_mean']     = np.mean(graph_list[y_idx],axis=0)
-    graph['yerr_mean']  = np.sqrt(np.mean(np.square(graph_list[yerr_idx]),axis=0))
-    graph['y_std']      = np.std(graph_list[y_idx],axis=0) if len(graph_list[y_idx])>1 else None
-    graph['y_min']      = np.min(graph_list[y_idx],axis=0) if len(graph_list[y_idx])>1 else None
-    graph['y_max']      = np.max(graph_list[y_idx],axis=0) if len(graph_list[y_idx])>1 else None
-    graph['ydiff_mean'] = np.mean(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_std']  = np.std(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_min']  = np.min(graph_list[y_idx]-sgasym,axis=0)
-    graph['ydiff_max']  = np.max(graph_list[y_idx]-sgasym,axis=0)
+    graph["ct_mean"] = np.mean(graph_list[ct_idx], axis=0)
+    graph["y_mean"] = np.mean(graph_list[y_idx], axis=0)
+    graph["yerr_mean"] = np.sqrt(np.mean(np.square(graph_list[yerr_idx]), axis=0))
+    graph["y_std"] = (
+        np.std(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
+    )
+    graph["y_min"] = (
+        np.min(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
+    )
+    graph["y_max"] = (
+        np.max(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
+    )
+    graph["ydiff_mean"] = np.mean(graph_list[y_idx] - sgasym, axis=0)
+    graph["ydiff_std"] = np.std(graph_list[y_idx] - sgasym, axis=0)
+    graph["ydiff_min"] = np.min(graph_list[y_idx] - sgasym, axis=0)
+    graph["ydiff_max"] = np.max(graph_list[y_idx] - sgasym, axis=0)
 
     # Extract aggregate projection variable statistics
-    x_idx_start    = 3
-    xerr_idx_start = x_idx_start+len(xvar_keys)
-    if len(xvar_keys)==1:
+    x_idx_start = 3
+    xerr_idx_start = x_idx_start + len(xvar_keys)
+    if len(xvar_keys) == 1:
 
         # Set projection variable arrays in the case of a 1D binning
         x_idx = x_idx_start
         xerr_idx = xerr_idx_start
-        graph['x_mean']     = np.mean(graph_list[x_idx],axis=0) #NOTE: Get mean across different graphs (axis=0) but not across bins (axis>0)
-        graph['xerr_mean']  = np.sqrt(np.mean(np.square(graph_list[xerr_idx]),axis=0))
+        graph["x_mean"] = np.mean(
+            graph_list[x_idx], axis=0
+        )  # NOTE: Get mean across different graphs (axis=0) but not across bins (axis>0)
+        graph["xerr_mean"] = np.sqrt(np.mean(np.square(graph_list[xerr_idx]), axis=0))
     else:
 
         # Loop projection variable keys and aggregate across each variable for a >1D binning
         for xvar_idx in range(len(xvar_keys)):
             x_idx = x_idx_start + xvar_idx
             xerr_idx = xerr_idx_start + xvar_idx
-            graph['x_mean'].append(np.mean(graph_list[x_idx],axis=0))
-            graph['xerr_mean'].append(np.sqrt(np.mean(np.square(graph_list[xerr_idx]),axis=0)))
+            graph["x_mean"].append(np.mean(graph_list[x_idx], axis=0))
+            graph["xerr_mean"].append(
+                np.sqrt(np.mean(np.square(graph_list[xerr_idx]), axis=0))
+            )
 
     return graph
 
+
 def get_graph_array(
-        dfs,
-        proj_ids,
-        id_key='bin_id',
-        count_key='count',
-        xvar_keys=None,
-        asym_key='a0',
-        err_ext='err',
-        sgasym=0.0,
-    ):
+    dfs,
+    proj_ids,
+    id_key="bin_id",
+    count_key="count",
+    xvar_keys=None,
+    asym_key="a0",
+    err_ext="err",
+    sgasym=0.0,
+):
     """
     Parameters
     ----------
@@ -990,26 +1125,39 @@ def get_graph_array(
     shape = np.shape(proj_ids)
 
     # Check shape
-    if not len(shape) in (2,3):
-        raise TypeError(f"`get_graph_array` : `proj_ids` must have len(shape) in (2,3) but shape = {shape}")
+    if not len(shape) in (2, 3):
+        raise TypeError(
+            f"`get_graph_array` : `proj_ids` must have len(shape) in (2,3) but shape = {shape}"
+        )
 
     # Create a graph array in the 2D grid case
-    if len(shape)==3:
-        return [[
-            get_aggregate_graph(
-                [
-                    get_graph_data(
+    if len(shape) == 3:
+        return [
+            [
+                (
+                    get_aggregate_graph(
+                        [
+                            get_graph_data(
                                 df,
                                 proj_ids[i][j],
                                 count_key=count_key,
                                 xvar_keys=xvar_keys,
                                 asym_key=asym_key,
-                                err_ext=err_ext
-                    ) for df in dfs
-                ],
-                xvar_keys=xvar_keys,
-                sgasym=sgasym[i][j] if not isinstance(sgasym,float) else sgasym
-            ) if proj_ids[i][j] is not None else None for j in range(shape[1])] for i in range(shape[0]) #NOTE Allow masked grid
+                                err_ext=err_ext,
+                            )
+                            for df in dfs
+                        ],
+                        xvar_keys=xvar_keys,
+                        sgasym=(
+                            sgasym[i][j] if not isinstance(sgasym, float) else sgasym
+                        ),
+                    )
+                    if proj_ids[i][j] is not None
+                    else None
+                )
+                for j in range(shape[1])
+            ]
+            for i in range(shape[0])  # NOTE Allow masked grid
         ]
 
     # Create a graph array in the 1D grid case
@@ -1017,42 +1165,44 @@ def get_graph_array(
         get_aggregate_graph(
             [
                 get_graph_data(
-                            df,
-                            proj_ids[i],
-                            id_key=id_key,
-                            count_key=count_key,
-                            xvar_keys=xvar_keys,
-                            asym_key=asym_key,
-                            err_ext=err_ext
-                ) for df in dfs
+                    df,
+                    proj_ids[i],
+                    id_key=id_key,
+                    count_key=count_key,
+                    xvar_keys=xvar_keys,
+                    asym_key=asym_key,
+                    err_ext=err_ext,
+                )
+                for df in dfs
             ],
             xvar_keys=xvar_keys,
-            sgasym=sgasym[i] if not isinstance(sgasym,float) else sgasym
-        ) for i in range(shape[0])
+            sgasym=sgasym[i] if not isinstance(sgasym, float) else sgasym,
+        )
+        for i in range(shape[0])
     ]
 
 
 def rescale_graph_data(
-        ct_mean,
-        x_mean,
-        y_mean,
-        xerr_mean,
-        yerr_mean,
-        path,
-        old_dat_path = 'old_dat_path.csv',
-        new_sim_path = 'new_sim_path.csv',
-        old_sim_path = 'old_sim_path.csv',
-        count_key = 'count',
-        yerr_key = '',
-        xs_ratio = 1.0,
-        lumi_ratio = 1.0,
-        tpol_factor = 1.0,
-        tdil_factor = 1.0,
-        yvalue = -100.0,
-        xvar_keys = None,
-        sgasym = 0.0,
-        aliases=None,
-    ):
+    ct_mean,
+    x_mean,
+    y_mean,
+    xerr_mean,
+    yerr_mean,
+    path,
+    old_dat_path="old_dat_path.csv",
+    new_sim_path="new_sim_path.csv",
+    old_sim_path="old_sim_path.csv",
+    count_key="count",
+    yerr_key="",
+    xs_ratio=1.0,
+    lumi_ratio=1.0,
+    tpol_factor=1.0,
+    tdil_factor=1.0,
+    yvalue=-100.0,
+    xvar_keys=None,
+    sgasym=0.0,
+    aliases=None,
+):
     """
     Parameters
     ----------
@@ -1112,69 +1262,88 @@ def rescale_graph_data(
     """
 
     # Load other graphs from csv
-    new_sim_graph = load_csv(path,old_path=old_dat_path,new_path=new_sim_path,aliases=aliases)
-    old_sim_graph = load_csv(path,old_path=old_dat_path,new_path=old_sim_path,aliases=aliases)
+    new_sim_graph = load_csv(
+        path, old_path=old_dat_path, new_path=new_sim_path, aliases=aliases
+    )
+    old_sim_graph = load_csv(
+        path, old_path=old_dat_path, new_path=old_sim_path, aliases=aliases
+    )
 
     # Get counts OR y errors from csv
-    new_sim_graph_count = new_sim_graph[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_graph[yerr_key])
-    old_sim_graph_count = old_sim_graph[count_key] if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_graph[yerr_key])
+    new_sim_graph_count = (
+        new_sim_graph[count_key]
+        if yerr_key is None or yerr_key == ""
+        else 1.0 / np.square(new_sim_graph[yerr_key])
+    )
+    old_sim_graph_count = (
+        old_sim_graph[count_key]
+        if yerr_key is None or yerr_key == ""
+        else 1.0 / np.square(old_sim_graph[yerr_key])
+    )
 
     # Compute scaled quantities
-    acceptanceratio  = np.divide(new_sim_graph_count,old_sim_graph_count) / xs_ratio
+    acceptanceratio = np.divide(new_sim_graph_count, old_sim_graph_count) / xs_ratio
     acceptanceratio[np.isinf(acceptanceratio)] = 0
-    acceptanceratio[np.isnan(acceptanceratio)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
-    scaling          = acceptanceratio * lumi_ratio
-    scaled_ct_mean   = np.multiply(scaling,ct_mean)
-    err_scaling      = np.sqrt(np.divide(ct_mean,scaled_ct_mean)) #NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
+    acceptanceratio[np.isnan(acceptanceratio)] = (
+        0  # NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
+    )
+    scaling = acceptanceratio * lumi_ratio
+    scaled_ct_mean = np.multiply(scaling, ct_mean)
+    err_scaling = np.sqrt(
+        np.divide(ct_mean, scaled_ct_mean)
+    )  # NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
     err_scaling[np.isinf(err_scaling)] = 0
-    err_scaling[np.isnan(err_scaling)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
-    scaled_yerr_mean = np.multiply(err_scaling,yerr_mean) * 1.0/(tpol_factor * tdil_factor)
+    err_scaling[np.isnan(err_scaling)] = (
+        0  # NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
+    )
+    scaled_yerr_mean = (
+        np.multiply(err_scaling, yerr_mean) * 1.0 / (tpol_factor * tdil_factor)
+    )
 
     # Set other graph quantities to new_sim values
-    x_mean = new_sim_graph['x']
-    xerr_mean = new_sim_graph['xerr']
-    y_mean = new_sim_graph['y']
+    x_mean = new_sim_graph["x"]
+    xerr_mean = new_sim_graph["xerr"]
+    y_mean = new_sim_graph["y"]
 
     # Set y values to constant and update scaled y errors if requested
-    scaled_y_mean = y_mean if yvalue<-1 else [yvalue for i in range(len(y_mean))]
-    if yvalue>=-1:
-        scaled_yerr_mean *= np.sqrt(1-np.square(yvalue*tpol_factor))
+    scaled_y_mean = y_mean if yvalue < -1 else [yvalue for i in range(len(y_mean))]
+    if yvalue >= -1:
+        scaled_yerr_mean *= np.sqrt(1 - np.square(yvalue * tpol_factor))
 
     # Create a length 1 list of graph data with scaled graph results
-    graph_list = np.array([[scaled_ct_mean,scaled_y_mean,scaled_yerr_mean,x_mean,xerr_mean]])
+    graph_list = np.array(
+        [[scaled_ct_mean, scaled_y_mean, scaled_yerr_mean, x_mean, xerr_mean]]
+    )
 
-    graph = get_aggregate_graph(
-            graph_list,
-            xvar_keys=xvar_keys,
-            sgasym=sgasym
-        )
+    graph = get_aggregate_graph(graph_list, xvar_keys=xvar_keys, sgasym=sgasym)
 
     # Set systematic errors to scaling fractions
-    graph['scaling'] = scaling
-    graph['acceptanceratio'] = acceptanceratio
+    graph["scaling"] = scaling
+    graph["acceptanceratio"] = acceptanceratio
 
     return graph
 
+
 def rescale_csv_data(
-        path,
-        outpath = '',
-        old_dat_path = 'old_dat_path.csv',
-        new_sim_path = 'new_sim_path.csv',
-        old_sim_path = 'old_sim_path.csv',
-        count_key = 'count',
-        y_key = 'a0',
-        yerr_key = 'a0err',
-        xs_ratio = 1.0,
-        lumi_ratio = 1.0,
-        tpol_factor = 1.0,
-        tdil_factor = 1.0,
-        yvalue = -100.0,
-        float_format = "%.3g",
-        config = None,
-        aggregate_config = None,
-        chain_configs = None,
-        aliases=None,
-    ):
+    path,
+    outpath="",
+    old_dat_path="old_dat_path.csv",
+    new_sim_path="new_sim_path.csv",
+    old_sim_path="old_sim_path.csv",
+    count_key="count",
+    y_key="a0",
+    yerr_key="a0err",
+    xs_ratio=1.0,
+    lumi_ratio=1.0,
+    tpol_factor=1.0,
+    tdil_factor=1.0,
+    yvalue=-100.0,
+    float_format="%.3g",
+    config=None,
+    aggregate_config=None,
+    chain_configs=None,
+    aliases=None,
+):
     """
     Parameters
     ----------
@@ -1227,31 +1396,57 @@ def rescale_csv_data(
     """
 
     # Load results from csv
-    old_dat_df = load_csv(path,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs,aliases=aliases)
-    new_sim_df = load_csv(path,old_path=old_dat_path,new_path=new_sim_path,aliases=aliases)
-    old_sim_df = load_csv(path,old_path=old_dat_path,new_path=old_sim_path,aliases=aliases)
+    old_dat_df = load_csv(
+        path,
+        config=config,
+        aggregate_config=aggregate_config,
+        chain_configs=chain_configs,
+        aliases=aliases,
+    )
+    new_sim_df = load_csv(
+        path, old_path=old_dat_path, new_path=new_sim_path, aliases=aliases
+    )
+    old_sim_df = load_csv(
+        path, old_path=old_dat_path, new_path=old_sim_path, aliases=aliases
+    )
 
     # Get counts OR y errors from csv
-    new_sim_df_count = new_sim_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_df[yerr_key])
-    old_sim_df_count = old_sim_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_df[yerr_key])
-    old_dat_df_count = old_dat_df[count_key] #if yerr_key is None or yerr_key == '' else 1.0/np.square(old_dat_df[yerr_key])
+    new_sim_df_count = new_sim_df[
+        count_key
+    ]  # if yerr_key is None or yerr_key == '' else 1.0/np.square(new_sim_df[yerr_key])
+    old_sim_df_count = old_sim_df[
+        count_key
+    ]  # if yerr_key is None or yerr_key == '' else 1.0/np.square(old_sim_df[yerr_key])
+    old_dat_df_count = old_dat_df[
+        count_key
+    ]  # if yerr_key is None or yerr_key == '' else 1.0/np.square(old_dat_df[yerr_key])
 
     # Compute scaled quantities
-    yerrs            = old_dat_df[yerr_key]
-    acceptanceratio  = np.divide(new_sim_df_count,old_sim_df_count) / xs_ratio
+    yerrs = old_dat_df[yerr_key]
+    acceptanceratio = np.divide(new_sim_df_count, old_sim_df_count) / xs_ratio
     acceptanceratio[np.isinf(acceptanceratio)] = 0
-    acceptanceratio[np.isnan(acceptanceratio)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
-    scaling          = acceptanceratio * lumi_ratio
-    new_dat_df_count = np.multiply(scaling,old_dat_df_count)
-    err_scaling      = np.sqrt(np.divide(old_dat_df_count,new_dat_df_count)) #NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
+    acceptanceratio[np.isnan(acceptanceratio)] = (
+        0  # NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
+    )
+    scaling = acceptanceratio * lumi_ratio
+    new_dat_df_count = np.multiply(scaling, old_dat_df_count)
+    err_scaling = np.sqrt(
+        np.divide(old_dat_df_count, new_dat_df_count)
+    )  # NOTE: SCALE ERRORS ASSUMING POISSONIAN STATISTICS -> d ~ 1/sqrt(N) -> MULTIPLY BY sqrt(N_old_data/N_new_data)
     err_scaling[np.isinf(err_scaling)] = 0
-    err_scaling[np.isnan(err_scaling)] = 0 #NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
-    scaled_yerrs     = np.multiply(err_scaling,yerrs) * 1.0/(tpol_factor * tdil_factor)
+    err_scaling[np.isnan(err_scaling)] = (
+        0  # NOTE: Check for all cases of zero division (n>1/0 or n==0/0) and replace with zero
+    )
+    scaled_yerrs = np.multiply(err_scaling, yerrs) * 1.0 / (tpol_factor * tdil_factor)
 
     # Set y values to constant and update scaled y errors if requested
-    scaled_ys = old_dat_df[y_key] if yvalue<-1 else [yvalue for i in range(len(old_dat_df[y_key]))]
-    if yvalue>=-1:
-        scaled_yerrs *= np.sqrt(1-np.square(yvalue*tpol_factor))
+    scaled_ys = (
+        old_dat_df[y_key]
+        if yvalue < -1
+        else [yvalue for i in range(len(old_dat_df[y_key]))]
+    )
+    if yvalue >= -1:
+        scaled_yerrs *= np.sqrt(1 - np.square(yvalue * tpol_factor))
 
     # Copy the old dataframe into the new dataframe
     new_dat_df = old_dat_df.copy(deep=True)
@@ -1260,17 +1455,18 @@ def rescale_csv_data(
     new_dat_df[count_key] = new_dat_df_count
     new_dat_df[y_key] = scaled_ys
     new_dat_df[yerr_key] = scaled_yerrs
-    new_dat_df['scaling'] = scaling
-    new_dat_df['acceptanceratio'] = acceptanceratio
+    new_dat_df["scaling"] = scaling
+    new_dat_df["acceptanceratio"] = acceptanceratio
 
     # Save the new dataframe to CSV
-    outpath = path.replace('.csv','_rescaled.csv') if len(outpath)==0 else outpath
+    outpath = path.replace(".csv", "_rescaled.csv") if len(outpath) == 0 else outpath
     new_dat_df.to_csv(outpath, float_format=float_format, index=False)
 
+
 def get_cut_array(
-        cut_titles,
-        proj_ids,
-    ):
+    cut_titles,
+    proj_ids,
+):
     """
     Parameters
     ----------
@@ -1300,30 +1496,30 @@ def get_cut_array(
     shape = np.shape(proj_ids)
 
     # Check shape
-    if len(shape) not in (2,3):
-        raise TypeError('`get_cut_array` : `proj_ids` must have len(shape) in (2,3) but shape = ',shape)
+    if len(shape) not in (2, 3):
+        raise TypeError(
+            "`get_cut_array` : `proj_ids` must have len(shape) in (2,3) but shape = ",
+            shape,
+        )
 
-    #NOTE: All BINS IN A 1D BINNING PROJECTION SHOULD HAVE THE SAME BIN CUTS FOR THE ARRAY VARIABLES.
+    # NOTE: All BINS IN A 1D BINNING PROJECTION SHOULD HAVE THE SAME BIN CUTS FOR THE ARRAY VARIABLES.
 
     # Create a graph array in the 2D grid case
-    if len(shape)==3:
-        return [[
-            cut_titles[proj_ids[i][j][0]]
-            for j in range(shape[1])] for i in range(shape[0])
+    if len(shape) == 3:
+        return [
+            [cut_titles[proj_ids[i][j][0]] for j in range(shape[1])]
+            for i in range(shape[0])
         ]
 
     # Create a graph array in the 1D grid case
-    return [
-        cut_titles[proj_ids[i][0]]
-        for i in range(shape[0])
-    ]
+    return [cut_titles[proj_ids[i][0]] for i in range(shape[0])]
 
 
 def add_cut_array(
-        args_array,
-        cut_array,
-        arr_vars,
-    ):
+    args_array,
+    cut_array,
+    arr_vars,
+):
     """
     Parameters
     ----------
@@ -1357,34 +1553,40 @@ def add_cut_array(
     shape = np.shape(args_array)
 
     # Check shapes match
-    if shape!=np.shape(cut_array):
+    if shape != np.shape(cut_array):
         raise TypeError(
-            "`add_cut_array` : `args_array` must have same shape as `cut_array` " +
-            f"but shapes are {shape} and {np.shape(cut_array)}"
+            "`add_cut_array` : `args_array` must have same shape as `cut_array` "
+            + f"but shapes are {shape} and {np.shape(cut_array)}"
         )
 
     # Create a graph array in the 2D grid case
-    if len(shape)==2: #NOTE: Since this is a 2D grid of dictionaries the numpy shape will only have length 2
+    if (
+        len(shape) == 2
+    ):  # NOTE: Since this is a 2D grid of dictionaries the numpy shape will only have length 2
         for i in range(shape[0]):
             for j in range(shape[1]):
-                args_array[i][j]['title'] = cut_array[i][j][arr_vars[0]]
-                args_array[i][j]['ylabel'] = cut_array[i][j][arr_vars[1]]
+                args_array[i][j]["title"] = cut_array[i][j][arr_vars[0]]
+                args_array[i][j]["ylabel"] = cut_array[i][j][arr_vars[1]]
 
     # Create a graph array in the 1D grid case
-    elif len(shape)==1:
+    elif len(shape) == 1:
         for i in range(shape[0]):
-            args_array[i]['title'] = cut_array[i][arr_vars[0]]
+            args_array[i]["title"] = cut_array[i][arr_vars[0]]
 
     # Raise an error if another shape length is encountered
     else:
-        raise TypeError('`add_cut_array` : `args_array` must have len(shape) in (2,3) but shape = ',shape)
+        raise TypeError(
+            "`add_cut_array` : `args_array` must have len(shape) in (2,3) but shape = ",
+            shape,
+        )
+
 
 def get_bin_mig_mat(
-        df,
-        id_gen_key='binid_gen',
-        id_rec_key='binid_rec',
-        mig_key='mig',
-    ):
+    df,
+    id_gen_key="binid_gen",
+    id_rec_key="binid_rec",
+    mig_key="mig",
+):
     """
     Parameters
     ----------
@@ -1416,23 +1618,24 @@ def get_bin_mig_mat(
     # Get unique bin ids and check they match between generated and reconstructed
     unique_binids_gen = sorted(df[id_gen_key].unique().tolist())
     unique_binids_rec = sorted(df[id_rec_key].unique().tolist())
-    if np.any([el not in unique_binids_gen for el in unique_binids_rec]) or np.any([el not in unique_binids_rec for el in unique_binids_gen]):
+    if np.any([el not in unique_binids_gen for el in unique_binids_rec]) or np.any(
+        [el not in unique_binids_rec for el in unique_binids_gen]
+    ):
         raise TypeError(
-            "`get_bin_migration_matrix` : Generated and reconstructed unique bin ids must have same members " +
-            f"but found: unique_binids_gen={unique_binids_gen}, unique_binids_rec={unique_binids_rec}"
+            "`get_bin_migration_matrix` : Generated and reconstructed unique bin ids must have same members "
+            + f"but found: unique_binids_gen={unique_binids_gen}, unique_binids_rec={unique_binids_rec}"
         )
 
     # Now reshape your bin migration matrix
-    shape = [len(unique_binids_gen) for i in range(2)] #NOTE: THIS MUST BE A SQUARE MATRIX
-    mig_array = np.reshape(df[mig_key].tolist(),shape)
+    shape = [
+        len(unique_binids_gen) for i in range(2)
+    ]  # NOTE: THIS MUST BE A SQUARE MATRIX
+    mig_array = np.reshape(df[mig_key].tolist(), shape)
 
     return mig_array
 
-def get_subset(
-        df,
-        bin_ids,
-        id_key='bin_id'
-    ):
+
+def get_subset(df, bin_ids, id_key="bin_id"):
     """
     Parameters
     ----------
@@ -1450,11 +1653,8 @@ def get_subset(
     """
     return df.loc[[el in bin_ids for el in df[id_key]]]
 
-def offset_graph_x(
-        g,
-        offset,
-        axis=0
-    ):
+
+def offset_graph_x(g, offset, axis=0):
     """
     Parameters
     ----------
@@ -1473,11 +1673,12 @@ def offset_graph_x(
     for idx in range(len(g[axis])):
         g[axis][idx] += offset
 
+
 def apply_bin_mig(
-        df,
-        inv_bin_mig_mat,
-        results_keys = (),
-    ):
+    df,
+    inv_bin_mig_mat,
+    results_keys=(),
+):
     """
     Parameters
     ----------
@@ -1495,14 +1696,15 @@ def apply_bin_mig(
 
     # Then multiply results and inverse bin migration and reset the original dataframe
     for result_key in results_keys:
-        df[result_key] = np.matmul(inv_bin_mig_mat,df[result_key])
+        df[result_key] = np.matmul(inv_bin_mig_mat, df[result_key])
+
 
 def compute_systematics(
-        results,
-        bin_migration_mat=None,
-        systematic_scales_mat=None,
-        systematics_additive_mat=None
-    ):
+    results,
+    bin_migration_mat=None,
+    systematic_scales_mat=None,
+    systematics_additive_mat=None,
+):
     """
     Parameters
     ----------
@@ -1532,16 +1734,21 @@ def compute_systematics(
     systematics = np.zeros(results.shape)
 
     # Compute and add bin migration systematics
-    if bin_migration_mat is not None: #NOTE: ASSUME BINNING IS 1D HERE.
+    if bin_migration_mat is not None:  # NOTE: ASSUME BINNING IS 1D HERE.
         bin_migration_mat_inv = np.linalg.inv(bin_migration_mat)
-        new_systematics = np.add(results,-np.matmul(bin_migration_mat_inv,results)) # DeltaA = a - f_inv . a
+        new_systematics = np.add(
+            results, -np.matmul(bin_migration_mat_inv, results)
+        )  # DeltaA = a - f_inv . a
         systematics = np.sqrt(np.square(systematics) + np.square(new_systematics))
 
     # Apply multiplicative scale systematics, note that these should already be summed over all sources of systematic error
     if systematic_scales_mat is not None:
-        systematics = np.sqrt(np.square(systematics) + np.square(np.multiply(results,systematic_scales_mat))) #NOTE: IMPORTANT!  ADD IN QUADRATURE.
+        systematics = np.sqrt(
+            np.square(systematics)
+            + np.square(np.multiply(results, systematic_scales_mat))
+        )  # NOTE: IMPORTANT!  ADD IN QUADRATURE.
 
-     # Apply additive scale systematics, note that these should already be summed over all sources of systematic error
+    # Apply additive scale systematics, note that these should already be summed over all sources of systematic error
     if systematics_additive_mat is not None:
         systematics += systematics_additive_mat
 
