@@ -457,7 +457,7 @@ def get_lims_coords(
             for yidx, xlim in enumerate(xlims):
                 for xidx in range(len(xlim[1:-1])):
                     el = [
-                        [xlim[xidx+1], xlim[xidx+1]],
+                        [xlim[xidx + 1], xlim[xidx + 1]],
                         [
                             ylims[yidx] if yidx > 0 else outer_ylims[0],
                             (
