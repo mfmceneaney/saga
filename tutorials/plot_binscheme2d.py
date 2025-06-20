@@ -62,10 +62,9 @@ cuts, _, _, _ = sagas.get_binscheme_cuts_and_ids(
 bin_centers, bin_widths = get_bin_centers(cuts,swap_axes=False)
 
 # Plot the bin ids
-sagas.plot_bin_ids(
+plot_bin_ids(
         ax,
         bin_centers,
-        bin_widths=bin_widths,
         size=25,
         color='red',
         alpha=1.0,
