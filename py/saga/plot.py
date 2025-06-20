@@ -867,6 +867,7 @@ def plot_results(
     graph_yvalue=-100.0,
     aliases=None,
     plot_xerrors=False,
+    **kwargs
 ):
     """
     Parameters
@@ -999,6 +1000,7 @@ def plot_results(
         Map of configuration option names to maps of option values to string aliases for chained CSVs when rescaling
     plot_xerrors : bool, optional
         Option to plot x errors on asymmetry graph
+    **kwargs
 
     Description
     -----------
