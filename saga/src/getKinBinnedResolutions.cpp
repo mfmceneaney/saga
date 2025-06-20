@@ -44,8 +44,7 @@ void execute(const YAML::Node& node) {
 
     //----------------------------------------------------------------------//
     // BEGIN HELICITY AND SPIN VARIABLES
-    
-    // HELICITY_NAME
+    std::vector<std::string> categories_as_float = saga::util::getYamlArg<std::vector<std::string>>(node, "categories_as_float", {}, message_prefix, verbose, yamlargout);
     std::string helicity_name = saga::util::getYamlArg<std::string>(node, "helicity_name", "heli", message_prefix, verbose, yamlargout);
     std::string helicity_formula = saga::util::getYamlArg<std::string>(node, "helicity_formula", "-helicity", message_prefix, verbose, yamlargout); //NOTE: Make sure to flip helicity for RGA fall 2018 data and check if needed for other datasets.
     std::map<std::string,int> helicity_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "helicity_states", {{"plus",1}, {"zero",0}, {"minus",-1}}, message_prefix, verbose, yamlargout);
@@ -241,6 +240,7 @@ void execute(const YAML::Node& node) {
             // // parameters passed to data::createDataset()
             "dataset", // std::string                      dataset_name,
             "dataset", // std::string                      dataset_title,
+            categories_as_float, // std::vector<std::string>         categories_as_float,
             helicity_name, // std::string                      helicity,
             helicity_states, // std::map<std::string,int>        helicity_states,
             tspin_name, // std::string                      tspin,

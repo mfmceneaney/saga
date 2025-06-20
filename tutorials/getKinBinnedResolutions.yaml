@@ -8,6 +8,7 @@ inject_seed: 2
 mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
 particle_suffixes: ["_p","_pim"]
 combined_spin_state: "ss"
+categories_as_float: [] #NOTE: You can use a single PDF instead of a simultaneous PDF if you tell the PDF to use the helicity or target spin as a float.
 helicity_name: "heli"
 helicity_formula: "(float)0.0"
 helicity_states:

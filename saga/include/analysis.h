@@ -85,7 +85,7 @@ RooArgSet* getSubRooArgSet(
     std::string fitformula,
     std::vector<std::string> varformulas,
     std::vector<std::string> varnames
-    ) {
+) {
 
     // Isolate the argset for the target spin dependent terms
     RooArgSet *subargset = new RooArgSet();
@@ -125,7 +125,7 @@ RooArgSet* getSubRooArgSet(
 std::string getSubFormula(
     std::string fitformula,
     std::vector<std::string> varformulas
-    ) {
+) {
 
     // Loop variable formulas and map old formulas to new formulas
     std::string subfitformula = fitformula;
@@ -146,9 +146,9 @@ std::string getSubFormula(
 } // RooArgSet* getSubRooArgSet()
 
 /**
-* @brief Create a simultaneous PDF for fitting a generic asymmetry with a maximum likelihood fit.
+* @brief Create a PDF for fitting a generic asymmetry with a maximum likelihood fit.
 * 
-* Create a simultaneous PDF given the formulas for the asymmetries coupling to each combination of beam helicity
+* Create a PDF given the formulas for the asymmetries coupling to each combination of beam helicity
 * and target spin states.  The PDF will be constructed internally using <a href="https://root.cern.ch/doc/master/classRooGenericPdf.html">RooGenericPdf</a>
 * in the form:
 *
@@ -163,6 +163,10 @@ std::string getSubFormula(
 * @f]
 * where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
 * The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
+*
+* If `categories_as_float` contains the beam helicity or target spin variable names,
+* the PDF will use these as independent variables.  Otherwise, a simultaneous PDF will be
+* formed over the various helicity and spin states.
 *
 * Note that in the case of an \f$A_{UT}\f$ asymmetry, the relevant formula should be included in the argument for the \f$A_{UU}\f$ formula
 * since \f$A_{UT}\f$ should only have a kinematic dependence, e.g., on \f$\phi_{S}\f$ rather than a categorical dependence on \f$S_{\perp}\f$.
@@ -185,6 +189,7 @@ std::string getSubFormula(
 * - The name of each yield variable in the workspace in the case of an extended NLL fit
 * 
 * @param w RooWorkspace in which to work
+* @param categories_as_float List of category variables to include use as asymmetry fit variables and automatically add to PDF formula
 * @param h Beam helicity \f$h_b\in(-1,0,1)\f$
 * @param t Target spin \f$h_t\in(-1,0,1)\f$
 * @param ht Beam helicity times target spin \f$h_b \cdot h_t\in(-1,0,1)\f$
@@ -204,8 +209,9 @@ std::string getSubFormula(
 * 
 * @return List of model name and all yield variable names
 */
-std::vector<std::string> getSimGenAsymPdf(
+std::vector<std::string> getGenAsymPdf(
     RooWorkspace *w,
+    std::vector<std::string> categories_as_float,
     RooCategory *h,
     RooCategory *t,
     RooCategory *ht,
@@ -235,15 +241,65 @@ std::vector<std::string> getSimGenAsymPdf(
 
     // Set variable formulas list
     std::vector<std::string> varformulas;
+    int start_idx = categories_as_float.size();
     for (int idx=0; idx<argset->size(); idx++) {
-        varformulas.push_back(Form("x[%d]", idx));
+        varformulas.push_back(Form("x[%d]", idx-start_idx));
+    }
+    //NOTE: Use negative index for the helicity and tspin since
+    // the user does not need to specify them in the fit formula,
+    // but they are prepended to the asymmetry fit variables (helicity, then tspin).
+
+    // Set model and yield names
+    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
+    std::vector<std::string> model_and_yield_names;
+    model_and_yield_names.push_back(model_name);
+
+    //TODO: Create simple pdf here if not using simultaneous PDF
+    if (categories_as_float.size()>0) {
+
+        // Check whether you have helicity and/or tspin and set formulas with negative index
+        std::string helicity_formula = (categories_as_float.size()==2) ? "x[-2]" : "x[-1]";
+        std::string tspin_formula = "x[-1]";
+
+        // Create the PDF formula
+        std::string fitformula_full = fitformula_uu;
+
+        // Create the PDF formula
+        if (fitformula_pu!="") {
+            fitformula_full = Form("%s + %s*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),bpol,fitformula_pu.c_str());
+        }
+        if (fitformula_up!="") {
+            fitformula_full = Form("%s + %s*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),tpol,fitformula_up.c_str());
+        }
+        if (fitformula_pp!="") {
+            fitformula_full = Form("%s + %s*%.3f*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),bpol,tpol,fitformula_pp.c_str());
+        }
+
+        // Isolate the argset for the target spin dependent terms
+        RooArgSet *argset_full = getSubRooArgSet(argset, fitformula_full.c_str(), varformulas, argnames);
+        std::string subfitformula_full = getSubFormula(fitformula_full.c_str(), varformulas);
+
+        // Create PDF
+        fitformula_full = fitformula_full!="" ? Form("1.0+(%s)",subfitformula_full.c_str()): "1.0";
+        RooGenericPdf _model_full(Form("_%s_full",model_name.c_str()), fitformula_full.c_str(), *argset_full);
+
+        // Create extended PDF
+        RooRealVar nsig_full(Form("nsig_%s_full",model_name.c_str()), "number of signal events", count, 0.0, 2.0*count);
+        RooExtendPdf model_full(Form("%s_full",model_name.c_str()), "extended signal pdf", _model_full, nsig_full);
+
+        // Import the PDF and return the model and yield names
+        if (use_extended_nll) {
+            w->import(model_full);
+            model_and_yield_names.push_back(nsig_full.GetName());
+        }
+        else {
+            w->import(_model_full);
+        }
+        return model_and_yield_names;
     }
 
     // Create simultaneous pdf
     RooSimultaneous * model;
-    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
-    std::vector<std::string> model_and_yield_names;
-    model_and_yield_names.push_back(model_name);
 
     //NOTE: `_<int><int>` on the variables below correspond to beam helicity and target spin states (+1) respectively, i.e., (-1,0,1) -> (0,1,2).
 
@@ -510,7 +566,7 @@ std::vector<std::string> getSimGenAsymPdf(
     w->import(*model);
     return model_and_yield_names;
 
-} // std::vector<std::string> getSimGenAsymPdf()
+} // std::vector<std::string> getGenAsymPdf()
 
 /**
 * @brief Fit an asymmetry.
@@ -518,7 +574,7 @@ std::vector<std::string> getSimGenAsymPdf(
 * Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
 * and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood fit method with an optional extended likelihood term.
 * Note that for the maximum likelihood fit, the given asymmetry formulas \f$ A_{(PU,UP,PP)}(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$
-* will be used internally by `getSimGenAsymPdf()` to construct a simultaneous PDF of the form:
+* will be used internally by `getGenAsymPdf()` to construct a simultaneous PDF of the form:
 * @f[
 * \begin{aligned}
 * PDF(h_b, h_t, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
@@ -582,6 +638,7 @@ std::vector<std::string> getSimGenAsymPdf(
 * @param dataset_name Dataset name
 * @param bpol Luminosity averaged beam polarization
 * @param tpol Luminosity averaged target polarization
+* @param categories_as_float List of category variables to treat as asymmetry fit variables and automatically add to PDF formulas
 * @param helicity Name of the helicity variable
 * @param tspin Name of the target spin variable
 * @param htspin Name of the beam helicity times target spin variable
@@ -612,6 +669,7 @@ std::vector<double> fitAsym(
         std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
         double                           bpol,
         double                           tpol,
+        std::vector<std::string>         categories_as_float,
         std::string                      helicity,
         std::string                      tspin,
         std::string                      htspin,
@@ -768,8 +826,9 @@ std::vector<double> fitAsym(
     }
 
     // Create and load asymmetry PDF
-    std::vector<std::string> model_and_yield_names = getSimGenAsymPdf(
+    std::vector<std::string> model_and_yield_names = getGenAsymPdf(
         w,
+        categories_as_float,
         h,
         t,
         ht,
@@ -795,8 +854,9 @@ std::vector<double> fitAsym(
     std::string binid_sb;
     if (sb_dataset_name!="") {
         binid_sb = Form("%s_sb",binid.c_str());
-        model_and_yield_names_bg = getSimGenAsymPdf(
+        model_and_yield_names_bg = getGenAsymPdf(
             w,
+            categories_as_float,
             h,
             t,
             ht,
@@ -1096,6 +1156,7 @@ std::vector<double> fitAsym(
 * @param workspace_title Title of workspace in which to work
 * @param dataset_name Dataset name
 * @param dataset_title Dataset title
+* @param categories_as_float List of category variables to include as asymmetry fit variables in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
 * @param tspin Name of target spin variable
@@ -1183,6 +1244,7 @@ void getKinBinnedAsym(
         // parameters passed to data::createDataset()
         std::string                      dataset_name,
         std::string                      dataset_title,
+        std::vector<std::string>         categories_as_float,
         std::string                      helicity,
         std::map<std::string,int>        helicity_states,
         std::string                      tspin,
@@ -1389,6 +1451,7 @@ void getKinBinnedAsym(
             ws,
             dataset_name,
             dataset_title,
+            categories_as_float,
             helicity,
             helicity_states,
             tspin,
@@ -1466,7 +1529,7 @@ void getKinBinnedAsym(
             saga::signal::applySPlot(
                 ws,
                 dataset_name,
-                Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getSimGenAsymPdf() renames these variables to ensure workspace uniqueness
+                Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
                 Form("%s_%s",massfit_bgYield_name.c_str(),scheme_binid.c_str()),
                 Form("%s_%s",massfit_pdf_name.c_str(),scheme_binid.c_str()),
                 dataset_sg_name,
@@ -1538,6 +1601,7 @@ void getKinBinnedAsym(
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
+                categories_as_float,
                 helicity,
                 helicity_states,
                 tspin,
@@ -1570,6 +1634,7 @@ void getKinBinnedAsym(
                                 fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 bpol,
                                 tpol,
+                                categories_as_float,
                                 helicity,
                                 tspin,
                                 htspin,
@@ -1608,6 +1673,7 @@ void getKinBinnedAsym(
                 ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
+                categories_as_float,
                 helicity,
                 helicity_states,
                 tspin,
@@ -1639,6 +1705,7 @@ void getKinBinnedAsym(
                                 dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 bpol,
                                 tpol,
+                                categories_as_float,
                                 helicity,
                                 tspin,
                                 htspin,
