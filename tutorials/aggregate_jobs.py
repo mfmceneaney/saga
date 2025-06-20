@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 import saga.aggregate as sagas
-from saga.data import load_csv, save_bin_mig_mat_to_csv
+from saga.data import load_yaml, load_csv, save_bin_mig_mat_to_csv
 from saga.plot import plot_results_array
 
 # Setup configuration dictionary
@@ -39,7 +39,7 @@ aggregate_keys = ["inject_seed"]
 # Load the binscheme you want to use
 binschemes_name = "binschemes"
 binscheme_name = 'binscheme'
-yaml_args = sagas.load_yaml(yaml_path)
+yaml_args = load_yaml(yaml_path)
 binscheme = yaml_args[binschemes_name][binscheme_name]
 
 # Load bin migration matrix and invert
@@ -233,8 +233,7 @@ for config_idx in range(len(config_list)):
     # Get array of bin cut titles
     cut_array = sagas.get_cut_array(
         binscheme_cut_titles,
-        all_proj_ids,
-        arr_vars,
+        all_proj_ids
     )
 
     # Modify `plot_results_kwargs_array` setting bin cuts as titles

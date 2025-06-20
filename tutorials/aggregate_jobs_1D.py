@@ -2,7 +2,8 @@ import numpy as np
 import os
 
 import saga.aggregate as sagas
-from saga.plot import plot_results
+from saga.data import load_yaml, load_csv, save_bin_mig_mat_to_csv
+from saga.plot import plot_results, set_default_plt_settings
 import matplotlib.pyplot as plt
 
 # Setup configuration dictionary
@@ -38,7 +39,7 @@ aggregate_keys = ["inject_seed"]
 
 # Load the binschemes
 binschemes_name = "binschemes"
-yaml_args = sagas.load_yaml(yaml_path)
+yaml_args = load_yaml(yaml_path)
 binschemes = yaml_args[binschemes_name]
 
 # Arguments for sagas.get_config_list()
@@ -151,14 +152,14 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
     # Load bin migration matrix and invert
     bin_mig_df, bin_mig_mat, inv_bin_mig_mat = None, None, None
     if use_bin_mig:
-        bin_mig_df = sagas.load_csv(bin_mig_path)
+        bin_mig_df = load_csv(bin_mig_path)
         bin_mig_mat = sagas.get_bin_mig_mat(
             bin_mig_df,
             id_gen_key=id_gen_key,
             id_rec_key=id_rec_key,
             mig_key=mig_key,
         )
-        sagas.save_bin_mig_mat_to_csv(
+        save_bin_mig_mat_to_csv(
             bin_mig_mat,
             base_dir='./',
             basename=binscheme_name,
@@ -197,7 +198,7 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
             ) for outdir in out_dirs]
 
         # Load pandas dataframes from the files
-        dfs = [sagas.load_csv(out_file_name,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs) for out_file_name in out_file_names]
+        dfs = [load_csv(out_file_name,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs) for out_file_name in out_file_names]
 
         # Apply bin migration correction
         if use_bin_mig:
@@ -207,7 +208,7 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
         # Get an aggregate graph
         proj_ids = [i for i in range(nbins)]#NOTE: Assume bin scheme indices are simple
         sgasym_idx = plot_results_kwargs_base['sgasym_idx'] #NOTE: Assume this is in the kwargs base dictionary
-        sgasym = config['sgasyms'][sgasym_idx] if 'sgasyms' in config else 0.0
+        sgasym = config['sgasyms'][sgasym_idx] if 'sgasyms' in config else [0.0]
         aggregate_graph = sagas.get_aggregate_graph(
             [
                 sagas.get_graph_data(
@@ -225,13 +226,13 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
         )
 
         # Use default plotting settings
-        if use_default_plt_settings: sagas.set_default_plt_settings()
+        if use_default_plt_settings: set_default_plt_settings()
 
         # Create figure and axes
         f, ax = plt.subplots(figsize=figsize)
 
         # Set additional arguments for saga.plot.plot_results()
-        plot_results_kwargs_base['sgasyms'] = config['sgasyms']
+        plot_results_kwargs_base['sgasyms'] = config['sgasyms'] if 'sgasyms' in config else [0.0]
         plot_results_kwargs_base['outpath'] = config_out_path
 
         # Plot the graph
@@ -239,4 +240,3 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
 
         # Save the graph
         f.savefig(config_out_path)
-        f.close()
