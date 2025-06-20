@@ -2,8 +2,6 @@
 This module implements methods for submitting
 slurm jobs for all possible option combinations
 supplied in yaml argument files.
-
-Author: Matthew F. McEneaney (2024, Duke University)
 """
 
 import subprocess

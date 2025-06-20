@@ -5,12 +5,12 @@ Python API
     
     This project is under active development.
 
-.. automodule:: saga.orchestrate
-    :members:
-    :undoc-members:
-    :show-inheritance:
+Module list
+-----------
 
-.. automodule:: saga.aggregate
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
+   orchestrate
+   aggregate
+   data
+   rescale
+   plot

@@ -1,10 +1,8 @@
 """
 This module implements methods for aggregating output
-from slurm jobs for all possible option combinations
+from jobs run for all possible option combinations
 supplied in yaml files. It also offers methods for
 manipulating, plotting, and saving the outputs.
-
-# Author: Matthew F. McEneaney (2024, Duke University)
 """
 
 import os

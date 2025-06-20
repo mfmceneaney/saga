@@ -2,8 +2,6 @@
 This module implements methods for loading and saving outputs
 from slurm jobs for all possible option combinations
 supplied in yaml files.
-
-# Author: Matthew F. McEneaney (2024, Duke University)
 """
 
 import os

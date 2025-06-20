@@ -1,4 +1,5 @@
 [![ROOT-latest](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml)
+[![Python-3.9](https://github.com/mfmceneaney/saga/actions/workflows/python3.9.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/python3.9.yaml)
 
 # Spin Asymmetry Generic Analysis (SAGA)
 

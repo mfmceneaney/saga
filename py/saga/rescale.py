@@ -1,8 +1,6 @@
 """
 This module implements methods for rescaling asymmetry
 results for future experiments.
-
-# Author: Matthew F. McEneaney (2024, Duke University)
 """
 
 import numpy as np
