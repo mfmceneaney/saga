@@ -1,8 +1,6 @@
 """
-This module implements methods for aggregating output
-from slurm jobs for all possible option combinations
-supplied in yaml files. It also offers methods for
-manipulating, plotting, and saving the outputs.
+This module implements methods for plotting
+asymmetry results.
 
 # Author: Matthew F. McEneaney (2024, Duke University)
 """
@@ -12,7 +10,7 @@ from matplotlib.colors import LogNorm
 import matplotlib.pyplot as plt
 import seaborn as sbn
 from .data import load_th1, save_graph_to_csv, save_graph_systematics_to_csv
-from .aggregate import rescale_graph_data
+from .rescale import rescale_graph_data
 
 
 def set_default_plt_settings():
