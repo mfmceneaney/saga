@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 
-import saga.aggregate as sagas
+from saga.plot import get_bin_kinematics_title, plot_results_array
 
 # Setup, modify these as needed for your specific binning scheme
 csv_path = os.path.abspath('results_kinematics_hists_2D/out_binscheme_kinematics.csv')
@@ -22,7 +22,7 @@ graph_array = [[{} for j in range(len(bin_ids))] for i in range(len(kinvars))]
 plot_results_kwargs_array = [[
         {
             'hist_keys':[f'h2_bin{bin_id}_'+kinvar_x+'_'+kinvar_y],
-            'title':sagas.get_bin_kinematics_title(bin_id,df),
+            'title':get_bin_kinematics_title(bin_id,df),
             'xlims':xlims[kinvar_x],
             'xlabel':xlabels[kinvar_x],
             'ylims':xlims[kinvar_y],
@@ -53,7 +53,7 @@ use_default_plt_settings = True
 use_grid_xlabels = False
 
 # Plot an array of graphs
-sagas.plot_results_array(
+plot_results_array(
         graph_array,
         plot_results_kwargs_array,
         plot_results_kwargs_base = plot_results_kwargs_base,

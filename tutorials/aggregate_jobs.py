@@ -2,6 +2,8 @@ import numpy as np
 import os
 
 import saga.aggregate as sagas
+from saga.data import load_yaml, load_csv, save_bin_mig_mat_to_csv
+from saga.plot import plot_results_array
 
 # Setup configuration dictionary
 methods = {"method":["HB","LF"]}
@@ -37,7 +39,7 @@ aggregate_keys = ["inject_seed"]
 # Load the binscheme you want to use
 binschemes_name = "binschemes"
 binscheme_name = 'binscheme'
-yaml_args = sagas.load_yaml(yaml_path)
+yaml_args = load_yaml(yaml_path)
 binscheme = yaml_args[binschemes_name][binscheme_name]
 
 # Load bin migration matrix and invert
@@ -47,14 +49,14 @@ id_rec_key='binid_rec'
 mig_key='mig'
 bin_mig_df, bin_mig_mat, inv_bin_mig_mat = None, None, None
 if use_bin_mig:
-    bin_mig_df = sagas.load_csv(bin_mig_path)
+    bin_mig_df = load_csv(bin_mig_path)
     bin_mig_mat = sagas.get_bin_mig_mat(
         bin_mig_df,
         id_gen_key=id_gen_key,
         id_rec_key=id_rec_key,
         mig_key=mig_key,
     )
-    sagas.save_bin_mig_mat_to_csv(
+    save_bin_mig_mat_to_csv(
         bin_mig_mat,
         base_dir='./',
         basename=binscheme_name,
@@ -97,7 +99,7 @@ xvar_keys  = proj_vars
 # Arguments for sagas.get_graph_array()
 sgasym = 0.1
 
-# Arguments for sagas.plot_results_array()
+# Arguments for saga.plot.plot_results_array()
 proj_vars_shape = [len(binscheme[proj_var])-1 for proj_var in proj_vars]
 arr_vars_shape = [len(binscheme[arr_var])-1 for arr_var in arr_vars]
 grid_shape = [*arr_vars_shape,*proj_vars_shape]
@@ -180,7 +182,7 @@ for config_idx in range(len(config_list)):
         ) for outdir in out_dirs]
 
     # Load pandas dataframes from the files
-    dfs = [sagas.load_csv(out_file_name,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs) for out_file_name in out_file_names]
+    dfs = [load_csv(out_file_name,config=config,aggregate_config=aggregate_config,chain_configs=chain_configs) for out_file_name in out_file_names]
 
     # Apply bin migration correction
     if use_bin_mig:
@@ -231,8 +233,7 @@ for config_idx in range(len(config_list)):
     # Get array of bin cut titles
     cut_array = sagas.get_cut_array(
         binscheme_cut_titles,
-        all_proj_ids,
-        arr_vars,
+        all_proj_ids
     )
 
     # Modify `plot_results_kwargs_array` setting bin cuts as titles
@@ -243,7 +244,7 @@ for config_idx in range(len(config_list)):
     )
 
     # Plot an array of graphs
-    sagas.plot_results_array(
+    plot_results_array(
             graph_array,
             plot_results_kwargs_array,
             plot_results_kwargs_base = plot_results_kwargs_base,

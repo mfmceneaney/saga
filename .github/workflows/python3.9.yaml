@@ -1,0 +1,27 @@
+name: Python 3.9
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        make -f py/Makefile install
+    - name: Lint with Pylint
+      run: |
+        make -f py/Makefile lint
+    - name: Test with Pytest
+      run: |
+        make -f py/Makefile test
+    - name: Format code with Python black
+      run: |
+        make -f py/Makefile format
