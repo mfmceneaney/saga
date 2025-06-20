@@ -1,80 +1,83 @@
 import pytest
-# from saga.aggregate import get_binscheme_cuts_and_ids, get_out_file_name
-# from saga.data import save_txt, load_yaml
+import os
+import yaml
+from saga.orchestrate import create_jobs
 
-# def write_file_from_config(outdir):
-#     """
-#     WRITE DUMMY DATA FOR A CONFIGURATION ASSUMING THE :obj:`args.yaml` FILE EXISTS
-#     AND CONTAINS A BIN SCHEME NAMED :obj:`binscheme`.
-#     """
 
-#     binscheme_name = "binscheme" #NOTE: MAKE SURE THIS MATCHES THE DUMMY BIN SCHEME NAME IN ARGS.YAML
+@pytest.fixture(name="configs")
+def configs_fixture():
+    return {"string": ["abcde", "fghij"], "float": [0.0, 1.0]}
 
-#     yaml_path = os.path.join(outdir,"args.yaml")
-#     yaml_args = load_yaml(yaml_path)
-#     binscheme = yaml_args["binschemes"][binscheme_name]
 
-#     # Get the list of bin ids
-#     binscheme_cuts, binscheme_cut_titles, binscheme_ids, nested_grid_shape = get_binscheme_cuts_and_ids(
-#         binscheme,
-#         start_idx=0,
-#         id_key='bin_id'
-#     )
+@pytest.fixture(name="yaml_args")
+def yaml_args_fixture():
+    return {"float": 0.0}
 
-#     # Get the name of the CSV file for the binning scheme you are interested in
-#     out_file_name = get_out_file_name(
-#             base_dir=outdir, #NOTE APPEND SYSTEM SEPARATOR TO OUTDIR HERE TODO: MAYBE JUST CHANGE THIS TO AN OUTPUT DIRECTORY...
-#             base_name='',
-#             binscheme_name=binscheme_name,
-#             ext='.csv'
-#         )
 
-#     # Convert to getKinBinnedAsym() output CSV format
-#     # COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr}
+@pytest.fixture(name="out_dirs_list")
+def out_dirs_list_fixture():
+    return [
+        "float_0.0__string_abcde",
+        "float_0.0__string_fghij",
+        "float_1.0__string_abcde",
+        "float_1.0__string_fghij",
+    ]
 
-#     # Set column header
-#     delimiter=","
-#     err_ext = "err"
-#     binvar_cols = [delimiter.join([binvar,binvar+err_ext]) for binvar in binscheme.keys()]
-#     depolvar_cols = [delimiter.join([depolvar,depolvar+err_ext]) for depolvar in ["depol"]]
-#     asymfitvar_cols = [delimiter.join([asymfitvar,asymfitvar+err_ext]) for asymfitvar in ["a0"]]
-#     cols = ["bin_id","count",*binvar_cols,*depolvar_cols,*asymfitvar_cols]
-#     header = delimiter.join(cols)
 
-#     # Set column formats
-#     fmt = ["%.3g" for i in range(2*(len(cols)-2))]
-#     fmt = ["%d","%d", *fmt]
+@pytest.fixture(name="out_configs")
+def out_configs_fixture():
+    return [
+        {"float": 0.0, "string": "abcde"},
+        {"float": 0.0, "string": "fghij"},
+        {"float": 1.0, "string": "abcde"},
+        {"float": 1.0, "string": "fghij"},
+    ]
 
-#     # Set bin means
-#     binvar_means = {binvar: np.array([np.average([binscheme[binvar][i],binscheme[binvar][i+1]]).item() for i in range(len(binscheme[binvar])-1)]) for binvar in binscheme}
-#     sum_binvar_nbins = np.sum([len(binvar_means[binvar]) for binvar in binscheme])
 
-#     # Set linearly dependent data with random noise
-#     data = []
-#     id_key = "bin_id"
-#     for binscheme_ids_idx in range(len(binscheme_ids)):
+def test_create_jobs(
+    tmp_path,
+    configs,
+    yaml_args,
+    out_dirs_list,
+    out_configs,
+):
 
-#         # Set bin id and count
-#         bin_id = binscheme_ids[id_key].iloc[binscheme_ids_idx]
-#         count = 100
+    # Set some local variables
+    submit_file_name = "submit.sh"
+    submit_file_content = "#!/bin/bash\n"
+    yaml_file_name = "args.yaml"
 
-#         # Set row data
-#         binvar_data = np.array([[binvar_means[binvar][binscheme_ids[binvar].iloc[binscheme_ids_idx]],0.05] for binvar in binscheme.keys()]).flatten().tolist()
-#         depolvar_data = [0.5,0.0]
-#         asymfitvar_val = -1.0 + 2.0 * np.sum([binscheme_ids[binvar].iloc[binscheme_ids_idx] for binvar in binscheme.keys()]) / sum_binvar_nbins  #NOTE: Introduce a linear dependence on each bin variable
-#         asymfitvar_val += np.random.rand() * 0.05 #NOTE: Introduce some random noise
-#         asymfitvar_data = [asymfitvar_val,0.05]
-#         row = [bin_id,count,*binvar_data,*depolvar_data,*asymfitvar_data]
+    # Write submit script
+    submit_path = os.path.join(tmp_path, submit_file_name)
+    with open(submit_path, "w", encoding="utf-8") as f:
+        f.write(submit_file_content)
 
-#         # Add row data
-#         data.append(row) 
+    # Write yaml file
+    yaml_path = os.path.join(tmp_path, yaml_file_name)
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(yaml_args, f, default_flow_style=False)
 
-#     # Save data to file
-#     save_txt(
-#         out_file_name,
-#         data,
-#         delimiter=",",
-#         header=header,
-#         fmt=fmt,
-#         comments='',
-#     )
+    # Create simple config directories
+    create_jobs(
+        configs, tmp_path, submit_path=submit_path, yaml_path=yaml_path, aliases=None
+    )
+
+    # Loop config directories
+    for idx, path_i in enumerate(out_dirs_list):
+
+        # Check existence
+        assert os.path.isdir(os.path.join(tmp_path, path_i))
+        submit_path_i = os.path.join(tmp_path, path_i, submit_file_name)
+        assert os.path.isfile(submit_path_i)
+        yaml_path_i = os.path.join(tmp_path, path_i, yaml_file_name)
+        assert os.path.isfile(yaml_path_i)
+
+        # Get yaml args for config
+        yaml_args_i = out_configs[idx]
+        yaml_args_i["outdir"] = os.path.join(tmp_path, path_i)
+
+        # Check file contents
+        with open(submit_path_i, "r", encoding="utf-8") as f:
+            assert f.read() == submit_file_content
+        with open(yaml_path_i, "r", encoding="utf-8") as f:
+            assert yaml.safe_load(f) == yaml_args_i
