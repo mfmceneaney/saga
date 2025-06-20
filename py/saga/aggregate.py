@@ -972,6 +972,7 @@ def get_aggregate_graph(
     graph_list,
     xvar_keys=None,
     sgasym=0.0,
+    get_min_max=False,
 ):
     """
     Parameters
@@ -982,6 +983,8 @@ def get_aggregate_graph(
         List of binning variables for which to return mean values
     sgasym : float, optional
         Injected signal asymmetry for computing difference of measured and injected values
+    get_min_max : bool, optional
+        Additional graph keys :obj:`y_min`, :obj:`y_max`, :obj:`ydiff_min`, and :obj:`ydiff_max`.
 
     Returns
     -------
@@ -1004,15 +1007,18 @@ def get_aggregate_graph(
         "y_mean": [],
         "yerr_mean": [],
         "y_std": [],
-        "y_min": [],
-        "y_max": [],
         "ydiff_mean": [],
         "ydiff_std": [],
-        "ydiff_min": [],
-        "ydiff_max": [],
         "x_mean": [],
         "xerr_mean": [],
     }
+
+    # Add optional info
+    if get_min_max:
+        graph["y_min"] = []
+        graph["y_max"] = []
+        graph["ydiff_min"] = []
+        graph["ydiff_max"] = []
 
     # Check if graph list is empty
     if len(graph_list) == 0:
@@ -1035,16 +1041,19 @@ def get_aggregate_graph(
     graph["y_std"] = (
         np.std(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
     )
-    graph["y_min"] = (
-        np.min(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
-    )
-    graph["y_max"] = (
-        np.max(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
-    )
     graph["ydiff_mean"] = np.mean(graph_list[y_idx] - sgasym, axis=0)
     graph["ydiff_std"] = np.std(graph_list[y_idx] - sgasym, axis=0)
-    graph["ydiff_min"] = np.min(graph_list[y_idx] - sgasym, axis=0)
-    graph["ydiff_max"] = np.max(graph_list[y_idx] - sgasym, axis=0)
+
+    # Add optional graph info
+    if get_min_max:
+        graph["y_min"] = (
+            np.min(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
+        )
+        graph["y_max"] = (
+            np.max(graph_list[y_idx], axis=0) if len(graph_list[y_idx]) > 1 else None
+        )
+        graph["ydiff_min"] = np.min(graph_list[y_idx] - sgasym, axis=0)
+        graph["ydiff_max"] = np.max(graph_list[y_idx] - sgasym, axis=0)
 
     # Extract aggregate projection variable statistics
     x_idx_start = 3
