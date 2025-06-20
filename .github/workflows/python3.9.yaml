@@ -15,13 +15,13 @@ jobs:
         python-version: 3.9
     - name: Install dependencies
       run: |
-        cd py; make install
+        make -f py/Makefile install
     - name: Lint with Pylint
       run: |
-        make lint
+        make -f py/Makefile lint
     - name: Test with Pytest
       run: |
-        make test
+        make -f py/Makefile test
     - name: Format code with Python black
       run: |
-        make format
+        make -f py/Makefile format
