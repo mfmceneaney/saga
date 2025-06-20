@@ -522,7 +522,7 @@ def plot_lines(ax, coordinates, linecolor="red", linewidth=1):
 
     # Check coordinates shape
     if len(np.shape(coordinates)) == 3 and np.shape(coordinates)[1:] != (2, 2):
-        raise ValueError(f"Expected shape (2,2) but got {np.shape(coordinates)}")
+        raise ValueError(f"Expected shape (nlines,2,2) but got {np.shape(coordinates)}")
 
     # Plot lines
     for coords in coordinates:
