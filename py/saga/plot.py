@@ -457,7 +457,7 @@ def get_lims_coords(
             for yidx, xlim in enumerate(xlims):
                 for xidx in range(len(xlim[1:-1])):
                     el = [
-                        [xlim[xidx], xlim[xidx]],
+                        [xlim[xidx+1], xlim[xidx+1]],
                         [
                             ylims[yidx] if yidx > 0 else outer_ylims[0],
                             (
@@ -551,8 +551,8 @@ def get_bin_centers(cuts, swap_axes=False):
     """
 
     # Convert dictionary to lists
-    new_cuts = list(cuts)
-    bin_ids = list(cuts)
+    new_cuts = list(cuts.values())
+    bin_ids = list(cuts.keys())
 
     # Convert 2D bin cuts into bin widths and centers
     bin_centers = [cut.replace("=", "").split(") && (") for cut in new_cuts]
