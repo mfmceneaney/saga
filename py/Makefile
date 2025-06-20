@@ -1,6 +1,6 @@
 install:
 	pip install --upgrade pip &&\
-		pip install -e .
+		pip install -e .[test]
 
 format:
 	black py/*/*.py py/*/*/*.py
