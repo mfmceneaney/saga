@@ -5,6 +5,15 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 import saga.aggregate as sagas
+from saga.data import load_yaml, load_th1
+from saga.plot import (
+    set_default_plt_settings,
+    plot_th2,
+    get_lims_coords,
+    plot_lines,
+    get_bin_centers,
+    plot_bin_ids
+)
 
 # Setup, modify these as needed for your specific binning scheme
 yaml_path = os.path.abspath('results_kinematics/args.yaml')
@@ -20,26 +29,26 @@ start_idx = 0
 id_key = 'bin_id'
 
 # Read bin scheme from YAML
-yaml_args = sagas.load_yaml(yaml_path)
+yaml_args = load_yaml(yaml_path)
 binscheme = yaml_args['binschemes'][binscheme_name]
 
 # Load TH2 histogram with uproot
-h2 = sagas.load_th1(hist_path,name=hist_name)
+h2 = load_th1(hist_path,name=hist_name)
 
 # Set plt settings
-sagas.set_default_plt_settings()
+set_default_plt_settings()
 
 # Open the figure
 f, ax = plt.subplots(figsize=(16,10))
 
 # Plot the 2D distribution
-sagas.plot_th2(h2, ax, norm=colors.LogNorm())
+plot_th2(h2, ax, norm=colors.LogNorm())
 ax.set_xlabel(binvar_labels[binvars[0]])
 ax.set_ylabel(binvar_labels[binvars[1]])
 
 # Get the bin limit line coordinates and plot
-lims_coords = sagas.get_lims_coords(binscheme, binvar_lims['x'], binvar_lims['Q2'], var_keys=var_keys)
-sagas.plot_lines(ax, lims_coords, linecolor='red', linewidth=1)
+lims_coords = get_lims_coords(binscheme, binvar_lims['x'], binvar_lims['Q2'], var_keys=var_keys)
+plot_lines(ax, lims_coords, linecolor='red', linewidth=1)
 
 # Get bin scheme cuts and ids
 cuts, _, _, _ = sagas.get_binscheme_cuts_and_ids(
@@ -50,7 +59,7 @@ cuts, _, _, _ = sagas.get_binscheme_cuts_and_ids(
                                                 )
 
 # Get the bin centers
-bin_centers, bin_widths = sagas.get_bin_centers(cuts,swap_axes=False)
+bin_centers, bin_widths = get_bin_centers(cuts,swap_axes=False)
 
 # Plot the bin ids
 sagas.plot_bin_ids(

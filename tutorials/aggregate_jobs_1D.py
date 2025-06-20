@@ -2,6 +2,7 @@ import numpy as np
 import os
 
 import saga.aggregate as sagas
+from saga.plot import plot_results
 import matplotlib.pyplot as plt
 
 # Setup configuration dictionary
@@ -67,7 +68,7 @@ count_key  = 'count'
 asym_key   = result_name #NOTE: This is set from above
 err_ext    = 'err'
 
-# Arguments for sagas.plot_results()
+# Arguments for saga.plot.plot_results()
 plot_results_kwargs_base = {
     'ylims':[-1.0,2.0],
     'sgasyms':[0.1,0.05,-0.3],
@@ -229,12 +230,12 @@ for binscheme_idx, binscheme_name in enumerate(binschemes.keys()):
         # Create figure and axes
         f, ax = plt.subplots(figsize=figsize)
 
-        # Set additional arguments for saga.aggregate.plot_results()
+        # Set additional arguments for saga.plot.plot_results()
         plot_results_kwargs_base['sgasyms'] = config['sgasyms']
         plot_results_kwargs_base['outpath'] = config_out_path
 
         # Plot the graph
-        sagas.plot_results(ax,**aggregate_graph,**plot_results_kwargs_base)
+        plot_results(ax,**aggregate_graph,**plot_results_kwargs_base)
 
         # Save the graph
         f.savefig(config_out_path)

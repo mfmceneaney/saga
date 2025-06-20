@@ -16,4 +16,4 @@ configs = dict(
     **seeds
 )
 create_jobs(configs,base_dir,submit_path,yaml_path)
-submit_jobs(configs,base_dir,submit_path,out_path,dry_run=True,generate_dummy_data=True)
+submit_jobs(configs,base_dir,submit_path,out_path,dry_run=True)

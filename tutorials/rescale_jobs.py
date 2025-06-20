@@ -2,6 +2,8 @@ import numpy as np
 import os
 
 import saga.aggregate as sagas
+from saga.data import load_yaml
+from saga.rescale import rescale_csv_data
 
 # Setup configuration dictionary
 methods = {"method":["HB","LF"]}
@@ -36,7 +38,7 @@ aggregate_keys = ["inject_seed"]
 # Load the binscheme you want to use
 binschemes_name = "binschemes"
 binscheme_name = 'binscheme'
-yaml_args = sagas.load_yaml(yaml_path)
+yaml_args = load_yaml(yaml_path)
 binscheme = yaml_args[binschemes_name][binscheme_name]
 
 # Arguments for sagas.get_config_list()
@@ -49,7 +51,7 @@ ext='.pdf'
 # Arguments for sagas.get_out_file_name()
 out_file_name_ext = '.csv'
 
-# Arguments for sagas.rescale_csv_data()
+# Arguments for saga.rescale.rescale_csv_data()
 rescale_csv_data_kwargs_base = {
         'old_dat_path':'results/',
         'new_sim_path':'results/',
@@ -91,7 +93,7 @@ for config_idx in range(len(config_list)):
 
     # Rescale results files
     for out_file_name in out_file_names:
-        sagas.rescale_csv_data(
+        rescale_csv_data(
             out_file_name,
             outpath = '', #NOTE: Output path will be first argument with `_rescaled` inserted before the file extension if this is empty
             config=config_list[config_idx],
