@@ -167,9 +167,13 @@ void createDataset(
                 asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
             }
         }
+    }
+
+    // Loop categories to convert include as floats
+    for (int idx=0; idx<categories_as_float.size(); idx++) {
 
         // Check for target spin variable
-        else if (categories_as_float[idx]==tspin) {
+        if (categories_as_float[idx]==tspin) {
 
             // Set helicity variable name and formula
             std::string h_as_float = Form("%s_as_float",tspin.c_str());
@@ -201,11 +205,6 @@ void createDataset(
                 asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
                 asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
             }
-        }
-
-        else {
-            std::cerr<<"ERROR: Category to use as float must match beam helicity or target spin variable,\n";
-            std::cerr<<"ERROR: \tbut: \""<<categories_as_float[idx].c_str()<<"\" not in (\""<<helicity.c_str()<<"\", \""<<tspin.c_str()<<"\")"<<std::endl;
         }
     }
 
