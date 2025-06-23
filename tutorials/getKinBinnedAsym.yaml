@@ -35,7 +35,7 @@ csv_key_cols: ["Run"] #NOTE: These are the variable name used as keys in the CSV
 col_names: [["PbPt"]] #NOTE: You must specify the data to take from the CSV
 col_aliases: #NOTE: You can optionally specify aliases for the column names in the CSV to avoid potential naming conflicts with existing columns in the `ROOT::RDataFrame`.
   PbPt: "PbPt"
-categories_as_float: [] #NOTE: You can use a single PDF instead of a simultaneous PDF if you tell the PDF to use the helicity or target spin as a float.
+use_categories_as_float: true #NOTE: You can use a single PDF instead of a simultaneous PDF which will automatically use the helicity and/or target spin as floats.
 helicity_name: "heli"
 helicity_formula: "-helicity"
 helicity_states:
