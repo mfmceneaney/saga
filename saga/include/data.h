@@ -138,26 +138,33 @@ void createDataset(
 
             // Set helicity variable info
             std::string h_as_float = Form("%s_as_float",helicity.c_str());
-            std::string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
-            std::string h_as_float_title = helicity;
-            int h_as_float_bins=0;
-            double h_as_float_min = 0.0;
-            double h_as_float_max = 0.0;
-            for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
-                if (it->second<h_as_float_min) h_as_float_min = it->second;
-                if (it->second>h_as_float_max) h_as_float_max = it->second;
-                h_as_float_bins++;
+            bool contains_var = false;
+            for (int ff = 0; ff<asymfitvars.size(); ff++) {
+                if (asymfitvars[ff]==h_as_float) contains_var = true;
+                break;
             }
-            std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
+            if (!contains_var) {
+                std::string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
+                std::string h_as_float_title = helicity;
+                int h_as_float_bins=0;
+                double h_as_float_min = 0.0;
+                double h_as_float_max = 0.0;
+                for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+                    if (it->second<h_as_float_min) h_as_float_min = it->second;
+                    if (it->second>h_as_float_max) h_as_float_max = it->second;
+                    h_as_float_bins++;
+                }
+                std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
 
-            // Define the new branch in the frame
-            frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
+                // Define the new branch in the frame
+                frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
 
-            // Add helicity variable as a fit variable
-            asymfitvars.insert(asymfitvars.begin(),h_as_float);
-            asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
-            asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
-            asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+                // Add helicity variable as a fit variable
+                asymfitvars.insert(asymfitvars.begin(),h_as_float);
+                asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
+                asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
+                asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+            }
         }
 
         // Check for target spin variable
@@ -165,26 +172,33 @@ void createDataset(
 
             // Set helicity variable info
             std::string h_as_float = Form("%s_as_float",tspin.c_str());
-            std::string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
-            std::string h_as_float_title = tspin;
-            int h_as_float_bins=0;
-            double h_as_float_min = 0.0;
-            double h_as_float_max = 0.0;
-            for (auto it = tspin_states.begin(); it != tspin_states.end(); it++) {
-                if (it->second<h_as_float_min) h_as_float_min = it->second;
-                if (it->second>h_as_float_max) h_as_float_max = it->second;
-                h_as_float_bins++;
+            bool contains_var = false;
+            for (int ff = 0; ff<asymfitvars.size(); ff++) {
+                if (asymfitvars[ff]==h_as_float) contains_var = true;
+                break;
             }
-            std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
+            if (!contains_var) {
+                std::string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
+                std::string h_as_float_title = tspin;
+                int h_as_float_bins=0;
+                double h_as_float_min = 0.0;
+                double h_as_float_max = 0.0;
+                for (auto it = tspin_states.begin(); it != tspin_states.end(); it++) {
+                    if (it->second<h_as_float_min) h_as_float_min = it->second;
+                    if (it->second>h_as_float_max) h_as_float_max = it->second;
+                    h_as_float_bins++;
+                }
+                std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
 
-            // Define the new branch in the frame
-            frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
+                // Define the new branch in the frame
+                frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
 
-            // Add helicity variable as a fit variable
-            asymfitvars.insert(asymfitvars.begin(),h_as_float);
-            asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
-            asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
-            asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+                // Add helicity variable as a fit variable
+                asymfitvars.insert(asymfitvars.begin(),h_as_float);
+                asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
+                asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
+                asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+            }
         }
 
         else {
