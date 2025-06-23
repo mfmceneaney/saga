@@ -188,7 +188,7 @@ void createDataset(
         }
 
         else {
-            std::cerr<<"ERROR: Category to use as float must match beam helicity or target spin variable,";
+            std::cerr<<"ERROR: Category to use as float must match beam helicity or target spin variable,\n";
             std::cerr<<"ERROR: \tbut: \""<<categories_as_float[idx].c_str()<<"\" not in (\""<<helicity.c_str()<<"\", \""<<tspin.c_str()<<"\")"<<std::endl;
         }
     }
