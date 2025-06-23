@@ -260,7 +260,7 @@ std::vector<std::string> getGenAsymPdf(
     // Set variable formulas list
     std::vector<std::string> varformulas;
     for (int idx=0; idx<argset->size(); idx++) {
-        varformulas.push_back(Form("x[%d]", idx));
+        varformulas.push_back(Form("x[%d]", idx-categories_as_float.size()));
     }
     //NOTE: The user does not need to specify the helicity and target spin variables in the fit formula,
     // but they are prepended to the asymmetry fit variables (helicity, then tspin).
@@ -301,7 +301,7 @@ std::vector<std::string> getGenAsymPdf(
 
         // Isolate the argset for the target spin dependent terms
         RooArgSet *argset_full = getSubRooArgSet(argset, fitformula_full.c_str(), varformulas, argnames);
-        std::string subfitformula_full = getSubFormula(fitformula_full.c_str(), varformulas, argset->size());
+        std::string subfitformula_full = getSubFormula(fitformula_full.c_str(), varformulas, argset->size()-1);
 
         // Create PDF
         fitformula_full = fitformula_full!="" ? Form("1.0+(%s)",subfitformula_full.c_str()): "1.0";
