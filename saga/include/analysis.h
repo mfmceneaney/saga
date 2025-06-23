@@ -262,9 +262,12 @@ std::vector<std::string> getGenAsymPdf(
         std::string tspin_formula = "x[-1]";
 
         // Create the PDF formula
-        std::string fitformula_full = fitformula_uu;
+        std::string fitformula_full = "";
 
         // Create the PDF formula
+        if (fitformula_uu!="") {
+            fitformula_full = fitformula_uu;
+        }
         if (fitformula_pu!="") {
             fitformula_full = Form("%s + %s*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),bpol,fitformula_pu.c_str());
         }
