@@ -272,10 +272,10 @@ std::vector<std::string> getGenAsymPdf(
             fitformula_full = Form("%s + %s*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),bpol,fitformula_pu.c_str());
         }
         if (fitformula_up!="") {
-            fitformula_full = Form("%s + %s*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),tpol,fitformula_up.c_str());
+            fitformula_full = Form("%s + %s*%.3f*(%s)",fitformula_full.c_str(),tspin_formula.c_str(),tpol,fitformula_up.c_str());
         }
         if (fitformula_pp!="") {
-            fitformula_full = Form("%s + %s*%.3f*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),bpol,tpol,fitformula_pp.c_str());
+            fitformula_full = Form("%s + %s*%s*%.3f*%.3f*(%s)",fitformula_full.c_str(),helicity_formula.c_str(),tspin_formula.c_str(),bpol,tpol,fitformula_pp.c_str());
         }
 
         // Isolate the argset for the target spin dependent terms
