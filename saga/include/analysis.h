@@ -250,7 +250,6 @@ std::vector<std::string> getGenAsymPdf(
     // Set model and yield names
     std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
     std::vector<std::string> model_and_yield_names;
-    model_and_yield_names.push_back(model_name);
 
     // Create simple pdf here if not using simultaneous PDF
     if (categories_as_float.size()>0) {
@@ -297,16 +296,19 @@ std::vector<std::string> getGenAsymPdf(
         // Import the PDF and return the model and yield names
         if (use_extended_nll) {
             w->import(model_full);
+            model_and_yield_names.push_back(model_full.GetName());
             model_and_yield_names.push_back(nsig_full.GetName());
         }
         else {
+            model_and_yield_names.push_back(_model_full.GetName());
             w->import(_model_full);
         }
         return model_and_yield_names;
     }
 
-    // Create simultaneous pdf
+    // Create simultaneous pdf and name
     RooSimultaneous * model;
+    model_and_yield_names.push_back(model_name);
 
     //NOTE: `_<int><int>` on the variables below correspond to beam helicity and target spin states (+1) respectively, i.e., (-1,0,1) -> (0,1,2).
 
