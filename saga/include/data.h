@@ -162,10 +162,10 @@ void createDataset(
                 std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
 
                 // Add helicity variable as a fit variable
-                asymfitvars.insert(asymfitvars.begin(),h_as_float);
-                asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
-                asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
-                asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+                asymfitvars.push_back(h_as_float);
+                asymfitvar_titles.push_back(h_as_float_title);
+                asymfitvar_lims.push_back(h_as_float_lims);
+                asymfitvar_bins.push_back(h_as_float_bins);
             }
         }
 
@@ -198,10 +198,10 @@ void createDataset(
                 std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
 
                 // Add helicity variable as a fit variable
-                asymfitvars.insert(asymfitvars.begin(),h_as_float);
-                asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
-                asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
-                asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+                asymfitvars.push_back(h_as_float);
+                asymfitvar_titles.push_back(h_as_float_title);
+                asymfitvar_lims.push_back(h_as_float_lims);
+                asymfitvar_bins.push_back(h_as_float_bins);
             }
         }
 

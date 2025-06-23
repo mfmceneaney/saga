@@ -241,25 +241,23 @@ std::vector<std::string> getGenAsymPdf(
 
     // Set variable formulas list
     std::vector<std::string> varformulas;
-    int start_idx = categories_as_float.size();
     for (int idx=0; idx<argset->size(); idx++) {
-        varformulas.push_back(Form("x[%d]", idx-start_idx));
+        varformulas.push_back(Form("x[%d]", idx));
     }
-    //NOTE: Use negative index for the helicity and tspin since
-    // the user does not need to specify them in the fit formula,
-    // but they are prepended to the asymmetry fit variables (helicity, then tspin).
+    //NOTE: The user does not need to specify the helicity and target spin variables in the fit formula,
+    // but they are appended to the asymmetry fit variables (helicity, then tspin).
 
     // Set model and yield names
     std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
     std::vector<std::string> model_and_yield_names;
     model_and_yield_names.push_back(model_name);
 
-    //TODO: Create simple pdf here if not using simultaneous PDF
+    // Create simple pdf here if not using simultaneous PDF
     if (categories_as_float.size()>0) {
 
-        // Check whether you have helicity and/or tspin and set formulas with negative index
-        std::string helicity_formula = (categories_as_float.size()==2) ? "x[-2]" : "x[-1]";
-        std::string tspin_formula = "x[-1]";
+        // Check whether you have helicity and/or tspin and set formulas
+        std::string helicity_formula = (categories_as_float.size()==2) ? Form("x[%d]",(int)argset->size()-2) : Form("x[%d]",(int)argset->size()-1);
+        std::string tspin_formula = Form("x[%d]",(int)argset->size()-1);
 
         // Create the PDF formula
         std::string fitformula_full = "";
