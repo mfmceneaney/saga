@@ -147,7 +147,6 @@ void createDataset(
             bool contains_var = false;
             for (int ff = 0; ff<asymfitvars.size(); ff++) {
                 if (asymfitvars[ff]==h_as_float) contains_var = true;
-                break;
             }
             if (!contains_var) {
                 std::string h_as_float_title = helicity;
@@ -183,7 +182,6 @@ void createDataset(
             bool contains_var = false;
             for (int ff = 0; ff<asymfitvars.size(); ff++) {
                 if (asymfitvars[ff]==h_as_float) contains_var = true;
-                break;
             }
             if (!contains_var) {
                 std::string h_as_float_title = tspin;
