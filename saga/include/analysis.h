@@ -119,25 +119,43 @@ RooArgSet* getSubRooArgSet(
 *
 * @param fitformula PDF formula passed to RooGenericPdf
 * @param varformulas List of variable formulas passed to RooGenericPdf
+* @param max_idx If this parameter is \f$>0\f$, then the formulas will be substituted in descending order starting at `idx==max_idx`.
 *
 * @return std::string
 */
 std::string getSubFormula(
     std::string fitformula,
-    std::vector<std::string> varformulas
+    std::vector<std::string> varformulas,
+    int max_idx = 0
 ) {
 
     // Loop variable formulas and map old formulas to new formulas
     std::string subfitformula = fitformula;
-    int add_idx = 0;
-    for (int idx = 0; idx<varformulas.size(); idx++) {
 
-        // Check if fit formula contains variable formula
-        if (fitformula.find(varformulas[idx]) != std::string::npos) {
+    // If you are doing forward ordering
+    if (max_idx==0) {
+        int add_idx = max_idx;
+        for (int idx = 0; idx<varformulas.size(); idx++) {
 
-            // Replace variable and increment index of variables added
-            saga::util::replaceAll(subfitformula, varformulas[idx], Form("x[%d]", add_idx));
-            add_idx++;
+            // Check if fit formula contains variable formula
+            if (fitformula.find(varformulas[idx]) != std::string::npos) {
+
+                // Replace variable and increment index of variables added
+                saga::util::replaceAll(subfitformula, varformulas[idx], Form("x[%d]", add_idx));
+                add_idx++;
+            }
+        }
+    } else { // Or backward ordering
+        int add_idx = max_idx;
+        for (int idx = varformulas.size()-1; idx>=0; idx--) {
+
+            // Check if fit formula contains variable formula
+            if (fitformula.find(varformulas[idx]) != std::string::npos) {
+
+                // Replace variable and increment index of variables added
+                saga::util::replaceAll(subfitformula, varformulas[idx], Form("x[%d]", add_idx));
+                add_idx--;
+            }
         }
     }
 
