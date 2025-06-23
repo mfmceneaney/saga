@@ -260,7 +260,7 @@ std::vector<std::string> getGenAsymPdf(
     // Set variable formulas list
     std::vector<std::string> varformulas;
     for (int idx=0; idx<argset->size(); idx++) {
-        varformulas.push_back(Form("x[%d]", idx-categories_as_float.size()));
+        varformulas.push_back(Form("x[%d]", (int)(idx-categories_as_float.size())));
     }
     //NOTE: The user does not need to specify the helicity and target spin variables in the fit formula,
     // but they are prepended to the asymmetry fit variables (helicity, then tspin).
