@@ -161,7 +161,7 @@ void createDataset(
         }
 
         // Check for target spin variable
-        if (categories_as_float[idx]==tspin) {
+        else if (categories_as_float[idx]==tspin) {
 
             // Set helicity variable info
             std::string h_as_float = Form("%s_as_float",tspin.c_str());
