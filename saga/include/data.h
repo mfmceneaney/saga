@@ -136,15 +136,20 @@ void createDataset(
         // Check for beam helicity variable
         if (categories_as_float[idx]==helicity) {
 
-            // Set helicity variable info
+            // Set helicity variable name and formula
             std::string h_as_float = Form("%s_as_float",helicity.c_str());
+            std::string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
+
+            // Define the new branch in the frame
+            frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
+
+            // Check if it's already been added before
             bool contains_var = false;
             for (int ff = 0; ff<asymfitvars.size(); ff++) {
                 if (asymfitvars[ff]==h_as_float) contains_var = true;
                 break;
             }
             if (!contains_var) {
-                std::string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
                 std::string h_as_float_title = helicity;
                 int h_as_float_bins=0;
                 double h_as_float_min = 0.0;
@@ -155,9 +160,6 @@ void createDataset(
                     h_as_float_bins++;
                 }
                 std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
-
-                // Define the new branch in the frame
-                frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
 
                 // Add helicity variable as a fit variable
                 asymfitvars.insert(asymfitvars.begin(),h_as_float);
@@ -170,15 +172,20 @@ void createDataset(
         // Check for target spin variable
         else if (categories_as_float[idx]==tspin) {
 
-            // Set helicity variable info
+            // Set helicity variable name and formula
             std::string h_as_float = Form("%s_as_float",tspin.c_str());
+            std::string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
+
+            // Define the new branch in the frame
+            frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
+
+            // Check if it's already been added before
             bool contains_var = false;
             for (int ff = 0; ff<asymfitvars.size(); ff++) {
                 if (asymfitvars[ff]==h_as_float) contains_var = true;
                 break;
             }
             if (!contains_var) {
-                std::string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
                 std::string h_as_float_title = tspin;
                 int h_as_float_bins=0;
                 double h_as_float_min = 0.0;
@@ -189,9 +196,6 @@ void createDataset(
                     h_as_float_bins++;
                 }
                 std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
-
-                // Define the new branch in the frame
-                frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
 
                 // Add helicity variable as a fit variable
                 asymfitvars.insert(asymfitvars.begin(),h_as_float);
