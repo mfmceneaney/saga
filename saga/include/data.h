@@ -46,6 +46,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @param w RooWorkspace in which to work
 * @param name Dataset name
 * @param title Dataset title
+* @param categories_as_float List of category variables to include as floats named `<category>_as_float` in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
 * @param tspin Name of target spin variable
@@ -75,6 +76,7 @@ void createDataset(
         RooWorkspace *w,
         std::string name,
         std::string title,
+        std::vector<std::string> categories_as_float,
         std::string helicity,
         std::map<std::string,int> helicity_states,
         std::string tspin,
@@ -90,10 +92,10 @@ void createDataset(
         std::vector<std::string> depolvar_titles,
         std::vector<std::vector<double>> depolvar_lims,
         std::vector<int> depolvar_bins,
-        std::vector<std::string> asymfitvars,
-        std::vector<std::string> asymfitvar_titles,
-        std::vector<std::vector<double>> asymfitvar_lims,
-        std::vector<int> asymfitvar_bins,
+        std::vector<std::string> &asymfitvars,
+        std::vector<std::string> &asymfitvar_titles,
+        std::vector<std::vector<double>> &asymfitvar_lims,
+        std::vector<int> &asymfitvar_bins,
         std::vector<std::string> massfitvars,
         std::vector<std::string> massfitvar_titles,
         std::vector<std::vector<double>> massfitvar_lims,
@@ -125,6 +127,84 @@ void createDataset(
             std::string state_name = Form("%s_%s",it_h->first.c_str(),it_t->first.c_str());
             int state_value = (it_h->second + 1) * 10 + (it_t->second + 1);
             ss.defineType(state_name.c_str(), state_value);
+        }
+    }
+
+    // Loop categories to convert include as floats
+    for (int idx=0; idx<categories_as_float.size(); idx++) {
+
+        // Check for beam helicity variable
+        if (categories_as_float[idx]==helicity) {
+
+            // Set helicity variable name and formula
+            std::string h_as_float = Form("%s_as_float",helicity.c_str());
+            std::string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
+
+            // Define the new branch in the frame
+            frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
+
+            // Check if it's already been added before
+            bool contains_var = false;
+            for (int ff = 0; ff<asymfitvars.size(); ff++) {
+                if (asymfitvars[ff]==h_as_float) contains_var = true;
+            }
+            if (!contains_var) {
+                std::string h_as_float_title = helicity;
+                int h_as_float_bins=0;
+                double h_as_float_min = 0.0;
+                double h_as_float_max = 0.0;
+                for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
+                    if (it->second<h_as_float_min) h_as_float_min = it->second;
+                    if (it->second>h_as_float_max) h_as_float_max = it->second;
+                    h_as_float_bins++;
+                }
+                std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
+
+                // Add helicity variable as a fit variable
+                asymfitvars.insert(asymfitvars.begin(),h_as_float);
+                asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
+                asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
+                asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+            }
+        }
+    }
+
+    // Loop categories to convert include as floats
+    for (int idx=0; idx<categories_as_float.size(); idx++) {
+
+        // Check for target spin variable
+        if (categories_as_float[idx]==tspin) {
+
+            // Set helicity variable name and formula
+            std::string h_as_float = Form("%s_as_float",tspin.c_str());
+            std::string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
+
+            // Define the new branch in the frame
+            frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
+
+            // Check if it's already been added before
+            bool contains_var = false;
+            for (int ff = 0; ff<asymfitvars.size(); ff++) {
+                if (asymfitvars[ff]==h_as_float) contains_var = true;
+            }
+            if (!contains_var) {
+                std::string h_as_float_title = tspin;
+                int h_as_float_bins=0;
+                double h_as_float_min = 0.0;
+                double h_as_float_max = 0.0;
+                for (auto it = tspin_states.begin(); it != tspin_states.end(); it++) {
+                    if (it->second<h_as_float_min) h_as_float_min = it->second;
+                    if (it->second>h_as_float_max) h_as_float_max = it->second;
+                    h_as_float_bins++;
+                }
+                std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
+
+                // Add helicity variable as a fit variable
+                asymfitvars.insert(asymfitvars.begin(),h_as_float);
+                asymfitvar_titles.insert(asymfitvar_titles.begin(),h_as_float_title);
+                asymfitvar_lims.insert(asymfitvar_lims.begin(),h_as_float_lims);
+                asymfitvar_bins.insert(asymfitvar_bins.begin(),h_as_float_bins);
+            }
         }
     }
 

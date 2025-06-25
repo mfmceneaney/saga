@@ -77,8 +77,7 @@ void execute(const YAML::Node& node) {
 
     //----------------------------------------------------------------------//
     // BEGIN HELICITY AND SPIN VARIABLES
-    
-    // HELICITY_NAME
+    bool use_categories_as_float = saga::util::getYamlArg<bool>(node, "use_categories_as_float", false, message_prefix, verbose, yamlargout);
     std::string helicity_name = saga::util::getYamlArg<std::string>(node, "helicity_name", "heli", message_prefix, verbose, yamlargout);
     std::string helicity_formula = saga::util::getYamlArg<std::string>(node, "helicity_formula", "-helicity", message_prefix, verbose, yamlargout); //NOTE: Make sure to flip helicity for RGA fall 2018 data and check if needed for other datasets.
     std::map<std::string,int> helicity_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "helicity_states", {{"plus",1}, {"zero",0}, {"minus",-1}}, message_prefix, verbose, yamlargout);
@@ -251,6 +250,18 @@ void execute(const YAML::Node& node) {
     std::string logpath = saga::util::getYamlArg<std::string>(node, "logpath", "out.txt", message_prefix, verbose, yamlargout);
     bool dump_dataset = saga::util::getYamlArg<bool>(node, "dump_dataset", false, message_prefix, verbose, yamlargout);
     std::vector<std::string> dump_vars = saga::util::getYamlArg<std::vector<std::string>>(node, "dump_vars", {}, message_prefix, verbose, yamlargout); //NOTE: If empty ALL variables from dataset will be dumped if dump_dataset==true.
+
+    //----------------------------------------------------------------------------------------------------//
+    // Create list of categories to use as float  //NOTE: Ordering is important!
+    std::vector<std::string> categories_as_float;
+    if (use_categories_as_float) {
+        if (asymfit_formula_pu!="" || asymfit_formula_pp!="") {
+            categories_as_float.push_back(helicity_name);
+        }
+        if (asymfit_formula_up!="" || asymfit_formula_pp!="") {
+            categories_as_float.push_back(tspin_name);
+        }
+    }
 
     //----------------------------------------------------------------------------------------------------//
     // ANALYSIS
@@ -535,6 +546,7 @@ void execute(const YAML::Node& node) {
             // // parameters passed to data::createDataset()
             "dataset", // std::string                      dataset_name,
             "dataset", // std::string                      dataset_title,
+            categories_as_float, // std::vector<std::string>         categories_as_float,
             helicity_name, // std::string                      helicity,
             helicity_states, // std::map<std::string,int>        helicity_states,
             tspin_name, // std::string                      tspin,

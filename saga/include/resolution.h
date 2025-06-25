@@ -391,6 +391,7 @@ std::vector<double> fitResolution(
 * @param workspace_title Title of workspace in which to work
 * @param dataset_name Dataset name
 * @param dataset_title Dataset title
+* @param categories_as_float List of category variables to include as asymmetry fit variables in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
 * @param tspin Name of target spin variable
@@ -443,6 +444,7 @@ void getKinBinnedResolutions(
         // parameters passed to data::createDataset()
         std::string                      dataset_name,
         std::string                      dataset_title,
+        std::vector<std::string>         categories_as_float,
         std::string                      helicity,
         std::map<std::string,int>        helicity_states,
         std::string                      tspin,
@@ -545,6 +547,7 @@ void getKinBinnedResolutions(
             ws,
             dataset_name,
             dataset_title,
+            categories_as_float,
             helicity,
             helicity_states,
             tspin,
