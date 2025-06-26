@@ -256,10 +256,10 @@ std::vector<double> fitResolution(
         // Compute chi2/NDF value
         OwningPtr<RooAbsReal> chi2;
         if (use_extended_nll) {
-            model.createChi2(*rdhs_1d[i], Range("fullRange"),
+            chi2 = model.createChi2(*rdhs_1d[i], Range("fullRange"),
                     Extended(use_extended_nll), DataError(RooAbsData::Poisson));
         } else {
-            _model.createChi2(*rdhs_1d[i], Range("fullRange"),
+            chi2 = _model.createChi2(*rdhs_1d[i], Range("fullRange"),
                     Extended(use_extended_nll), DataError(RooAbsData::Poisson));
         }
         int nparameters;
