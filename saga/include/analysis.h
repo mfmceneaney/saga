@@ -172,11 +172,11 @@ std::string getSubFormula(
 *
 * @f[
 * \begin{aligned}
-* PDF(h_b, h_t, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* PDF(\lambda_{\ell}, S_{||}, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
 * & 1 + A_{UU,UT}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + h_b \cdot \overline{P^2_b} \cdot A_{PU}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + h_t \cdot \overline{P^2_t} \cdot A_{UP}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + h_b \cdot \overline{P^2_b} \cdot h_t \cdot \overline{P^2_t} \cdot A_{PP}(\vec{x}, \vec{a}, \vec{d}), \\
+* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot A_{LU,LT}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + S_{||} \cdot \overline{S^2} \cdot A_{UL}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot S_{||} \cdot \overline{S^2} \cdot A_{LL}(\vec{x}, \vec{a}, \vec{d}), \\
 * \end{aligned}
 * @f]
 * where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
@@ -186,8 +186,8 @@ std::string getSubFormula(
 * the PDF will use these as independent variables.  Otherwise, a simultaneous PDF will be
 * formed over the various helicity and spin states.
 *
-* Note that in the case of an \f$A_{UT}\f$ asymmetry, the relevant formula should be included in the argument for the \f$A_{UU}\f$ formula
-* since \f$A_{UT}\f$ should only have a kinematic dependence, e.g., on \f$\phi_{S}\f$ rather than a categorical dependence on \f$S_{\perp}\f$.
+* Note that in the case of an \f$A_{UT}\f$ or \f$A_{LT}\f$ asymmetry, the relevant formula should be included in the argument for the \f$A_{UU}\f$ or \f$A_{LU}\f$ formula
+* respectively since \f$A_{UT}\f$ and \f$A_{LT}\f$ should only have kinematic dependence on \f$\phi_{S}\f$ rather than categorical dependence on \f$S_{\perp}\f$.
 *
 * The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
 * `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
@@ -208,20 +208,20 @@ std::string getSubFormula(
 * 
 * @param w RooWorkspace in which to work
 * @param categories_as_float List of category variables to include use as asymmetry fit variables and automatically add to PDF formula
-* @param h Beam helicity \f$h_b\in(-1,0,1)\f$
-* @param t Target spin \f$h_t\in(-1,0,1)\f$
-* @param ht Beam helicity times target spin \f$h_b \cdot h_t\in(-1,0,1)\f$
-* @param ss Combined beam helicity and target spin state \f$ss = (h_b+1)*10 + (h_t+1)\f$
+* @param h Beam helicity \f$\lambda_{\ell}\in(-1,0,1)\f$
+* @param t Target spin \f$S\in(-1,0,1)\f$
+* @param ht Beam helicity times target spin \f$\lambda_{\ell} \cdot S\in(-1,0,1)\f$
+* @param ss Combined beam helicity and target spin state \f$ss = (\lambda_{\ell}+1)\cdot10 + (S+1)\f$
 * @param argset Argument set for PDF
 * @param argnames Argument names for PDF
 * @param method_name Method name, used to name PDF
 * @param binid Unique bin id, used to name PDF
 * @param fitformula_uu Fit formula for the asymmetry terms \f$A_{UU,UT}\f$
-* @param fitformula_pu Fit formula for the beam helicity dependent asymmetry terms \f$A_{PU}\f$
-* @param fitformula_up Fit formula for the target spin dependent asymmetry terms \f$A_{UP}\f$
-* @param fitformula_pp Fit formula for the beam helicity and target spin dependent asymmetry terms \f$A_{PP}\f$
-* @param bpol Average beam polarization
-* @param tpol Average target polarization
+* @param fitformula_pu Fit formula for the beam helicity dependent asymmetry terms \f$A_{LU,LT}\f$
+* @param fitformula_up Fit formula for the target spin dependent asymmetry terms \f$A_{UL}\f$
+* @param fitformula_pp Fit formula for the beam helicity and target spin dependent asymmetry terms \f$A_{LL}\f$
+* @param bpol Luminosity averaged beam polarization \f$\overline{\lambda_{\ell}^2}\f$
+* @param tpol Luminosity averaged target polarization \f$\overline{S^2}\f$
 * @param count Bin count
 * @param use_extended_nll Option to use an extended likelihood term
 * 
@@ -600,14 +600,15 @@ std::vector<std::string> getGenAsymPdf(
 *
 * Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
 * and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood fit method with an optional extended likelihood term.
-* Note that for the maximum likelihood fit, the given asymmetry formulas \f$ A_{(PU,UP,PP)}(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$
+* Note that for the maximum likelihood fit, the given asymmetry formulas \f$ A_{(UU,PU,UP,PP)}(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$
 * will be used internally by `getGenAsymPdf()` to construct a simultaneous PDF of the form:
 * @f[
 * \begin{aligned}
-* PDF(h_b, h_t, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
-* & 1 + h_b \cdot \overline{P^2_b} \cdot A_{PU}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + h_t \cdot \overline{P^2_t} \cdot A_{UP}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + h_b \cdot \overline{P^2_b} \cdot h_t \cdot \overline{P^2_t} \cdot A_{PP}(\vec{x}, \vec{a}, \vec{d}), \\
+* PDF(\lambda_{\ell}, S_{||}, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
+* & 1 + A_{UU=(UU,UT)}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot A_{PU=(LU,LT)}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + S_{||} \cdot \overline{S^2} \cdot A_{UP=UL}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot S_{||} \cdot \overline{S^2} \cdot A_{PP=LL}(\vec{x}, \vec{a}, \vec{d}), \\
 * \end{aligned}
 * @f]
 * where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
@@ -663,8 +664,8 @@ std::vector<std::string> getGenAsymPdf(
 *
 * @param w RooWorkspace in which to work
 * @param dataset_name Dataset name
-* @param bpol Luminosity averaged beam polarization
-* @param tpol Luminosity averaged target polarization
+* @param bpol Luminosity averaged beam polarization \f$\overline{\lambda_{\ell}^2}\f$
+* @param tpol Luminosity averaged target polarization \f$\overline{S^2}\f$
 * @param categories_as_float List of category variables to treat as asymmetry fit variables and automatically add to PDF formulas
 * @param helicity Name of the helicity variable
 * @param tspin Name of the target spin variable
@@ -1209,8 +1210,8 @@ std::vector<double> fitAsym(
 * @param massfitvar_lims List invariant mass fit variable minimum and maximum bounds 
 * @param massfitvar_bins List of invariant mass fit variables bins
 
-* @param bpol Luminosity averaged beam polarization
-* @param tpol Luminosity averaged target polarization
+* @param bpol Luminosity averaged beam polarization \f$\overline{\lambda_{\ell}^2}\f$
+* @param tpol Luminosity averaged target polarization \f$\overline{S^2}\f$
 * @param asymfit_formula_uu The asymmetry formula in ROOT TFormula format for the unpolarized and transverse target spin (\f$\phi_{S}\f$) dependent asymmetries
 * @param asymfit_formula_pu The asymmetry formula in ROOT TFormula format for the beam helicity dependent asymmetries
 * @param asymfit_formula_up The asymmetry formula in ROOT TFormula format for the target spin dependent asymmetries
