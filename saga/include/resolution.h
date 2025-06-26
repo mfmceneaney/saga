@@ -49,10 +49,10 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * Fit a resolution distribution, that is, the difference in reconstructed and true values \f$\Delta X = X_{Rec} - X_{True}\f$
 * with a generic PDF, although this will default to Gaussian.  Starting parameter values and limits may be loaded from a yaml file for each bin.
 *
-* The retured vector will contain, in order:
+* The returned vector will contain, in order:
 * - The total bin count
 * - The average bin variable means and corresponding standard deviations
-* - The \f$\chi^2/NDF\f$ of the fit
+* - The \f$\chi^2/NDF\f$ of the fit from a 1D histogram in each fit variable
 * - The parameter value and error for each fit parameter
 *
 * @param w RooWorkspace in which to work
@@ -243,69 +243,79 @@ std::vector<double> fitResolution(
         fitparerrs.push_back((double)pars[aa]->getError());
     }
 
-    // Import TH1 histogram into RooDataHist
-    RooRealVar *x = f[0]; //NOTE: For now just use the first fit variable.
-    std::string dh_title = Form("%s",x->GetTitle());
-    RooDataHist *rdhs_1d = new RooDataHist(dh_title.c_str(), dh_title.c_str(), *x, *bin_ds);
+    // Compute chi2 from 1D histograms
+    std::vector<double> chi2ndfs;
+    RooDataHist *rdhs_1d[(const int)resfitvars.size()];
+    for (int i=0; i<resfitvars.size(); i++) {
 
-    // Compute chi2/NDF value
-    x->setRange("fullRange", x->getMin(), x->getMax());
-    OwningPtr<RooAbsReal> chi2;
-    if (use_extended_nll) {
-        model.createChi2(*rdhs_1d, Range("fullRange"),
-                Extended(use_extended_nll), DataError(RooAbsData::Poisson));
-    } else {
-        _model.createChi2(*rdhs_1d, Range("fullRange"),
-                Extended(use_extended_nll), DataError(RooAbsData::Poisson));
-    }
-    int nparameters;
-    if (use_extended_nll) {
-        nparameters = (int)model.getParameters(RooArgSet(*x))->size();
-    } else {
-        nparameters = (int)_model.getParameters(RooArgSet(*x))->size();
-    }
-    int ndf = x->getBins() - nparameters; //NOTE: ASSUME ALL BINS NONZERO
-    double chi2ndf = (double) chi2->getVal()/ndf;
+        // Import TH1 histogram into RooDataHist //NOTE: For now just use the first fit variable.
+        std::string dh_name = Form("h_%s",f[i]->GetName());
+        std::string dh_title = Form("%s",f[i]->GetTitle());
+        rdhs_1d[i] = new RooDataHist(dh_name.c_str(), dh_title.c_str(), *f[i], *bin_ds);
 
-    // Plot dataset and PDF
-    RooPlot *frame = x->frame();
-    frame->SetTitle(plot_title.c_str());
-    bin_ds->plotOn(frame);
-    if (use_extended_nll) {
-        model.plotOn(frame);
-    } else {
-        _model.plotOn(frame);
+        // Compute chi2/NDF value
+        OwningPtr<RooAbsReal> chi2;
+        if (use_extended_nll) {
+            chi2 = model.createChi2(*rdhs_1d[i], Range("fullRange"),
+                    Extended(use_extended_nll), DataError(RooAbsData::Poisson));
+        } else {
+            chi2 = _model.createChi2(*rdhs_1d[i], Range("fullRange"),
+                    Extended(use_extended_nll), DataError(RooAbsData::Poisson));
+        }
+        int nparameters;
+        if (use_extended_nll) {
+            nparameters = (int)model.getParameters(RooArgSet(*f[i]))->size();
+        } else {
+            nparameters = (int)_model.getParameters(RooArgSet(*f[i]))->size();
+        }
+        int ndf = f[i]->getBins() - nparameters; //NOTE: ASSUME ALL BINS NONZERO
+        double chi2ndf = (double) chi2->getVal()/ndf;
+        chi2ndfs.push_back(chi2ndf);
     }
 
-    // Create legend
-    TLegend *legend = new TLegend();
-    legend->SetTextSize(lg_text_size);
-    legend->SetMargin(lg_margin);
-    if (lg_ncols>1) legend->SetNColumns(lg_ncols);
+    //---------------------------------------- Plot projections ----------------------------------------//
+    for (int i=0; i<resfitvars.size(); i++) {
 
-    // Create legend entries
-    std::string str_chi2 = Form("#chi^{2}/NDF = %.3g",chi2ndf);
+        // Plot dataset and PDF
+        RooPlot *frame = f[i]->frame();
+        frame->SetTitle(plot_title.c_str());
+        bin_ds->plotOn(frame);
+        if (use_extended_nll) {
+            model.plotOn(frame);
+        } else {
+            _model.plotOn(frame);
+        }
 
-    // Add legend entries
-    legend->AddEntry((TObject*)0, str_chi2.c_str(), Form(" %g ",0.0));
+        // Create legend
+        TLegend *legend = new TLegend();
+        legend->SetTextSize(lg_text_size);
+        legend->SetMargin(lg_margin);
+        if (lg_ncols>1) legend->SetNColumns(lg_ncols);
 
-    // Create and add legend entries for PDF parameter values and errors
-    for (int i=0; i<nparams; i++) {
-        std::string par_str = Form("%s = %.3g #pm %.3g %s", pars[i]->GetTitle(), pars[i]->getVal(), pars[i]->getError(), parunits[i].c_str());
-        legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",chi2ndf));
+        // Create legend entries
+        std::string str_chi2 = Form("#chi^{2}/NDF = %.3g",chi2ndfs[i]);
+
+        // Add legend entries
+        legend->AddEntry((TObject*)0, str_chi2.c_str(), Form(" %g ",0.0));
+
+        // Create and add legend entries for PDF parameter values and errors
+        for (int i=0; i<nparams; i++) {
+            std::string par_str = Form("%s = %.3g #pm %.3g %s", pars[i]->GetTitle(), pars[i]->getVal(), pars[i]->getError(), parunits[i].c_str());
+            legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",chi2ndfs[i]));
+        }
+
+        // Create canvas and draw
+        std::string cname = Form("c_%s_%s_%s", method_name.c_str(), binid.c_str(), f[i]->GetName());
+        TCanvas *c = new TCanvas(cname.c_str());
+        c->cd();
+        gPad->SetLeftMargin(0.15);
+        frame->GetYaxis()->SetTitleOffset(1.6);
+        frame->Draw();
+        legend->Draw();
+
+        // Save to PDF
+        c->Print(Form("%s.pdf", cname.c_str()));
     }
-
-    // Create canvas and draw
-    std::string cname = Form("%s_%s", method_name.c_str(), binid.c_str());
-    TCanvas *c = new TCanvas(cname.c_str());
-    c->cd();
-    gPad->SetLeftMargin(0.15);
-    frame->GetYaxis()->SetTitleOffset(1.6);
-    frame->Draw();
-    legend->Draw();
-
-    // Save to PDF
-    c->Print(Form("%s.pdf", cname.c_str()));
 
     // Show fit info
     out << "------------------------------------------------------------" <<std::endl;
@@ -325,7 +335,12 @@ std::vector<double> fitResolution(
         if (idx<resfitvars.size()-1) { out << " , "; }
     }
     out << " ]" << std::endl;
-    out << " chi2/ndf:    = " << chi2ndf << std::endl;
+    out << " chi2/ndfs  = [" ;
+    for (int idx=0; idx<resfitvars.size(); idx++) {
+        out << resfitvars[idx] << " : " << chi2ndfs[idx];
+        if (idx<resfitvars.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
     out << " fitformula   = " << fitformula.c_str() << std::endl;
     out << " nparams      = " << nparams <<std::endl;
     out << " parinits     = [" ;
@@ -349,7 +364,9 @@ std::vector<double> fitResolution(
         arr.push_back(binvarmeans[idx]);
         arr.push_back(binvarerrs[idx]);
     }
-    arr.push_back(chi2ndf);
+    for (int idx=0; idx<chi2ndfs.size(); idx++) {
+        arr.push_back(chi2ndfs[idx]);
+    }
     for (int i = 0; i<nparams; i++) {
         arr.push_back(fitpars[i]);
         arr.push_back(fitparerrs[i]);
@@ -375,11 +392,11 @@ std::vector<double> fitResolution(
 *
 *   - `<binvar>_err`: Standard deviation
 *
-* - For the **first** fit variable:
+* - For each independent fit variable:
 *
 *   - `<chi2ndf>`: \f$\chi^2/NDF\f$ value of the 1D projection of the full PDF in that variable
 *
-* - For each resoolution fit PDF parameter `fitpar`
+* - For each resolution fit PDF parameter `fitpar`
 *
 *   - `<fitpar>`: Final parameter value
 *
@@ -511,12 +528,15 @@ void getKinBinnedResolutions(
     std::string csv_separator = ",";
 
     // Set CSV column headers
-    // COLS: bin_id,count,{binvarmean,binvarerr},{resfitvar,resfitvarerr}
+    // COLS: bin_id,count,{binvarmean,binvarerr},{chi2ndf},{resfitvar,resfitvarerr}
     csvout << "bin_id" << csv_separator.c_str();
     csvout << "count" << csv_separator.c_str();
     for (int bb=0; bb<binvars.size(); bb++) {
         csvout << binvars[bb].c_str() << csv_separator.c_str();
         csvout << binvars[bb].c_str() << "_err" << csv_separator.c_str();
+    }
+    for (int bb=0; bb<binvars.size(); bb++) {
+        csvout << "chi2ndf_" << binvars[bb].c_str() << csv_separator.c_str();
     }
     for (int aa=0; aa<parinits.size(); aa++) {
         csvout << parnames[aa].c_str() << csv_separator.c_str();
@@ -615,6 +635,7 @@ void getKinBinnedResolutions(
         int    nparams  = parinits.size();
         double xs[nbinvars];
         double exs[nbinvars];
+        double chi2ndfs[nbinvars];
         double ys[nparams];
         double eys[nparams];
 
@@ -625,18 +646,24 @@ void getKinBinnedResolutions(
             xs[idx]     = resfitresult[k++];
             exs[idx]    = resfitresult[k++];
         }
+        for (int idx=0; idx<binvars.size(); idx++) {
+            chi2ndfs[idx]     = resfitresult[k++];
+        }
         for (int idx=0; idx<nparams; idx++) {
             ys[idx] = resfitresult[k++];
             eys[idx] = resfitresult[k++];
         }
 
         // Write out a row of data to csv
-        // COLS: bin_id,count,{binvarmean,binvarerr}{resfitvar,resfitvarerr}
+        // COLS: bin_id,count,{binvarmean,binvarerr},{chi2ndf},{resfitvar,resfitvarerr}
         csvout << bin_id << csv_separator.c_str();
         csvout << count << csv_separator.c_str();
         for (int bb=0; bb<binvars.size(); bb++) {
             csvout << xs[bb] << csv_separator.c_str();
             csvout << exs[bb] << csv_separator.c_str();
+        }
+        for (int bb=0; bb<binvars.size(); bb++) {
+            csvout << chi2ndfs[bb] << csv_separator.c_str();
         }
         for (int aa=0; aa<nparams; aa++) {
             csvout << ys[aa] << csv_separator.c_str();
