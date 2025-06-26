@@ -514,23 +514,27 @@ RNode mapDataFromCSV(RNode filtered_df,
 * beam and target polarizations, and the relevant signal and background 
 * asymmetry formulas separated into unpolarized and (only) transverse target spin, i.e., \f$\phi_{S}\f$, dependent asymmetry terms,
 * as well as asymmetry terms dependent on beam helicity, target spin, or both.
-* In the case of an asymmetry term depending (only) on transverse target spin, the \f$\phi_{S}\f$ variable can be injected into the dataset if a variable name is supplied.
+* In the case of an asymmetry term depending on transverse target spin, the \f$\phi_{S}\f$ variable can be injected into the dataset if a variable name is supplied.
 * The injection algorithm proceeds as follows.
-* For each event, a random number \f$r\in[0,1)\f$, beam helicity \f$h_b\in(-1,0,1)\f$, and target spin \f$h_t\in(-1,0,1)\f$ are all randomly generated.
-* A non-zero \f$h_b\f$ and \f$h_t\f$ are generated with probabilities taken from the beam and target polarizations respectively:
-* \f$P(h_b\neq0) = \overline{P^2_b}\f$ and
-* \f$P(h_t\neq0) = \overline{P^2_t}\f$.
-* The event weight \f$w\f$ is computed as:
+* For each event, a random number \f$r\in[0,1)\f$, beam helicity \f$\lambda_{\ell}\in(-1,0,1)\f$, and target spin \f$S\in(-1,0,1)\f$ are all randomly generated.
+* A non-zero \f$\lambda_{\ell}\f$ and \f$S\f$ are generated with probabilities taken from the beam and target polarizations respectively:
+* \f$P(\lambda_{\ell}\neq0) = \overline{\lambda_{\ell}^2}\f$ and
+* \f$P(S\neq0) = \overline{S^2}\f$.
+* Otherwise, positive and negative helicity and spin values are generated with equal probability.
+* The probability \f$w\f$ of accepting the proposed \f$(\lambda_{\ell},S)\f$ pair is:
 * \f[
-*   w = \frac{1}{2} (1 + A_{UU} + A_{UT} + h_b \cdot A_{PU} + h_b \cdot A_{UP} + h_b \cdot h_t \cdot A_{PP}),
+*   w = \frac{1}{N} (1 + A_{UU} + A_{UT}(\phi_{S}) + \lambda_{\ell} \cdot A_{PU}(\phi_{S}) + \lambda_{\ell} \cdot A_{UP} + \lambda_{\ell} \cdot S_{||} \cdot A_{PP}),
 * \f]
-* where \f$A_{UU}\f$, \f$A_{UT}\f$ are the unpolarized and (only) transverse target spin dependent asymmetry terms
+* where \f$N\f$ is the number of possible combinations of \f$(\lambda_{\ell},S)\f$, given whether either has already been set to \f$0\f$.
+* For example, if \f$(\lambda_{\ell},S)=(0,\pm1)\f$ or \f$(\lambda_{\ell},S)=(\pm1,0)\f$ then \f$N=2\f$,
+* but if \f$(\lambda_{\ell},S)=(\pm1,\pm1)\f$ then \f$N=4\f$.
+* \f$A_{UU}\f$, \f$A_{UT}\f$ are the unpolarized and (only) transverse target spin dependent asymmetry terms
 * and \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ are the asymmetry terms
 * dependent on beam helicity, target spin, or both.
-* Note that the asymmetry terms will taken from either the signal or background asymmetries
-* depending on whether the event has been marked as signal or background.
-* If \f$w>r\f$ the beam helicity and target spin values for that event are accepted,
-* otherwise all random values are regenerated and the process repeats until \f$w>r\f$.
+* The asymmetry terms will be taken from either the signal or background asymmetries
+* according to the boolean variable `mc_sg_match_name` indicating signal events.
+* If \f$r<w\f$ the beam helicity and target spin values for that event are accepted,
+* otherwise all random values are regenerated and the process repeats until \f$r<w\f$.
 *
 * @param df `ROOT::RDataFrame` in which to inject asymmetry
 * @param seed Seed for random number generator
@@ -549,7 +553,7 @@ RNode mapDataFromCSV(RNode filtered_df,
 * @param asyms_bg_pu_neg_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$
 * @param asyms_bg_up_name Name of column containing the true background asymmetries dependent on target spin
 * @param asyms_bg_pp_name Name of column containing the true background asymmetries dependent on beam helicity and target spin
-* @param combined_spin_state_name Name of column containing combined beam helicity and target spin state encoded as \f$ss = (h_b+1)*10 + (h_t+1)\f$
+* @param combined_spin_state_name Name of column containing combined beam helicity and target spin state encoded as \f$ss = (\lambda_{\ell}+1)\cdot10 + (S+1)\f$
 * @param helicity_name Name of column containing the beam helicity
 * @param tspin_name Name of column containing the target spin
 * @param phi_s_up_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=+1\f$ events
@@ -626,7 +630,7 @@ RNode injectAsym(
             if (tpol>0.0 && t_rand_var<=tpol) tspin     = (t_rand_var<=tpol/2.0) ? 1 : -1;
 
             // Set the phi_s dependent asymmetries
-            float asyms_sg_uu = (tspin>0) ? asyms_sg_uu_pos : asyms_sg_uu_neg; //NOTE: Double check this...what to do if tspin==0?
+            float asyms_sg_uu = (tspin>0) ? asyms_sg_uu_pos : asyms_sg_uu_neg; //NOTE: Double check this...what to do if tspin==0? -> Need to add separate arguments for UT LT XSs so that you can drop those in case tspin=0.
             float asyms_bg_uu = (tspin>0) ? asyms_bg_uu_pos : asyms_bg_uu_neg;
             float asyms_sg_pu = (tspin>0) ? asyms_sg_pu_pos : asyms_sg_pu_neg;
             float asyms_bg_pu = (tspin>0) ? asyms_bg_pu_pos : asyms_bg_pu_neg;
