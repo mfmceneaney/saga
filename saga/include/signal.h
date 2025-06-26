@@ -570,7 +570,7 @@ std::vector<double> fitMass(
         model->plotOn(mframe_1d, Components(*bg), LineStyle(kDashed), LineColor(kBlue));
 
         // Plot on a TCanvas
-        TCanvas *c_massfit = new TCanvas(Form("c_%s_%s",method_name.c_str(),binid.c_str()));
+        TCanvas *c_massfit = new TCanvas(Form("c_%s_%s_%s",method_name.c_str(),binid.c_str(),f[i]->GetName()));
         c_massfit->cd();
         gPad->SetLeftMargin(0.15);
         mframe_1d->GetYaxis()->SetTitleOffset(1.6);
@@ -630,6 +630,12 @@ std::vector<double> fitMass(
     out << " fitvars  = [" ;
     for (int idx=0; idx<fitvars.size(); idx++) {
         out << fitvars[idx];
+        if (idx<fitvars.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
+    out << " chi2/ndfs  = [" ;
+    for (int idx=0; idx<fitvars.size(); idx++) {
+        out << fitvars[idx] << " : " << chi2ndfs[idx];
         if (idx<fitvars.size()-1) { out << " , "; }
     }
     out << "]" << std::endl;
