@@ -249,8 +249,9 @@ std::vector<double> fitResolution(
     for (int i=0; i<resfitvars.size(); i++) {
 
         // Import TH1 histogram into RooDataHist //NOTE: For now just use the first fit variable.
+        std::string dh_name = Form("h_%s",f[i]->GetName());
         std::string dh_title = Form("%s",f[i]->GetTitle());
-        rdhs_1d[i] = new RooDataHist(dh_title.c_str(), dh_title.c_str(), *f[i], *bin_ds);
+        rdhs_1d[i] = new RooDataHist(dh_name.c_str(), dh_title.c_str(), *f[i], *bin_ds);
 
         // Compute chi2/NDF value
         OwningPtr<RooAbsReal> chi2;
