@@ -266,7 +266,7 @@ std::vector<std::string> getGenAsymPdf(
     // but they are prepended to the asymmetry fit variables (helicity, then tspin).
 
     // Set model and yield names
-    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
+    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str());
     std::vector<std::string> model_and_yield_names;
 
     // Create simple pdf here if not using simultaneous PDF
@@ -1484,7 +1484,7 @@ void getKinBinnedAsym(
         bool                             use_extended_nll,
         bool                             use_binned_fit,
 
-        // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+        // parameters passed to saga::signal::fitMass()
         std::map<std::string,std::string> massfit_yamlfile_map,
         std::string                       massfit_pdf_name,
         std::string                       massfit_formula_sg,
@@ -1556,7 +1556,7 @@ void getKinBinnedAsym(
     std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
     std::ostream &csvout = csvoutf;
     std::string csv_separator = ",";
-    std::vector<std::string> rawasymvars = { "bsa", "tsa", "dsa"}; //TODO: OPTIONALLY CORRECT THESE BY A GIVEN DEPOLVAR
+    std::vector<std::string> rawasymvars = { "bsa", "tsa", "dsa"};
 
     // Set CSV column headers
     // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}

@@ -487,7 +487,7 @@ void getKinBinnedResolutions(
         std::vector<std::vector<double>> massfitvar_lims,
         std::vector<int>                 massfitvar_bins,
 
-        // parameters passed to saga::signal::fitResolution() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+        // parameters passed to saga::signal::fitResolution()
         std::map<std::string,std::string> yamlfile_map,
         std::string                       pdf_name,
         std::string                       fitformula,
