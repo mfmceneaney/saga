@@ -1556,7 +1556,7 @@ void getKinBinnedAsym(
     std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
     std::ostream &csvout = csvoutf;
     std::string csv_separator = ",";
-    std::vector<std::string> rawasymvars = { "asym_h", "asym_t", "asym_ht"}; //TODO: OPTIONALLY CORRECT THESE BY A GIVEN DEPOLVAR
+    std::vector<std::string> rawasymvars = { "bsa", "tsa", "dsa"}; //TODO: OPTIONALLY CORRECT THESE BY A GIVEN DEPOLVAR
 
     // Set CSV column headers
     // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}
