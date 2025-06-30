@@ -2103,7 +2103,7 @@ void getKinBinnedAsym(
         }
         for (int rr=0; rr<rawasymvars.size(); rr++) {
             csvout << rawasyms[rr] << csv_separator.c_str();
-            csvout << rawasyms[rr] << csv_separator.c_str();
+            csvout << rawasymerrs[rr] << csv_separator.c_str();
         }
         for (int aa=0; aa<nparams; aa++) {
             csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
