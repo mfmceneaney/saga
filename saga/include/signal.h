@@ -69,8 +69,6 @@ namespace signal {
 using namespace RooFit;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
-// TODO: Write method to load mass fit parameter initial values and limits and titles and names from a yaml file path and bin id -> Could just leave this for a bigger change to load all parameters from YAML...
-
 /**
 * @brief Create a PDF for fitting a combined signal and background invariant mass distribution.
 * 

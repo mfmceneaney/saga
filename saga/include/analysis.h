@@ -266,7 +266,7 @@ std::vector<std::string> getGenAsymPdf(
     // but they are prepended to the asymmetry fit variables (helicity, then tspin).
 
     // Set model and yield names
-    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str()); //TODO: Make model names more specific above to avoid naming conflicts...
+    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str());
     std::vector<std::string> model_and_yield_names;
 
     // Create simple pdf here if not using simultaneous PDF
@@ -648,6 +648,15 @@ std::vector<std::string> getGenAsymPdf(
 *
 *   - Depolarization variable standard deviation
 *
+* - The raw asymmetries and errors using the actual counts
+*   **or**, in the case of an extended fit, using the fitted counts, for each of
+*
+*   - Beam helicity \f$\lambda_{\ell}\f$
+*
+*   - Target spin \f$S\f$
+*
+*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*
 * - For each asymmetry fit parameter:
 *
 *   - Asymmetry fit parameter mean value
@@ -1008,6 +1017,150 @@ std::vector<double> fitAsym(
         }
     }
 
+    // Get the raw counts and poissonian errors
+    std::vector<double> counts;
+    std::vector<double> counterrs;
+    double count_h_pos  = (double)bin_ds->reduce(Form("%s>0",h->GetName()))->sumEntries();
+    double count_h_neg  = (double)bin_ds->reduce(Form("%s<0",h->GetName()))->sumEntries();
+    double count_t_pos  = (double)bin_ds->reduce(Form("%s>0",t->GetName()))->sumEntries();
+    double count_t_neg  = (double)bin_ds->reduce(Form("%s<0",t->GetName()))->sumEntries();
+    double count_ht_pos = (double)bin_ds->reduce(Form("%s>0",ht->GetName()))->sumEntries();
+    double count_ht_neg = (double)bin_ds->reduce(Form("%s<0",ht->GetName()))->sumEntries();
+    double counterr_h_pos   = (double)TMath::Sqrt(count_h_pos);
+    double counterr_h_neg   = (double)TMath::Sqrt(count_h_neg);
+    double counterr_t_pos   = (double)TMath::Sqrt(count_t_pos);
+    double counterr_t_neg   = (double)TMath::Sqrt(count_t_neg);
+    double counterr_ht_pos  = (double)TMath::Sqrt(count_ht_pos);
+    double counterr_ht_neg  = (double)TMath::Sqrt(count_ht_neg);
+
+    // Get the fitted yields and errors if using an extended fit
+    if (use_extended_nll && categories_as_float.size()==0) {
+
+        // Loop fitted yields and get values and errors
+        for (int nn=1; nn<model_and_yield_names.size(); nn++) {
+            RooRealVar *avar = (RooRealVar*)w->var(model_and_yield_names[nn].c_str()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
+            counts.push_back((double)avar->getVal());
+            counterrs.push_back((double)avar->getError());
+        }
+
+        // Get yields for helicity dependent pdf
+        if (fitformula_pu!="" && fitformula_up=="" && fitformula_pp=="") {
+
+            int j = 0;
+            double nsig_21 = counts[j++];
+            double nsig_11 = counts[j++];
+            double nsig_01 = counts[j++];
+            int k = 0;
+            double nsigerr_21 = counterrs[k++];
+            double nsigerr_11 = counterrs[k++];
+            double nsigerr_01 = counterrs[k++];
+
+            count_h_pos    = nsig_21;
+            count_h_neg    = nsig_01;
+            counterr_h_pos = nsigerr_21;
+            counterr_h_neg = nsigerr_01;
+        }
+
+        // Get yields for target spin dependent pdf
+        if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp=="") {
+
+            int j = 0;
+            double nsig_12 = counts[j++];
+            double nsig_11 = counts[j++];
+            double nsig_10 = counts[j++];
+            int k = 0;
+            double nsigerr_12 = counterrs[k++];
+            double nsigerr_11 = counterrs[k++];
+            double nsigerr_10 = counterrs[k++];
+
+            count_t_pos    = nsig_12;
+            count_t_neg    = nsig_10;
+            counterr_t_pos = nsigerr_12;
+            counterr_t_neg = nsigerr_10;
+        }
+
+        // Get yields for beam helicity and target spin dependent pdf
+        if (fitformula_pu=="" && fitformula_up=="" && fitformula_pp!="") {
+
+            int j = 0;
+            double nsig_22_00 = counts[j++];
+            double nsig_11    = counts[j++];
+            double nsig_20_02 = counts[j++];
+            int k = 0;
+            double nsigerr_22_00 = counterrs[k++];
+            double nsigerr_11    = counterrs[k++];
+            double nsigerr_20_02 = counterrs[k++];
+
+            count_ht_pos    = nsig_22_00;
+            count_ht_neg    = nsig_20_02;
+            counterr_ht_pos = nsigerr_22_00;
+            counterr_ht_neg = nsigerr_20_02;
+        }
+
+        // Get yields for FULL beam helicity and target spin dependent pdf **WITHOUT** PU asymmetries
+        if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp!="") {
+
+            int j = 0;
+            double nsig_11 = counts[j++];
+            double nsig_12 = counts[j++]; double nsig_10 = counts[j++];
+            double nsig_22 = counts[j++]; double nsig_00 = counts[j++];
+            double nsig_02 = counts[j++]; double nsig_20 = counts[j++];
+            int k = 0;
+            double nsigerr_11 = counterrs[k++];
+            double nsigerr_12 = counterrs[k++]; double nsigerr_10 = counterrs[k++];
+            double nsigerr_22 = counterrs[k++]; double nsigerr_00 = counterrs[k++];
+            double nsigerr_02 = counterrs[k++]; double nsigerr_20 = counterrs[k++];
+        }
+
+        // Get yields for FULL beam helicity and target spin dependent pdf
+        if (fitformula_pu!="" && fitformula_up!="" && fitformula_pp!="") {
+
+            int j = 0;
+            double nsig_11 = counts[j++];
+            double nsig_21 = counts[j++]; double nsig_01 = counts[j++];
+            double nsig_12 = counts[j++]; double nsig_10 = counts[j++];
+            double nsig_22 = counts[j++]; double nsig_00 = counts[j++];
+            double nsig_02 = counts[j++]; double nsig_20 = counts[j++];
+            int k = 0;
+            double nsigerr_11 = counterrs[k++];
+            double nsigerr_21 = counterrs[k++]; double nsigerr_01 = counterrs[k++];
+            double nsigerr_12 = counterrs[k++]; double nsigerr_10 = counterrs[k++];
+            double nsigerr_22 = counterrs[k++]; double nsigerr_00 = counterrs[k++];
+            double nsigerr_02 = counterrs[k++]; double nsigerr_20 = counterrs[k++];
+
+            count_h_pos     = nsig_21;
+            count_h_neg     = nsig_01;
+            counterr_h_pos  = nsigerr_21;
+            counterr_h_neg  = nsigerr_01;
+            count_t_pos     = nsig_12;
+            count_t_neg     = nsig_10;
+            counterr_t_pos  = nsigerr_12;
+            counterr_t_neg  = nsigerr_10;
+            count_ht_pos    = nsig_22 + nsig_00;
+            count_ht_neg    = nsig_20 + nsig_02;
+            counterr_ht_pos = (double)TMath::Sqrt(nsigerr_22*nsigerr_22 + nsigerr_00*nsigerr_00);
+            counterr_ht_neg = (double)TMath::Sqrt(nsigerr_20*nsigerr_20 + nsigerr_02*nsigerr_02);
+        }
+
+        // Set counts knowing how they are added in saga::analysis::getGenAsymPdf()
+    }
+
+    // Set the raw asymmetries
+    std::vector<double> rawasyms;
+    std::vector<double> rawasymerrs;
+    double asym_h  = (count_h_pos-count_h_neg)/(count_h_pos+count_h_neg);
+    double asym_t  = (count_t_pos-count_t_neg)/(count_t_pos+count_t_neg);
+    double asym_ht = (count_ht_pos-count_ht_neg)/(count_ht_pos+count_ht_neg);
+    rawasyms.push_back(asym_h);
+    rawasyms.push_back(asym_t);
+    rawasyms.push_back(asym_ht);
+    double asymerr_h  = (double)TMath::Sqrt(4.0*count_h_pos*count_h_neg/TMath::Power(count,3)); //NOTE: Use binomial error assuming correlated counts from: http://blast.lns.mit.edu/BlastTalk/archive/att-5707/01-asymmetry_calculations.pdf
+    double asymerr_t  = (double)TMath::Sqrt(4.0*count_t_pos*count_t_neg/TMath::Power(count,3)); //NOTE: Assume q=N^+/N is your random variable following a binomial distribution
+    double asymerr_ht = (double)TMath::Sqrt(4.0*count_ht_pos*count_ht_neg/TMath::Power(count,3)); //NOTE: A = q - (q-1) = 2q-1 ---> (dN^{+})^2 = N*q*(1-q) ---> dA^2 = 4*N^{+}*N^{-}/N^3
+    rawasymerrs.push_back(asymerr_h);
+    rawasymerrs.push_back(asymerr_t);
+    rawasymerrs.push_back(asymerr_ht);
+
     // Print out fit info
     out << "--------------------------------------------------" << std::endl;
     out << " "<<method_name.c_str()<<"():" << std::endl;
@@ -1073,10 +1226,16 @@ std::vector<double> fitAsym(
         }
         out << "]" << std::endl;
     }
+    out << " rawasyms = [" ;
+    for (int idx=0; idx<rawasyms.size(); idx++) {
+        out << rawasyms[idx] << "±" << rawasymerrs[idx];
+        if (idx<rawasyms.size()-1) { out << " , "; }
+    }
+    out << "]" << std::endl;
     out << "--------------------------------------------------" << std::endl;
 
     // Fill return array
-    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*nparams(+2*nparams)
+    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*rawasyms.size()+2*nparams(+2*nparams)
     arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
         arr.push_back(binvarmeans[idx]);
@@ -1085,6 +1244,10 @@ std::vector<double> fitAsym(
     for (int idx=0; idx<depolvars.size(); idx++) {
         arr.push_back(depols[idx]);
         arr.push_back(depolerrs[idx]);
+    }
+    for (int idx=0; idx<rawasyms.size(); idx++) {
+        arr.push_back(rawasyms[idx]);
+        arr.push_back(rawasymerrs[idx]);
     }
     for (int idx=0; idx<nparams; idx++) {
         arr.push_back(params[idx]);
@@ -1125,6 +1288,15 @@ std::vector<double> fitAsym(
 *   - `<depolvar>`: Mean value
 *
 *   - `<depolvar>_err`: Standard deviation
+*
+* - The raw asymmetries and errors using the actual counts
+*   **or**, in the case of an extended fit, using the fitted counts, for each of
+*
+*   - Beam helicity \f$\lambda_{\ell}\f$
+*
+*   - Target spin \f$S\f$
+*
+*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
 *
 * - For each asymmetry fit parameter `asymfitpar`
 *
@@ -1312,7 +1484,7 @@ void getKinBinnedAsym(
         bool                             use_extended_nll,
         bool                             use_binned_fit,
 
-        // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+        // parameters passed to saga::signal::fitMass()
         std::map<std::string,std::string> massfit_yamlfile_map,
         std::string                       massfit_pdf_name,
         std::string                       massfit_formula_sg,
@@ -1384,9 +1556,10 @@ void getKinBinnedAsym(
     std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
     std::ostream &csvout = csvoutf;
     std::string csv_separator = ",";
+    std::vector<std::string> rawasymvars = { "bsa", "tsa", "dsa"};
 
     // Set CSV column headers
-    // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}
+    // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}
     csvout << "bin_id" << csv_separator.c_str();
     csvout << "count" << csv_separator.c_str();
     for (int bb=0; bb<binvars.size(); bb++) {
@@ -1396,6 +1569,10 @@ void getKinBinnedAsym(
     for (int dd=0; dd<depolvars.size(); dd++) {
         csvout << depolvars[dd].c_str() << csv_separator.c_str();
         csvout << depolvars[dd].c_str() << "_err" << csv_separator.c_str();
+    }
+    for (int rr=0; rr<rawasymvars.size(); rr++) {
+        csvout << rawasymvars[rr].c_str() << csv_separator.c_str();
+        csvout << rawasymvars[rr].c_str() << "_err" << csv_separator.c_str();
     }
     for (int aa=0; aa<asymfitpar_inits.size(); aa++) {
         csvout << Form("a%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
@@ -1774,6 +1951,8 @@ void getKinBinnedAsym(
         double edepols[nparams];
         double ys_corrected[nparams];
         double eys_corrected[nparams];
+        double rawasyms[(const int)rawasymvars.size()];
+        double rawasymerrs[(const int)rawasymvars.size()];
 
         // Get asymmetry fit bin data
         int k = 0;
@@ -1785,6 +1964,10 @@ void getKinBinnedAsym(
         for (int idx=0; idx<depolvars.size(); idx++) {
             depols[idx] = asymfit_result[k++];
             edepols[idx] = asymfit_result[k++];
+        }
+        for (int idx=0; idx<rawasymvars.size(); idx++) {
+            rawasyms[idx] = asymfit_result[k++];
+            rawasymerrs[idx] = asymfit_result[k++];
         }
         for (int idx=0; idx<nparams; idx++) {
             ys[idx] = asymfit_result[k++];
@@ -1907,7 +2090,7 @@ void getKinBinnedAsym(
         out << "---------------------------\n";
 
         // Write out a row of data to csv
-        // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{asymfitvar,asymfitvarerr}(,{bg_asymfitvar,bg_asymfitvarerr})
+        // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr}(,{bg_asymfitvar,bg_asymfitvarerr})
         csvout << bin_id << csv_separator.c_str();
         csvout << count << csv_separator.c_str();
         for (int bb=0; bb<binvars.size(); bb++) {
@@ -1917,6 +2100,10 @@ void getKinBinnedAsym(
         for (int dd=0; dd<depolvars.size(); dd++) {
             csvout << depols[dd] << csv_separator.c_str();
             csvout << edepols[dd] << csv_separator.c_str();
+        }
+        for (int rr=0; rr<rawasymvars.size(); rr++) {
+            csvout << rawasyms[rr] << csv_separator.c_str();
+            csvout << rawasymerrs[rr] << csv_separator.c_str();
         }
         for (int aa=0; aa<nparams; aa++) {
             csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
