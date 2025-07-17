@@ -1154,9 +1154,9 @@ std::vector<double> fitAsym(
     rawasyms.push_back(asym_h);
     rawasyms.push_back(asym_t);
     rawasyms.push_back(asym_ht);
-    double asymerr_h  = (1.0 + asym_h )*(counterr_h_pos*counterr_h_pos   + counterr_h_neg*counterr_h_neg  )/(count_h_pos+count_h_neg);
-    double asymerr_t  = (1.0 + asym_t )*(counterr_t_pos*counterr_t_pos   + counterr_t_neg*counterr_t_neg  )/(count_t_pos+count_t_neg);
-    double asymerr_ht = (1.0 + asym_ht)*(counterr_ht_pos*counterr_ht_pos + counterr_ht_neg*counterr_ht_neg)/(count_ht_pos+count_ht_neg);
+    double asymerr_h  = (double)TMath::Sqrt(4.0*count_h_pos*count_h_neg/TMath::Power(count,3)); //NOTE: Use binomial error assuming correlated counts from: http://blast.lns.mit.edu/BlastTalk/archive/att-5707/01-asymmetry_calculations.pdf
+    double asymerr_t  = (double)TMath::Sqrt(4.0*count_t_pos*count_t_neg/TMath::Power(count,3)); //NOTE: Assume q=N^+/N is your random variable following a binomial distribution
+    double asymerr_ht = (double)TMath::Sqrt(4.0*count_ht_pos*count_ht_neg/TMath::Power(count,3)); //NOTE: A = q - (q-1) = 2q-1 ---> (dN^{+})^2 = N*q*(1-q) ---> dA^2 = 4*N^{+}*N^{-}/N^3
     rawasymerrs.push_back(asymerr_h);
     rawasymerrs.push_back(asymerr_t);
     rawasymerrs.push_back(asymerr_ht);
