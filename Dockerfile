@@ -6,7 +6,7 @@ ENV LANG=C.UTF-8
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Install build tools, Doxygen, venv support
+# Install build tools, Doxygen, venv support and LaTeX deps for building docs
 RUN apt-get update && \
     apt-get install -y \
         bash \
@@ -16,6 +16,13 @@ RUN apt-get update && \
         doxygen \
         python3-venv \
         python3-pip \
+        texlive-latex-recommended \
+        texlive-latex-extra \
+        texlive-fonts-recommended \
+        texlive-xetex \
+        latexmk \
+        dvipng \
+        cm-super \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -34,7 +41,7 @@ RUN pip install --upgrade pip && \
 # Build project and docs with CMake
 RUN cmake -S . -B build -DBUILD_DOXYGEN=TRUE && \
     cmake --build build && \
-    cmake --install build --prefix bin
+    cmake --install build --prefix /usr/bin
 
 # Install python modules
 RUN if [ -f pyproject.toml ]; then pip install -e .; fi
