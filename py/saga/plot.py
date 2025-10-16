@@ -636,7 +636,7 @@ def plot_th2(h2, ax, add_colorbar=True, norm=LogNorm(), **kwargs):
         Add a colorbar to show the z-axis scale
     norm : str or matplotlib.colors.Normalize, optional
         Normalization used to scale data to :math:`[0,1]` range before mapping to a color map
-    **kwargs
+    kwargs
         Additional parameters are passed along to :meth:`matplotlib.pyplot.hist2d`
 
     Description
