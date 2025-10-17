@@ -1,4 +1,5 @@
-[![ROOT-latest](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml)
+[![Docker-build](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml)
+[![Singularity-build](https://github.com/mfmceneaney/saga/actions/workflows/build-singularity.yml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/build-singularity.yml)
 [![Python-3.9](https://github.com/mfmceneaney/saga/actions/workflows/python3.9.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/python3.9.yaml)
 
 # Spin Asymmetry Generic Analysis (SAGA)
@@ -50,16 +51,24 @@ Then you can import the libraries in your python code with:
 import saga
 ```
 
-## Install via Docker
+## Containerized Installation
 
-You may also install and run the project as a [Docker](https://www.docker.com) container.
+You may also install and run the project as a [Docker](https://www.docker.com) or [singularity/apptainer](https://github.com/apptainer/singularity) container.
 
 Begin as above by cloning the repository:
 ```bash
 git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
 ```
 
-Then build the project with:
+Once you build and start the container you should have the following environment variables:
+- `SAGA_HOME`
+- `SAGA_BUILD`
+- `SAGA_BIN`
+Furthermore, the project executables in `$SAGA_BIN` should be available from your `$PATH`.
+
+### Docker
+
+To build the project with docker, run:
 ```bash
 docker build -t saga-project /path/to/saga
 ```
@@ -73,11 +82,30 @@ inside the container with the following:
 ```bash
 docker run --rm -it -v <src>:<dst> saga-project
 ```
-Once you start the container you should have the following environment variables:
-- `SAGA_HOME`
-- `SAGA_BUILD`
-- `SAGA_BIN`
-Furthermore, the project executables in `$SAGA_BIN` should be available from your `$PATH`.
+
+### Singularity / Apptainer
+
+If you prefer Singularity/Apptainer instead of Docker you can build and run a SIF image.
+
+Build locally (requires Apptainer/ Singularity installed):
+```bash
+# build using apptainer (modern) or singularity (legacy) with fakeroot
+apptainer build --fakeroot saga.sif singularity.def
+# or, if your host uses the older command name:
+singularity build --fakeroot saga.sif singularity.def
+```
+
+Run the image and bind-mount the current repo so changes are visible inside the container:
+```bash
+singularity run -B ${PWD}:/usr/src/saga saga.sif
+# or with apptainer:
+apptainer run -B ${PWD}:/usr/src/saga saga.sif
+```
+
+The Singularity runscript will source the repository environment script (either `bin/env.sh` or `env/env.sh`) and start an interactive bash shell; you can also `exec` into the container:
+```bash
+singularity exec -B ${PWD}:/usr/src/saga saga.sif bash -lc 'source /usr/src/saga/bin/env.sh || source /usr/src/saga/env/env.sh; <your-command>'
+```
 
 ## Documentation
 Check out the documentation page on [Read The Docs](https://saga.readthedocs.io/en/latest/)!

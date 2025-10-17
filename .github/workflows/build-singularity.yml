@@ -1,0 +1,56 @@
+name: Singularity Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-singularity:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            submodules: recursive
+
+        - name: Install dependencies for Apptainer
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y build-essential \
+                                    libseccomp-dev \
+                                    pkg-config \
+                                    squashfs-tools \
+                                    cryptsetup
+            
+        - name: Install Go (required for apptainer)
+          uses: actions/setup-go@v4
+          with:
+            go-version: '1.20'
+
+        - name: Download and install Apptainer
+          run: |
+            export VERSION=1.1.7
+            wget https://github.com/apptainer/apptainer/releases/download/v${VERSION}/apptainer-${VERSION}.tar.gz
+            tar -xzf apptainer-${VERSION}.tar.gz
+            cd apptainer-${VERSION}
+            ./mconfig
+            make -C builddir
+            sudo make -C builddir install
+
+        - name: Verify apptainer install
+          run: apptainer --version
+
+        - name: Build Singularity image (SIF)
+          run: |
+            # Use the singularity/Apptainer definition to build an image
+            # The build requires running from the repo root so %files maps correctly
+            apptainer build saga.sif singularity.def || true
+
+        - name: Upload SIF artifact
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: saga-singularity-image
+            path: saga.sif

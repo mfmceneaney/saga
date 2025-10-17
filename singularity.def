@@ -1,0 +1,71 @@
+BootStrap: docker
+From: docker.io/rootproject/root:6.36.00-ubuntu25.04
+
+%labels
+    Author mfmceneaney
+    Version 1.0
+
+%files
+    . /usr/src/saga
+
+%post
+    set -e
+    apt-get update && apt-get install -y --no-install-recommends \
+        bash \
+        cmake \
+        g++ \
+        git \
+        doxygen \
+        python3-venv \
+        python3-pip \
+        texlive-latex-recommended \
+        texlive-latex-extra \
+        texlive-fonts-recommended \
+        texlive-xetex \
+        latexmk \
+        dvipng \
+        cm-super \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Ensure workdir exists (files will be copied by %files)
+    mkdir -p /usr/src/saga
+
+    # Create Python virtual environment
+    export VIRTUAL_ENV=/opt/venv
+    export PATH="$VIRTUAL_ENV/bin:$PATH"
+    python3 -m venv $VIRTUAL_ENV
+
+    # Activate venv for subsequent pip installs in the build environment
+    . $VIRTUAL_ENV/bin/activate || true
+
+    # Install pip packages for docs if present
+    if [ -f /usr/src/saga/docs/requirements.txt ]; then
+        pip install --upgrade pip
+        pip install -r /usr/src/saga/docs/requirements.txt || true
+    fi
+
+    # Build project and docs with CMake if CMakeLists present
+    if [ -f /usr/src/saga/CMakeLists.txt ]; then
+        cd /usr/src/saga
+        cmake -S . -B build -DBUILD_DOXYGEN=TRUE || true
+        cmake --build build || true
+        cmake --install build --prefix /usr/bin || true
+    fi
+
+    # Install python modules if present
+    if [ -f /usr/src/saga/pyproject.toml ]; then
+        pip install -e /usr/src/saga || true
+    fi
+
+%environment
+    export DEBIAN_FRONTEND=noninteractive
+    export LANG=C.UTF-8
+    export VIRTUAL_ENV=/opt/venv
+    export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+%runscript
+    cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash "$@"
+
+%startscript
+    cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash "$@"
