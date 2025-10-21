@@ -22,6 +22,19 @@ namespace saga {
 
 namespace util {
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::is_same;
+using std::map;
+using std::ofstream;
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+
 /**
 * @brief Load an argument from YAML file.
 *
@@ -39,11 +52,11 @@ namespace util {
 template<typename T>
 T getYamlArg(
         const YAML::Node &node,
-        std::string       argname,
+        string       argname,
         T                 defaultval,
-        std::string       message_prefix,
+        string       message_prefix,
         bool              verbose,
-        std::ostream     &out = std::cout
+        ostream     &out = cout
     ){
     T arg = defaultval;
     if (node[argname]) {
@@ -61,33 +74,33 @@ T getYamlArg(
         if (!node[argname]) { out << "USE DEFAULT: "; }
 
         // Single value numeric
-        if constexpr (std::is_same<T, bool>::value || std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, double>::value) {
-            out << argname.c_str() << ": " << arg << std::endl;
+        if constexpr (is_same<T, bool>::value || is_same<T, int>::value || is_same<T, float>::value || is_same<T, double>::value) {
+            out << argname.c_str() << ": " << arg << endl;
         }
         // Single value string
-        else if constexpr (std::is_same<T, std::string>::value) {
-            out << argname.c_str() << ": " << arg.c_str() << std::endl;
+        else if constexpr (is_same<T, string>::value) {
+            out << argname.c_str() << ": " << arg.c_str() << endl;
         }
         // Vector numeric
-        else if constexpr (std::is_same<T, std::vector<bool>>::value || std::is_same<T, std::vector<int>>::value || std::is_same<T, std::vector<float>>::value || std::is_same<T, std::vector<double>>::value) {
+        else if constexpr (is_same<T, vector<bool>>::value || is_same<T, vector<int>>::value || is_same<T, vector<float>>::value || is_same<T, vector<double>>::value) {
             out << argname.c_str() << ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
                 if (idx!=arg.size()-1) { out << arg[idx] <<", "; }
                 else { out << arg[idx]; }
             }
-            out << " ]" << std::endl;
+            out << " ]" << endl;
         }
         // Vector string
-        else if constexpr (std::is_same<T, std::vector<std::string>>::value) {
+        else if constexpr (is_same<T, vector<string>>::value) {
             out << argname.c_str() << ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
                 if (idx!=arg.size()-1) { out << arg[idx].c_str() <<", "; }
                 else { out << arg[idx].c_str(); }
             }
-            out << " ]" << std::endl;
+            out << " ]" << endl;
         }
         // Vector vector numeric
-        else if constexpr (std::is_same<T, std::vector<std::vector<bool>>>::value || std::is_same<T, std::vector<std::vector<int>>>::value || std::is_same<T, std::vector<std::vector<float>>>::value || std::is_same<T, std::vector<std::vector<double>>>::value) {
+        else if constexpr (is_same<T, vector<vector<bool>>>::value || is_same<T, vector<vector<int>>>::value || is_same<T, vector<vector<float>>>::value || is_same<T, vector<vector<double>>>::value) {
             out << argname.c_str() << ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
                 out << "\n\t [ ";
@@ -98,10 +111,10 @@ T getYamlArg(
                 if (idx!=arg.size()-1) { out <<"],"; }
                 else { out <<"]\n"; }
             }
-            out << " ]" << std::endl;
+            out << " ]" << endl;
         }
         // Vector vector string
-        else if constexpr (std::is_same<T, std::vector<std::vector<std::string>>>::value) {
+        else if constexpr (is_same<T, vector<vector<string>>>::value) {
             out << argname.c_str() << ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
                 out << "\n\t [ ";
@@ -112,25 +125,25 @@ T getYamlArg(
                 if (idx!=arg.size()-1) { out <<"],"; }
                 else { out <<"]\n"; }
             }
-            out << " ]" << std::endl;
+            out << " ]" << endl;
         }
         // Map string numeric
-        else if constexpr (std::is_same<T, std::map<std::string,bool>>::value || std::is_same<T, std::map<std::string,int>>::value || std::is_same<T, std::map<std::string,float>>::value || std::is_same<T, std::map<std::string,double>>::value) {
+        else if constexpr (is_same<T, map<string,bool>>::value || is_same<T, map<string,int>>::value || is_same<T, map<string,float>>::value || is_same<T, map<string,double>>::value) {
             out << argname.c_str() << ": { ";
             for (auto it = arg.begin(); it != arg.end(); ++it) {
                 out << it->first<<" : "<<it->second<<", ";
             }
-            out << " }" << std::endl;
+            out << " }" << endl;
         }
         // Map string string
-        else if constexpr (std::is_same<T, std::map<std::string,std::string>>::value) {
+        else if constexpr (is_same<T, map<string,string>>::value) {
             out << argname.c_str() << ": { ";
             for (auto it = arg.begin(); it != arg.end(); ++it) {
                 out << it->first.c_str()<<" : "<<it->second.c_str()<<", ";
             }
-            out << " }" << std::endl;
+            out << " }" << endl;
         }
-        else { out << argname.c_str() << ": STRING CONVERSION NOT IMPLEMENTED FOR ARGUMENT TYPE" << std::endl; }
+        else { out << argname.c_str() << ": STRING CONVERSION NOT IMPLEMENTED FOR ARGUMENT TYPE" << endl; }
     } // if (verbose) {
 
     return arg;
@@ -138,7 +151,7 @@ T getYamlArg(
 }
 
 /**
-* @brief Find and replace function for std::string.
+* @brief Find and replace function for string.
 *
 * Find all occurences of a substring and replace them with another.
 * Note that this is an in place operation. REGEX is NOT supported.
@@ -148,13 +161,13 @@ T getYamlArg(
 * @param replace_with Substring to insert
 */
 void replaceAll(
-        std::string& s,
-        std::string const& to_replace,
-        std::string const& replace_with
+        string& s,
+        string const& to_replace,
+        string const& replace_with
     ) {
-    std::string buf;
-    std::size_t pos = 0;
-    std::size_t prev_pos;
+    string buf;
+    size_t pos = 0;
+    size_t prev_pos;
 
     // Reserves rough estimate of final size of string.
     buf.reserve(s.size());
@@ -162,7 +175,7 @@ void replaceAll(
     while (true) {
         prev_pos = pos;
         pos = s.find(to_replace, pos);
-        if (pos == std::string::npos)
+        if (pos == string::npos)
             break;
         buf.append(s, prev_pos, pos - prev_pos);
         buf += replace_with;
@@ -184,17 +197,17 @@ void replaceAll(
 *
 * @return Updated cut string
 */
-std::string addLimitCuts(
-        std::string                      cuts,
-        std::vector<std::string>         vars,
-        std::vector<std::vector<double>> varlims
+string addLimitCuts(
+        string                      cuts,
+        vector<string>         vars,
+        vector<vector<double>> varlims
     ) {
     
-    std::string newcuts = cuts;
+    string newcuts = cuts;
     for (int idx=0; idx<vars.size(); idx++) {
 
         // Get variable name and limits
-        std::string var = vars[idx];
+        string var = vars[idx];
         double varmin   = varlims[idx][0];
         double varmax   = varlims[idx][1];
 

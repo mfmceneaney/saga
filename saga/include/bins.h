@@ -33,6 +33,19 @@ namespace saga {
 
 namespace bins {
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::is_same;
+using std::map;
+using std::ofstream;
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+
 /**
 * @brief Find bin limits for equal bin statistics
 *
@@ -45,16 +58,16 @@ namespace bins {
 *
 * @return Bin limits
 */
-std::vector<double> findBinLims(
+vector<double> findBinLims(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-        std::string varname,
+        string varname,
         const int nbins
     ) {
 
     // Initialize vectors
-    std::vector<double> binmeans;
-    std::vector<double> binmeans_err;
-    std::vector<double> binlims;
+    vector<double> binmeans;
+    vector<double> binmeans_err;
+    vector<double> binlims;
 
     // Get overall limits and count and the necessary bin count with nbins
     double varmin = (double)*frame.Min(varname);
@@ -74,7 +87,7 @@ std::vector<double> findBinLims(
         // Set the bin max cut starting at the bin min 
         double binmin = (i==0 ? (double)varmin : binlims.at(binlims.size()-1)); //NOTE: NEED TO SET OUTSIDE OR ADD.....
         double binmax = (i==nbins-1 ? (double)varmax: binmin);
-        std::string bin_cut = Form("%s>=%.16f && %s<%.16f",varname.c_str(),binmin,varname.c_str(),binmax);
+        string bin_cut = Form("%s>=%.16f && %s<%.16f",varname.c_str(),binmin,varname.c_str(),binmax);
         int bincount = (int)*frame.Filter(bin_cut).Count();
         bool pass_flag = false;
 
@@ -117,35 +130,35 @@ std::vector<double> findBinLims(
         binlims.push_back(binmax);
 
         // Show results message
-        std::cout<<"------------------------------------------------------------"<<std::endl;
-        std::cout<<" i        = "<<i<<std::endl;
-        std::cout<<" varname  = "<<varname.c_str()<<std::endl;
-        std::cout<<" bin_cut   = "<<bin_cut.c_str()<<std::endl;
-        std::cout<<" varmax   = "<<varmax<<std::endl;
-        std::cout<<" varmin   = "<<varmin<<std::endl;
-        std::cout<<" mean     = "<<binmean<<std::endl;
-        std::cout<<" stddev   = "<<binstd<<std::endl;
-        std::cout<<" bincount = "<<bincount<<std::endl;
-        std::cout<<" step                = "<<step<<std::endl;
-        std::cout<<" bincount            = "<<bincount<<std::endl;
-        std::cout<<" |bincount - target| = "<<delta<<std::endl;
-        std::cout<<" \% diff             = "<<100*(delta/targetbincount)<<"\%"<<std::endl;
-        std::cout<<" bin_cut             = "<<bin_cut<<std::endl;
+        cout<<"------------------------------------------------------------"<<endl;
+        cout<<" i        = "<<i<<endl;
+        cout<<" varname  = "<<varname.c_str()<<endl;
+        cout<<" bin_cut   = "<<bin_cut.c_str()<<endl;
+        cout<<" varmax   = "<<varmax<<endl;
+        cout<<" varmin   = "<<varmin<<endl;
+        cout<<" mean     = "<<binmean<<endl;
+        cout<<" stddev   = "<<binstd<<endl;
+        cout<<" bincount = "<<bincount<<endl;
+        cout<<" step                = "<<step<<endl;
+        cout<<" bincount            = "<<bincount<<endl;
+        cout<<" |bincount - target| = "<<delta<<endl;
+        cout<<" \% diff             = "<<100*(delta/targetbincount)<<"\%"<<endl;
+        cout<<" bin_cut             = "<<bin_cut<<endl;
 
     } // for (int i=0; i<nbins; i++) {
 
     // Print out bin limits
-    std::cout<<varname<<" = [";
+    cout<<varname<<" = [";
     for (int i=0; i<nbins; i++) {
         double binmin = binlims.at(i);
-        std::string limstring = Form(" %.4f,",binmin);
-        std::cout<<limstring.c_str();
+        string limstring = Form(" %.4f,",binmin);
+        cout<<limstring.c_str();
     }
-    std::cout<<" ]"<<std::endl;
+    cout<<" ]"<<endl;
 
     return binlims;
 
-} // std::vector<double> findBinLims()
+} // vector<double> findBinLims()
 
 /**
 * @brief Recursively set a map of bin scheme coordinates to bin variable limits for a nested bin scheme.
@@ -165,11 +178,11 @@ std::vector<double> findBinLims(
 void findNestedBinLims(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
         YAML::Node node,
-        std::string node_name             = "",
-        std::string nbins_key             = "nbins",
-        std::string lims_key              = "lims",
-        std::string nested_key            = "nested",
-        std::vector<std::string> bin_cuts = {}
+        string node_name             = "",
+        string nbins_key             = "nbins",
+        string lims_key              = "lims",
+        string nested_key            = "nested",
+        vector<string> bin_cuts = {}
     ) {
     
     // Check the YAML node
@@ -191,15 +204,15 @@ void findNestedBinLims(
                 for (auto it_nested = node_nested_bin.begin(); it_nested != node_nested_bin.end(); ++it_nested) {
 
                     // Get bin variable name
-                    std::string it_key = it_nested->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
+                    string it_key = it_nested->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
 
                     // Filter dataframe if a bin cut is available
                     auto df_filtered = (bin_cuts.size()==0) ? frame : frame.Filter(bin_cuts[bin].c_str());
 
                     // Check for bin limits and number of bins and find limits if not provided
-                    std::vector<double> bin_lims;
+                    vector<double> bin_lims;
                     if (it_nested->second[lims_key]) {
-                        bin_lims = it_nested->second[lims_key].as<std::vector<double>>();
+                        bin_lims = it_nested->second[lims_key].as<vector<double>>();
                     } else if (it_nested->second[nbins_key]) {
                         const int nbins = it_nested->second[nbins_key].as<int>();
                         bin_lims = findBinLims(df_filtered, it_key, nbins);
@@ -207,9 +220,9 @@ void findNestedBinLims(
                     }
 
                     // Set bin cuts to carry to next depth of bin scheme
-                    std::vector<std::string> new_bin_cuts;
+                    vector<string> new_bin_cuts;
                     for (int idx=0; idx<bin_lims.size()-1; idx++) {
-                        std::string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[idx], bin_lims[idx+1]}});
+                        string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[idx], bin_lims[idx+1]}});
                         new_bin_cuts.push_back(bincut);
                     }
 
@@ -247,13 +260,13 @@ void findNestedBinLims(
 *
 * @return Bin limits
 */
-std::vector<double> getBinLims(
+vector<double> getBinLims(
         const int nbins,
         double xmin,
         double xmax
     ) {
 
-    std::vector<double> binlims;
+    vector<double> binlims;
     double step = (xmax-xmin)/nbins;
     for (int i=0; i<nbins+1; i++) {
         double lim = xmin + i*step; 
@@ -262,7 +275,7 @@ std::vector<double> getBinLims(
 
     return binlims;
 
-} // std::vector<double> getBinLims(
+} // vector<double> getBinLims(
 
 /**
 * @brief Set binning scheme cuts for a nested binning scheme.
@@ -278,21 +291,21 @@ std::vector<double> getBinLims(
 * @param nested_key YAML key for nested binning
 */
 void setNestedBinCuts(
-        std::vector<std::string> &cuts, //NOTE: List to set.
+        vector<string> &cuts, //NOTE: List to set.
         YAML::Node               node,
-        std::vector<std::string> &old_cuts, //NOTE: Modify this separately in each branch and then add cuts to the overall vector before returning
-        std::string              node_name  = "",
-        std::string              lims_key   = "lims",
-        std::string              nested_key = "nested"
+        vector<string> &old_cuts, //NOTE: Modify this separately in each branch and then add cuts to the overall vector before returning
+        string              node_name  = "",
+        string              lims_key   = "lims",
+        string              nested_key = "nested"
     ) {
 
     // Check the YAML node
     if (node && node.IsMap()) {
 
         // Check for bin limits
-        std::vector<double> lims;
+        vector<double> lims;
         if (node[lims_key] && node[lims_key].IsSequence()) {
-            lims = node[lims_key].as<std::vector<double>>();
+            lims = node[lims_key].as<vector<double>>();
         }
 
         // Set nbins lower limit to 0 since you allow passing limits with length 0
@@ -300,19 +313,19 @@ void setNestedBinCuts(
         if (nbins<0) nbins=0;
 
         // Loop bins and get bin cuts
-        std::vector<std::string> varcuts;
+        vector<string> varcuts;
         for (int bin=0; bin<nbins; bin++) {
-            std::string cut = saga::util::addLimitCuts("",{node_name.c_str()},{{lims[bin],lims[bin+1]}});
+            string cut = saga::util::addLimitCuts("",{node_name.c_str()},{{lims[bin],lims[bin+1]}});
             varcuts.push_back(cut);
         }
 
         // Loop previous cuts
-        std::vector<std::string> newcuts;
+        vector<string> newcuts;
         for (int idx=0; idx<old_cuts.size(); idx++) {
             
             // Loop this variable's cuts
             for (int bin=0; bin<varcuts.size(); bin++) {
-                std::string newcut = Form("%s && %s",old_cuts[idx].c_str(),varcuts[bin].c_str());
+                string newcut = Form("%s && %s",old_cuts[idx].c_str(),varcuts[bin].c_str());
                 newcuts.push_back(newcut);
             }
         }
@@ -337,10 +350,10 @@ void setNestedBinCuts(
                 for (auto it_nested = node_nested_bin.begin(); it_nested != node_nested_bin.end(); ++it_nested) {
 
                     // Get bin variable
-                    std::string it_key = it_nested->first.as<std::string>();
+                    string it_key = it_nested->first.as<string>();
 
                     // Create a new vector for uniqueness along different recursion branches
-                    std::vector<std::string> new_old_cuts;
+                    vector<string> new_old_cuts;
                     if (bin<old_cuts.size()) new_old_cuts = {old_cuts[bin]}; 
 
                     // Recursion call
@@ -381,36 +394,36 @@ void setNestedBinCuts(
 *
 * @return Map of unique integer bin ids to bin cuts
 */
-std::map<int,std::string> getBinCuts(
-        std::map<std::string,std::vector<double>> binscheme,
+map<int,string> getBinCuts(
+        map<string,vector<double>> binscheme,
         int                                       start_bin_id
     ) {
 
-    std::vector<std::string> cuts;
+    vector<string> cuts;
 
     // Loop bin variables
     for (auto it = binscheme.begin(); it != binscheme.end(); ++it) {
 
         // Get bin variable name and limits
-        std::string binvar = it->first;
-        std::vector<double> lims = it->second;
+        string binvar = it->first;
+        vector<double> lims = it->second;
 
         // Loop bin limits and get bin cuts
-        std::vector<std::string> varcuts;
+        vector<string> varcuts;
         for (int bin=0; bin<lims.size()-1; bin++) {
             double bin_min = lims[bin];
             double bin_max = lims[bin+1];
-            std::string cut = Form("(%s>=%.8f && %s<%.8f)",binvar.c_str(),bin_min,binvar.c_str(),bin_max);
+            string cut = Form("(%s>=%.8f && %s<%.8f)",binvar.c_str(),bin_min,binvar.c_str(),bin_max);
             varcuts.push_back(cut);
         }
 
         // Loop previous cuts
-        std::vector<std::string> newcuts;
+        vector<string> newcuts;
         for (int idx=0; idx<cuts.size(); idx++) {
             
             // Loop this variable's cuts
             for (int bin=0; bin<varcuts.size(); bin++) {
-                std::string newcut = Form("%s && %s",cuts[idx].c_str(),varcuts[bin].c_str());
+                string newcut = Form("%s && %s",cuts[idx].c_str(),varcuts[bin].c_str());
                 newcuts.push_back(newcut);
             }
         }
@@ -421,7 +434,7 @@ std::map<int,std::string> getBinCuts(
     }
 
     // Convert vector to map starting at given start index
-    std::map<int,std::string> bincuts;
+    map<int,string> bincuts;
     for (int idx=0; idx<cuts.size(); idx++) {
         bincuts[start_bin_id+idx] = cuts[idx];
     }
@@ -442,19 +455,19 @@ std::map<int,std::string> getBinCuts(
 *
 * @return Map of bin scheme names to maps of unique integer bin ids to bin cuts
 */
-std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
+map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
 
     // Set minimum allowed bin id
     int min_bin_id = start_bin_id;
 
     // Initialize bin cuts map
-    std::map<std::string,std::map<int,std::string>> bincuts_map;
+    map<string,map<int,string>> bincuts_map;
 
     // Loop bin schemes
     for (auto it_binschemes = node_binschemes.begin(); it_binschemes != node_binschemes.end(); ++it_binschemes) {
 
         // Get bin scheme name
-        std::string binscheme_name = it_binschemes->first.as<std::string>();
+        string binscheme_name = it_binschemes->first.as<string>();
 
         // Get bin scheme node
         auto node_binscheme = node_binschemes[binscheme_name];
@@ -463,24 +476,24 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
         if (node_binscheme && node_binscheme.IsMap()) {
 
             // Recursively read nested bin scheme OR loop bin scheme yaml and create grid
-            std::map<std::string,std::vector<double>> binscheme;
-            std::map<int,std::string> bincuts;
+            map<string,vector<double>> binscheme;
+            map<int,string> bincuts;
 
             // Check if you have a nested bin scheme
             if (node_binscheme["nested"]) {
 
                 try {
                     // Set nested bin cuts
-                    std::vector<std::string> cuts;
-                    std::vector<std::string> old_cuts;
+                    vector<string> cuts;
+                    vector<string> old_cuts;
                     setNestedBinCuts(cuts,node_binscheme,old_cuts,"");
 
                     // Convert vector to map starting at given start index
                     for (int idx=0; idx<cuts.size(); idx++) {
                         bincuts[start_bin_id+idx] = cuts[idx];
                     }
-                } catch (std::exception& e) {
-                    std::cerr<<"ERROR: Could not read nested bin limits for binscheme: "<<binscheme_name.c_str()<<std::endl;
+                } catch (exception& e) {
+                    cerr<<"ERROR: Could not read nested bin limits for binscheme: "<<binscheme_name.c_str()<<endl;
                 }
             }
             
@@ -489,27 +502,27 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
                 for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
 
                     // Get bin variable name
-                    std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+                    string binvar = it->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
 
                     // Compute bin limits or read directly from yaml 
                     int nbins = 0;
-                    std::vector<double> binlims;
+                    vector<double> binlims;
                     auto node_binvar = node_binscheme[binvar];
                     if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
                         try {
                             int nbins = node_binvar["nbins"].as<int>();
-                            std::vector<double> lims = node_binvar["lims"].as<std::vector<double>>();
+                            vector<double> lims = node_binvar["lims"].as<vector<double>>();
                             if (nbins>0 && lims.size()==2) {
                                 binlims = getBinLims(nbins,lims[0],lims[1]);
                             }
-                        } catch (std::exception& e) {
-                            std::cerr<<"ERROR: Could not compute bin limits for binvar: "<<binvar.c_str()<<std::endl;
+                        } catch (exception& e) {
+                            cerr<<"ERROR: Could not compute bin limits for binvar: "<<binvar.c_str()<<endl;
                         }
                     } else {
                         try {
-                            binlims = node_binvar.as<std::vector<double>>();
-                        } catch (std::exception& e) {
-                            std::cerr<<"ERROR: Could not read bin limits for binvar: "<<binvar.c_str()<<std::endl;
+                            binlims = node_binvar.as<vector<double>>();
+                        } catch (exception& e) {
+                            cerr<<"ERROR: Could not read bin limits for binvar: "<<binvar.c_str()<<endl;
                         }
                     }
 
@@ -528,7 +541,7 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
     } // for (auto it = node["binschemes"].begin(); it != node["binschemes"].end(); ++it) {
 
     return bincuts_map;
-} // std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
+} // map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
 
 /**
 * @brief Produce a list of lists of the bin variables used in each bin scheme defined in given a YAML node.
@@ -537,16 +550,16 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMap(YAML::Node node_bi
 *
 * @return Map of bin scheme names to lists of bin variable names used in each scheme
 */
-std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
+map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
     // Initialize bin cuts map
-    std::map<std::string,std::vector<std::string>> binschemes_vars;
+    map<string,vector<string>> binschemes_vars;
 
     // Loop bin schemes
     for (auto it_binschemes = node_binschemes.begin(); it_binschemes != node_binschemes.end(); ++it_binschemes) {
 
         // Get bin scheme name
-        std::string binscheme_name = it_binschemes->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
+        string binscheme_name = it_binschemes->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
 
         // Get bin scheme node
         auto node_binscheme = node_binschemes[binscheme_name];
@@ -556,14 +569,14 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
 
             // Follow nested yaml structure and create nested bin scheme
             YAML::Node node_nested = node_binscheme["nested"];
-            std::vector<std::string> binvars;
+            vector<string> binvars;
             while (node_nested && node_nested.IsSequence()) {
 
                 // Loop keys to find the bin variable (only expect one entry!)
                 for (auto it = node_nested[0].begin(); it != node_nested[0].end(); ++it) {
 
                     // Get bin variable name and add to list
-                    std::string binvar = it->first.as<std::string>();
+                    string binvar = it->first.as<string>();
                     binvars.push_back(binvar);
 
                     // Reset the node
@@ -578,11 +591,11 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
         } else if (node_binscheme && node_binscheme.IsMap()) {
 
             // Loop bin scheme yaml and create grid bin scheme
-            std::vector<std::string> binvars;
+            vector<string> binvars;
             for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
 
                 // Get bin variable name and add to list
-                std::string binvar = it->first.as<std::string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
+                string binvar = it->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
                 binvars.push_back(binvar);
 
             } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
@@ -594,7 +607,7 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
     } // for (auto it = node["binschemes"].begin(); it != node["binschemes"].end(); ++it) {
 
     return binschemes_vars;
-} // std::vector<std::vector<std::string>> getBinSchemesVars(YAML::Node node_binschemes) {
+} // vector<vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
 
 /**
@@ -608,24 +621,24 @@ std::map<std::string,std::vector<std::string>> getBinSchemesVars(YAML::Node node
 * @param nbatches Total number of batches
 * @param ibatch Index of the batch \f$i\in[0,N_{batches}-1]\f$
 */
-std::map<std::string,std::map<int,std::string>> getBinCutsMapBatch(
-    std::map<std::string,std::map<int,std::string>> bincuts_map,
+map<string,map<int,string>> getBinCutsMapBatch(
+    map<string,map<int,string>> bincuts_map,
     int nbatches,
     int ibatch
     ) {
 
     // Initialize output map
-    std::map<std::string,std::map<int,std::string>> bincuts_map_batch;
+    map<string,map<int,string>> bincuts_map_batch;
 
     // Loop bin schemes
     for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
         // Get bin scheme name and cuts
-        std::string binscheme_name = it->first;
-        std::map<int,std::string> bincuts = it->second;
+        string binscheme_name = it->first;
+        map<int,string> bincuts = it->second;
 
         // Initialize output map
-        std::map<int,std::string> bincuts_batch;
+        map<int,string> bincuts_batch;
 
         // Loop bin cuts
         int n_bin_ids = bincuts.size();
@@ -635,7 +648,7 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMapBatch(
 
             // Get bin id and cut
             int binid = it->first;
-            std::string bincut = it->second;
+            string bincut = it->second;
 
             // Check if bin id is in batch
             if ((                   idx>=batch_size*ibatch && idx<batch_size*(ibatch+1)) ||
@@ -667,19 +680,19 @@ std::map<std::string,std::map<int,std::string>> getBinCutsMapBatch(
 */
 void getBinMigration(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-    std::string                                                   scheme_name,
-    std::map<int,std::string>                                     bincuts,
-    std::vector<std::string>                                      binvars,
-    std::string                                                   mc_suffix = "_mc"
+    string                                                   scheme_name,
+    map<int,string>                                     bincuts,
+    vector<string>                                      binvars,
+    string                                                   mc_suffix = "_mc"
     ) {
 
     // Form MC Truth bin cut map
-    std::map<int,std::string> bincuts_gen;
+    map<int,string> bincuts_gen;
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
         int binid = it->first;
-        std::string bincut = it->second;
+        string bincut = it->second;
         for (int idx=0; idx<binvars.size(); idx++) {
-            std::string binvar = binvars[idx];
+            string binvar = binvars[idx];
             saga::util::replaceAll(bincut,Form("(%s>",binvar.c_str()),Form("(%s%s>",binvar.c_str(),mc_suffix.c_str())); //NOTE: ASSUME FORM OF BIN CUTS FROM getBinCuts() METHOD.
             saga::util::replaceAll(bincut,Form("& %s<",binvar.c_str()),Form("& %s%s<",binvar.c_str(),mc_suffix.c_str())); //NOTE: ASSUME FORM OF BIN CUTS FROM getBinCuts() METHOD.
         }
@@ -687,23 +700,23 @@ void getBinMigration(
     }
 
     // Open output CSV
-    std::string csvpath = Form("%s_bin_migration.csv",scheme_name.c_str());
-    std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
-    std::ostream &csvout = csvoutf;
-    std::string csv_separator = ",";
+    string csvpath = Form("%s_bin_migration.csv",scheme_name.c_str());
+    ofstream csvoutf; csvoutf.open(csvpath.c_str());
+    ostream &csvout = csvoutf;
+    string csv_separator = ",";
 
     // Set CSV column headers
     // COLS: binid_gen,binid_rec,migration_fraction=N_(REC && GEN)/N_GEN
     csvout << "binid_gen" << csv_separator.c_str();
     csvout << "binid_rec" << csv_separator.c_str();
-    csvout << "mig" << std::endl;
+    csvout << "mig" << endl;
 
     // Loop bin cut maps, compute bin migration, and write to CSV
     for (auto it_gen = bincuts_gen.begin(); it_gen != bincuts_gen.end(); ++it_gen) {
 
         // Get generated bin id and cut
         int binid_gen = it_gen->first;
-        std::string bincut_gen = it_gen->second;
+        string bincut_gen = it_gen->second;
 
         // Get generated count
         auto frame_filtered = frame.Filter(bincut_gen.c_str());
@@ -714,7 +727,7 @@ void getBinMigration(
 
             // Get generated bin id and cut
             int binid_rec = it_rec->first;
-            std::string bincut_rec = it_rec->second;
+            string bincut_rec = it_rec->second;
 
             // Get reconstructed count
             double count_rec = (double)*frame_filtered.Filter(bincut_rec.c_str()).Count();
@@ -726,7 +739,7 @@ void getBinMigration(
             // COLS: bin_id_gen,bin_id_rec,migration_fraction=N_(REC && GEN)/N_GEN
             csvout << binid_gen << csv_separator.c_str();
             csvout << binid_rec << csv_separator.c_str();
-            csvout << mig << std::endl;
+            csvout << mig << endl;
 
         } // for (auto it_rec = bincuts.begin(); it_rec != bincuts.end(); ++it_rec) {
 
@@ -747,16 +760,16 @@ void getBinMigration(
 */
 void getBinKinematics(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-    std::string                                                   scheme_name,
-    std::map<int,std::string>                                     bincuts,
-    std::vector<std::string>                                      kinvars
+    string                                                   scheme_name,
+    map<int,string>                                     bincuts,
+    vector<string>                                      kinvars
     ) {
 
     // Open output CSV
-    std::string csvpath = Form("%s_kinematics.csv",scheme_name.c_str());
-    std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
-    std::ostream &csvout = csvoutf;
-    std::string csv_separator = ",";
+    string csvpath = Form("%s_kinematics.csv",scheme_name.c_str());
+    ofstream csvoutf; csvoutf.open(csvpath.c_str());
+    ostream &csvout = csvoutf;
+    string csv_separator = ",";
 
     // Set CSV column headers
     // COLS: bin,{kinvar,kinvar_err}
@@ -767,14 +780,14 @@ void getBinKinematics(
         csvout << kinvars[idx].c_str() << "_err";
         if (idx<kinvars.size()-1) csvout << csv_separator.c_str();
     }
-    csvout << std::endl;
+    csvout << endl;
 
     // Loop bin cut maps, compute count and kinematics, and write to CSV
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
 
         // Get generated bin id and cut
         int bin = it->first;
-        std::string bincut = it->second;
+        string bincut = it->second;
 
         // Apply bin cut
         auto frame_filtered = frame.Filter(bincut.c_str());
@@ -793,7 +806,7 @@ void getBinKinematics(
             csvout << binvar_err;
             if (idx<kinvars.size()-1) csvout << csv_separator.c_str();
         }
-        csvout << std::endl;
+        csvout << endl;
 
     } // for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
 
@@ -816,7 +829,7 @@ void getBinKinematics(
 */
 void saveTH1ToCSV(
     const TH1& h1,
-    std::string csv_name
+    string csv_name
     ) {
 
     // Check histogram dimensions
@@ -824,14 +837,14 @@ void saveTH1ToCSV(
     int nbinsy = h1.GetNbinsY();
 
     // Open output CSV
-    std::ofstream csvoutf; csvoutf.open(csv_name.c_str());
-    std::ostream &csvout = csvoutf;
-    std::string csv_separator = ",";
+    ofstream csvoutf; csvoutf.open(csv_name.c_str());
+    ostream &csvout = csvoutf;
+    string csv_separator = ",";
 
     // Write CSV data
     if (nbinsx>0 && nbinsy<=1) { //TH1 case
         // Write column headers
-        csvout << "bin" << csv_separator.c_str() << "llimx" << csv_separator.c_str() << "count" << std::endl;
+        csvout << "bin" << csv_separator.c_str() << "llimx" << csv_separator.c_str() << "count" << endl;
         
         // Loop x bins
         for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
@@ -843,13 +856,13 @@ void saveTH1ToCSV(
             // Write data
             csvout << idx-1 << csv_separator.c_str(); //NOTE: WRITE PYTHON INDEX
             csvout << llimx << csv_separator.c_str();
-            csvout << count << std::endl;
+            csvout << count << endl;
         }
     } else if (nbinsx>0 && nbinsy>1) { //TH2 case
 
         // Write column headers
         csvout << "binx" << csv_separator.c_str() << "biny" << csv_separator.c_str();
-        csvout << "llimx" << csv_separator.c_str() << "llimy" << csv_separator.c_str() << "count" << std::endl;
+        csvout << "llimx" << csv_separator.c_str() << "llimy" << csv_separator.c_str() << "count" << endl;
         
         // Loop x bin
         for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
@@ -869,12 +882,12 @@ void saveTH1ToCSV(
                 csvout << idy-1 << csv_separator.c_str();
                 csvout << llimx << csv_separator.c_str();
                 csvout << llimy << csv_separator.c_str();
-                csvout << count << std::endl;
+                csvout << count << endl;
             }
         }
     } else {
-        std::cout << "ERROR: Unknown histogram type!" << std::endl;
-        throw std::runtime_error("Unknown histogram type!");
+        cout << "ERROR: Unknown histogram type!" << endl;
+        throw runtime_error("Unknown histogram type!");
     }
     
     // Close output CSV
@@ -896,17 +909,17 @@ void saveTH1ToCSV(
 */
 void getBinKinematicsTH1Ds(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-        std::string                                                   scheme_name,
-        std::map<int,std::string>                                     bincuts,
-        std::vector<std::string>                                      kinvars,
-        std::vector<std::vector<double>>                              kinvar_lims,
-        std::vector<int>                                              kinvar_bins,
+        string                                                   scheme_name,
+        map<int,string>                                     bincuts,
+        vector<string>                                      kinvars,
+        vector<vector<double>>                              kinvar_lims,
+        vector<int>                                              kinvar_bins,
         bool                                                          save_pdfs = false,
         bool                                                          save_csvs = false
     ) {
 
     // Open output ROOT file
-    std::string path = Form("%s_kinematics.root",scheme_name.c_str());
+    string path = Form("%s_kinematics.root",scheme_name.c_str());
     TFile *f = new TFile(path.c_str(),"RECREATE");
 
     // Loop bin cut maps, get kinematics histograms, and write to ROOT
@@ -914,25 +927,25 @@ void getBinKinematicsTH1Ds(
 
         // Get generated bin id and cut
         int bin = it->first;
-        std::string bincut = it->second;
+        string bincut = it->second;
 
         // Apply bin cut
         auto frame_filtered = frame.Filter(bincut.c_str());
 
         // Create 1D histograms for each kinematic variable
         for (int idx=0; idx<kinvars.size(); idx++) {
-            std::string hist_name = Form("h1_bin%d_%s", bin, kinvars[idx].c_str());
+            string hist_name = Form("h1_bin%d_%s", bin, kinvars[idx].c_str());
             TH1D h1 = (TH1D) *frame_filtered.Histo1D({hist_name.c_str(),kinvars[idx].c_str(),kinvar_bins[idx],kinvar_lims[idx][0],kinvar_lims[idx][1]},kinvars[idx].c_str());
             f->WriteObject(&h1, hist_name.c_str());
             if (save_pdfs) {
-                std::string canvas_name = Form("c1_%s_bin%d_%s", scheme_name.c_str(), bin, kinvars[idx].c_str());
+                string canvas_name = Form("c1_%s_bin%d_%s", scheme_name.c_str(), bin, kinvars[idx].c_str());
                 TCanvas *c1 = new TCanvas(canvas_name.c_str());
                 c1->cd();
                 h1.Draw("COLZ");
                 c1->Print(Form("%s.pdf", canvas_name.c_str()));
             }
             if (save_csvs) {
-                std::string csv_name = Form("%s_bin%d_%s.csv", scheme_name.c_str(), bin, kinvars[idx].c_str());
+                string csv_name = Form("%s_bin%d_%s.csv", scheme_name.c_str(), bin, kinvars[idx].c_str());
                 saveTH1ToCSV(h1, csv_name);
             }
         }
@@ -958,17 +971,17 @@ void getBinKinematicsTH1Ds(
 */
 void getBinKinematicsTH2Ds(
         ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
-        std::string                                                   scheme_name,
-        std::map<int,std::string>                                     bincuts,
-        std::vector<std::vector<std::string>>                         kinvars,
-        std::vector<std::vector<std::vector<double>>>                 kinvar_lims,
-        std::vector<std::vector<int>>                                 kinvar_bins,
+        string                                                   scheme_name,
+        map<int,string>                                     bincuts,
+        vector<vector<string>>                         kinvars,
+        vector<vector<vector<double>>>                 kinvar_lims,
+        vector<vector<int>>                                 kinvar_bins,
         bool                                                          save_pdfs = false,
         bool                                                          save_csvs = false
     ) {
 
     // Open output ROOT file
-    std::string path = Form("%s_kinematics.root",scheme_name.c_str());
+    string path = Form("%s_kinematics.root",scheme_name.c_str());
     TFile *f = new TFile(path.c_str(),"RECREATE");
 
     // Loop bin cut maps, get kinematics histograms, and write to ROOT
@@ -976,26 +989,26 @@ void getBinKinematicsTH2Ds(
 
         // Get generated bin id and cut
         int bin = it->first;
-        std::string bincut = it->second;
+        string bincut = it->second;
 
         // Apply bin cut
         auto frame_filtered = frame.Filter(bincut.c_str());
 
         // Create 2D histograms for each kinematic variable
         for (int idx=0; idx<kinvars.size(); idx++) {
-            std::string hist_name = Form("h2_bin%d_%s_%s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
-            std::string hist_title = Form("Bin %d : %s vs. %s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+            string hist_name = Form("h2_bin%d_%s_%s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+            string hist_title = Form("Bin %d : %s vs. %s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
             TH2D h2 = (TH2D) *frame_filtered.Histo2D({hist_name.c_str(),hist_title.c_str(),kinvar_bins[idx][0],kinvar_lims[idx][0][0],kinvar_lims[idx][0][1],kinvar_bins[idx][1],kinvar_lims[idx][1][0],kinvar_lims[idx][1][1]},kinvars[idx][0].c_str(),kinvars[idx][1].c_str());
             f->WriteObject(&h2, hist_name.c_str());
             if (save_pdfs) {
-                std::string canvas_name = Form("c2_%s_bin%d_%s_%s", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+                string canvas_name = Form("c2_%s_bin%d_%s_%s", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
                 TCanvas *c1 = new TCanvas(canvas_name.c_str());
                 c1->cd();
                 h2.Draw("COLZ");
                 c1->Print(Form("%s.pdf", canvas_name.c_str()));
             }
             if (save_csvs) {
-                std::string csv_name = Form("%s_bin%d_%s_%s.csv", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
+                string csv_name = Form("%s_bin%d_%s_%s.csv", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
                 saveTH1ToCSV(h2, csv_name);
             }
         }

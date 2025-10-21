@@ -33,6 +33,18 @@ namespace saga {
 
 namespace data {
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::is_same;
+using std::map;
+using std::ofstream;
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
 /**
@@ -74,32 +86,32 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 void createDataset(
         RNode frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
         RooWorkspace *w,
-        std::string name,
-        std::string title,
-        std::vector<std::string> categories_as_float,
-        std::string helicity,
-        std::map<std::string,int> helicity_states,
-        std::string tspin,
-        std::map<std::string,int> tspin_states,
-        std::string htspin,
-        std::map<std::string,int> htspin_states,
-        std::string combined_spin_state,
-        std::vector<std::string> binvars,
-        std::vector<std::string> binvar_titles,
-        std::vector<std::vector<double>> binvar_lims,
-        std::vector<int> binvar_bins,
-        std::vector<std::string> depolvars,
-        std::vector<std::string> depolvar_titles,
-        std::vector<std::vector<double>> depolvar_lims,
-        std::vector<int> depolvar_bins,
-        std::vector<std::string> &asymfitvars,
-        std::vector<std::string> &asymfitvar_titles,
-        std::vector<std::vector<double>> &asymfitvar_lims,
-        std::vector<int> &asymfitvar_bins,
-        std::vector<std::string> massfitvars,
-        std::vector<std::string> massfitvar_titles,
-        std::vector<std::vector<double>> massfitvar_lims,
-        std::vector<int> massfitvar_bins
+        string name,
+        string title,
+        vector<string> categories_as_float,
+        string helicity,
+        map<string,int> helicity_states,
+        string tspin,
+        map<string,int> tspin_states,
+        string htspin,
+        map<string,int> htspin_states,
+        string combined_spin_state,
+        vector<string> binvars,
+        vector<string> binvar_titles,
+        vector<vector<double>> binvar_lims,
+        vector<int> binvar_bins,
+        vector<string> depolvars,
+        vector<string> depolvar_titles,
+        vector<vector<double>> depolvar_lims,
+        vector<int> depolvar_bins,
+        vector<string> &asymfitvars,
+        vector<string> &asymfitvar_titles,
+        vector<vector<double>> &asymfitvar_lims,
+        vector<int> &asymfitvar_bins,
+        vector<string> massfitvars,
+        vector<string> massfitvar_titles,
+        vector<vector<double>> massfitvar_lims,
+        vector<int> massfitvar_bins
     ) {
 
     // Define the helicity variable
@@ -124,7 +136,7 @@ void createDataset(
     RooCategory ss(combined_spin_state.c_str(), combined_spin_state.c_str());
     for (auto it_h = helicity_states.begin(); it_h != helicity_states.end(); it_h++) {
         for (auto it_t = htspin_states.begin(); it_t != htspin_states.end(); it_t++) {
-            std::string state_name = Form("%s_%s",it_h->first.c_str(),it_t->first.c_str());
+            string state_name = Form("%s_%s",it_h->first.c_str(),it_t->first.c_str());
             int state_value = (it_h->second + 1) * 10 + (it_t->second + 1);
             ss.defineType(state_name.c_str(), state_value);
         }
@@ -137,8 +149,8 @@ void createDataset(
         if (categories_as_float[idx]==helicity) {
 
             // Set helicity variable name and formula
-            std::string h_as_float = Form("%s_as_float",helicity.c_str());
-            std::string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
+            string h_as_float = Form("%s_as_float",helicity.c_str());
+            string h_as_float_formula = Form("(float)(%s)",helicity.c_str());
 
             // Define the new branch in the frame
             frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
@@ -149,7 +161,7 @@ void createDataset(
                 if (asymfitvars[ff]==h_as_float) contains_var = true;
             }
             if (!contains_var) {
-                std::string h_as_float_title = helicity;
+                string h_as_float_title = helicity;
                 int h_as_float_bins=0;
                 double h_as_float_min = 0.0;
                 double h_as_float_max = 0.0;
@@ -158,7 +170,7 @@ void createDataset(
                     if (it->second>h_as_float_max) h_as_float_max = it->second;
                     h_as_float_bins++;
                 }
-                std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
+                vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
 
                 // Add helicity variable as a fit variable
                 asymfitvars.insert(asymfitvars.begin(),h_as_float);
@@ -176,8 +188,8 @@ void createDataset(
         if (categories_as_float[idx]==tspin) {
 
             // Set helicity variable name and formula
-            std::string h_as_float = Form("%s_as_float",tspin.c_str());
-            std::string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
+            string h_as_float = Form("%s_as_float",tspin.c_str());
+            string h_as_float_formula = Form("(float)(%s)",tspin.c_str());
 
             // Define the new branch in the frame
             frame = frame.Define(h_as_float.c_str(),h_as_float_formula.c_str());
@@ -188,7 +200,7 @@ void createDataset(
                 if (asymfitvars[ff]==h_as_float) contains_var = true;
             }
             if (!contains_var) {
-                std::string h_as_float_title = tspin;
+                string h_as_float_title = tspin;
                 int h_as_float_bins=0;
                 double h_as_float_min = 0.0;
                 double h_as_float_max = 0.0;
@@ -197,7 +209,7 @@ void createDataset(
                     if (it->second>h_as_float_max) h_as_float_max = it->second;
                     h_as_float_bins++;
                 }
-                std::vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
+                vector<double> h_as_float_lims = {h_as_float_min,h_as_float_max};
 
                 // Add helicity variable as a fit variable
                 asymfitvars.insert(asymfitvars.begin(),h_as_float);
@@ -209,22 +221,22 @@ void createDataset(
     }
 
     // Define the full variables and limits lists
-    std::vector<std::string> vars;
+    vector<string> vars;
     for (int idx=0; idx<binvars.size();     idx++) vars.push_back(binvars[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) vars.push_back(depolvars[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) vars.push_back(asymfitvars[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) vars.push_back(massfitvars[idx]);
-    std::vector<std::string> var_titles;
+    vector<string> var_titles;
     for (int idx=0; idx<binvars.size();     idx++) var_titles.push_back(binvar_titles[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_titles.push_back(depolvar_titles[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_titles.push_back(asymfitvar_titles[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) var_titles.push_back(massfitvar_titles[idx]);
-    std::vector<std::vector<double>> var_lims;
+    vector<vector<double>> var_lims;
     for (int idx=0; idx<binvars.size();     idx++) var_lims.push_back(binvar_lims[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_lims.push_back(depolvar_lims[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_lims.push_back(asymfitvar_lims[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) var_lims.push_back(massfitvar_lims[idx]);
-    std::vector<int> var_bins;
+    vector<int> var_bins;
     for (int idx=0; idx<binvars.size();     idx++) var_bins.push_back(binvar_bins[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_bins.push_back(depolvar_bins[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_bins.push_back(asymfitvar_bins[idx]);
@@ -350,7 +362,7 @@ void createDataset(
             );
             break;
         default:
-            std::cerr<<"ERROR: nvars="<<nvars<<" is outside the allowed range [2,18]"<<std::endl;
+            cerr<<"ERROR: nvars="<<nvars<<" is outside the allowed range [2,18]"<<endl;
             return;
     }
 
@@ -358,7 +370,7 @@ void createDataset(
     RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h,t,ht,ss));
 
     // Set cuts for variable limits so that new dataset will have same length as old dataset
-    std::string varlims_cuts = "";
+    string varlims_cuts = "";
     for (int vv=0; vv<nvars; vv++) {
         if (varlims_cuts.size()==0) {
             varlims_cuts = Form("(%s>=%.8f && %s<=%.8f)", vars[vv].c_str(), rrvars[vv]->getMin(), vars[vv].c_str(), rrvars[vv]->getMax());
@@ -445,11 +457,11 @@ void createDataset(
 */
 template<typename CsvKeyType, typename CsvValueType>
 RNode mapDataFromCSV(RNode filtered_df,
-                            std::string rdf_key_col,
-                            std::string csv_path,
-                            std::string csv_key_col,
-                            std::vector<std::string> col_names,
-                            std::map<std::string,std::string> col_aliases,
+                            string rdf_key_col,
+                            string csv_path,
+                            string csv_key_col,
+                            vector<string> col_names,
+                            map<string,string> col_aliases,
                             bool readHeaders=true,
                             char delimiter=','
     ) {
@@ -465,8 +477,8 @@ RNode mapDataFromCSV(RNode filtered_df,
     for (int cc=0; cc<col_names.size(); cc++) {
         
         // Set column name using alias if available
-        const std::string& csv_value_col = col_names[cc];
-        std::string new_column_name = col_names[cc];
+        const string& csv_value_col = col_names[cc];
+        string new_column_name = col_names[cc];
         for (auto it = col_aliases.begin(); it != col_aliases.end(); it++) {
             if (it->first == new_column_name) {
                 new_column_name = it->second;
@@ -478,14 +490,14 @@ RNode mapDataFromCSV(RNode filtered_df,
         auto values = csv_df.Take<CsvValueType>(csv_value_col);
 
         // Capture data as simple vectors to share across threads
-        std::vector<CsvKeyType> keys_vec = *keys;
-        std::vector<CsvValueType> values_vec = *values;
+        vector<CsvKeyType> keys_vec = *keys;
+        vector<CsvValueType> values_vec = *values;
 
         // Define column
         df_with_new_column = filtered_df.Define(new_column_name,
             [keys_vec, values_vec](float key_in) -> float {
                 // Build map thread-local, initialized on first use
-                static thread_local std::map<float, float> map;
+                static thread_local map<float, float> map;
                 static thread_local bool initialized = false;
 
                 if (!initialized) {
@@ -567,25 +579,25 @@ RNode injectAsym(
     int seed,
     double bpol,
     double tpol,
-    std::string mc_sg_match_name,
-    std::string asyms_sg_uu_pos_name,
-    std::string asyms_sg_uu_neg_name,
-    std::string asyms_sg_pu_pos_name,
-    std::string asyms_sg_pu_neg_name,
-    std::string asyms_sg_up_name,
-    std::string asyms_sg_pp_name,
-    std::string asyms_bg_uu_pos_name,
-    std::string asyms_bg_uu_neg_name,
-    std::string asyms_bg_pu_pos_name,
-    std::string asyms_bg_pu_neg_name,
-    std::string asyms_bg_up_name,
-    std::string asyms_bg_pp_name,
-    std::string combined_spin_state_name,
-    std::string helicity_name,
-    std::string tspin_name,
-    std::string phi_s_up_name,
-    std::string phi_s_dn_name,
-    std::string phi_s_name_injected
+    string mc_sg_match_name,
+    string asyms_sg_uu_pos_name,
+    string asyms_sg_uu_neg_name,
+    string asyms_sg_pu_pos_name,
+    string asyms_sg_pu_neg_name,
+    string asyms_sg_up_name,
+    string asyms_sg_pp_name,
+    string asyms_bg_uu_pos_name,
+    string asyms_bg_uu_neg_name,
+    string asyms_bg_pu_pos_name,
+    string asyms_bg_pu_neg_name,
+    string asyms_bg_up_name,
+    string asyms_bg_pp_name,
+    string combined_spin_state_name,
+    string helicity_name,
+    string tspin_name,
+    string phi_s_up_name,
+    string phi_s_dn_name,
+    string phi_s_name_injected
     ) {
 
     // Define a lambda to inject an asymmetry for each rdf entry
@@ -683,7 +695,7 @@ RNode injectAsym(
 
     // Define tspin dependent phi_s AFTER injecting the asymmetry
     if (phi_s_up_name!="" && phi_s_dn_name!="") {
-        std::string _phi_s_name_injected = phi_s_name_injected;
+        string _phi_s_name_injected = phi_s_name_injected;
         if (_phi_s_name_injected=="") _phi_s_name_injected = Form("%s_injected",phi_s_up_name.c_str());
         frame = frame.Define(_phi_s_name_injected.c_str(), [](float tspin, float phi_s_up, float phi_s_dn) -> float { return (float)(tspin>0 ? phi_s_up : phi_s_dn);},{tspin_name.c_str(),phi_s_up_name.c_str(),phi_s_dn_name.c_str()});
     }
@@ -712,19 +724,19 @@ RNode injectAsym(
 */
 RNode defineAngularDiffVars(
         RNode frame,
-        std::vector<std::string> particle_suffixes,
-        std::string theta_name = "theta",
-        std::string phi_name   = "phi",
-        std::string mc_suffix  = "_mc"
+        vector<string> particle_suffixes,
+        string theta_name = "theta",
+        string phi_name   = "phi",
+        string mc_suffix  = "_mc"
     ) {
     
     // Define angular difference variable names
-    std::vector<std::string> theta_vars;
-    std::vector<std::string> phi_vars;
-    std::vector<std::string> theta_mc_vars;
-    std::vector<std::string> phi_mc_vars;
-    std::vector<std::string> dtheta_vars;
-    std::vector<std::string> dphi_vars;
+    vector<string> theta_vars;
+    vector<string> phi_vars;
+    vector<string> theta_mc_vars;
+    vector<string> phi_mc_vars;
+    vector<string> dtheta_vars;
+    vector<string> dphi_vars;
     for (int idx=0; idx<particle_suffixes.size(); idx++) {
         theta_vars.push_back(Form("%s%s",theta_name.c_str(),particle_suffixes[idx].c_str()));
         phi_vars.push_back(Form("%s%s",phi_name.c_str(),particle_suffixes[idx].c_str()));
