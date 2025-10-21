@@ -67,6 +67,18 @@ namespace saga {
 
 namespace analysis {
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::is_same;
+using std::map;
+using std::ofstream;
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 using namespace RooFit;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
@@ -82,9 +94,9 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 */
 RooArgSet* getSubRooArgSet(
     RooArgSet* argset,
-    std::string fitformula,
-    std::vector<std::string> varformulas,
-    std::vector<std::string> varnames
+    string fitformula,
+    vector<string> varformulas,
+    vector<string> varnames
 ) {
 
     // Isolate the argset for the target spin dependent terms
@@ -94,12 +106,12 @@ RooArgSet* getSubRooArgSet(
     for (int idx = 0; idx<varformulas.size(); idx++) {
 
         // Check if fit formula contains variable formula
-        if (fitformula.find(varformulas[idx]) != std::string::npos) {
+        if (fitformula.find(varformulas[idx]) != string::npos) {
 
             // Find the RooRealVar in the argset
             RooRealVar *var = (RooRealVar*)argset->find(varnames[idx].c_str());
             if (var==nullptr) {
-                std::cerr << "ERROR: RooRealVar \"" << varnames[idx].c_str() << "\" with formula \"" << varformulas[idx].c_str() << "\" not found in argset" << std::endl;
+                cerr << "ERROR: RooRealVar \"" << varnames[idx].c_str() << "\" with formula \"" << varformulas[idx].c_str() << "\" not found in argset" << endl;
                 continue;
             }
             subargset->add(*var);
@@ -121,16 +133,16 @@ RooArgSet* getSubRooArgSet(
 * @param varformulas List of variable formulas passed to RooGenericPdf
 * @param max_idx If this parameter is \f$>0\f$, then the formulas will be substituted in descending order starting at `idx==max_idx`.
 *
-* @return std::string
+* @return string
 */
-std::string getSubFormula(
-    std::string fitformula,
-    std::vector<std::string> varformulas,
+string getSubFormula(
+    string fitformula,
+    vector<string> varformulas,
     int max_idx = 0
 ) {
 
     // Loop variable formulas and map old formulas to new formulas
-    std::string subfitformula = fitformula;
+    string subfitformula = fitformula;
 
     // If you are doing forward ordering
     if (max_idx==0) {
@@ -138,7 +150,7 @@ std::string getSubFormula(
         for (int idx = 0; idx<varformulas.size(); idx++) {
 
             // Check if fit formula contains variable formula
-            if (fitformula.find(varformulas[idx]) != std::string::npos) {
+            if (fitformula.find(varformulas[idx]) != string::npos) {
 
                 // Replace variable and increment index of variables added
                 saga::util::replaceAll(subfitformula, varformulas[idx], Form("x[%d]", add_idx));
@@ -150,7 +162,7 @@ std::string getSubFormula(
         for (int idx = varformulas.size()-1; idx>=0; idx--) {
 
             // Check if fit formula contains variable formula
-            if (fitformula.find(varformulas[idx]) != std::string::npos) {
+            if (fitformula.find(varformulas[idx]) != string::npos) {
 
                 // Replace variable and increment index of variables added
                 saga::util::replaceAll(subfitformula, varformulas[idx], Form("x[%d]", add_idx));
@@ -227,21 +239,21 @@ std::string getSubFormula(
 * 
 * @return List of model name and all yield variable names
 */
-std::vector<std::string> getGenAsymPdf(
+vector<string> getGenAsymPdf(
     RooWorkspace *w,
-    std::vector<std::string> categories_as_float,
+    vector<string> categories_as_float,
     RooCategory *h,
     RooCategory *t,
     RooCategory *ht,
     RooCategory *ss,
     RooArgSet *argset,
-    std::vector<std::string> argnames,
-    std::string method_name,
-    std::string binid,
-    std::string fitformula_uu,
-    std::string fitformula_pu,
-    std::string fitformula_up,
-    std::string fitformula_pp,
+    vector<string> argnames,
+    string method_name,
+    string binid,
+    string fitformula_uu,
+    string fitformula_pu,
+    string fitformula_up,
+    string fitformula_pp,
     double bpol,
     double tpol,
     int count,
@@ -258,7 +270,7 @@ std::vector<std::string> getGenAsymPdf(
     double ninit = count / nstates;
 
     // Set variable formulas list
-    std::vector<std::string> varformulas;
+    vector<string> varformulas;
     for (int idx=0; idx<argset->size(); idx++) {
         varformulas.push_back(Form("x[%d]", (int)(idx-categories_as_float.size())));
     }
@@ -266,42 +278,42 @@ std::vector<std::string> getGenAsymPdf(
     // but they are prepended to the asymmetry fit variables (helicity, then tspin).
 
     // Set model and yield names
-    std::string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str());
-    std::vector<std::string> model_and_yield_names;
+    string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str());
+    vector<string> model_and_yield_names;
 
     // Create simple pdf here if not using simultaneous PDF
     if (categories_as_float.size()>0) {
 
         // Check whether you have helicity and/or tspin and set formulas
-        std::string helicity_formula = (categories_as_float.size()==2) ? "x[-2]" : "x[-1]";
-        std::string tspin_formula = "x[-1]";
+        string helicity_formula = (categories_as_float.size()==2) ? "x[-2]" : "x[-1]";
+        string tspin_formula = "x[-1]";
 
         // Create the PDF formula
-        std::string fitformula_full = "";
+        string fitformula_full = "";
 
         // Create the PDF formula
         if (fitformula_uu!="") {
             fitformula_full = fitformula_uu;
         }
         if (fitformula_pu!="") {
-            std::string fitformula_new = Form("%s*%.3f*(%s)",helicity_formula.c_str(),bpol,fitformula_pu.c_str());
+            string fitformula_new = Form("%s*%.3f*(%s)",helicity_formula.c_str(),bpol,fitformula_pu.c_str());
             if (fitformula_full=="") fitformula_full = fitformula_new;
             else fitformula_full = Form("%s + %s",fitformula_full.c_str(),fitformula_new.c_str());
         }
         if (fitformula_up!="") {
-            std::string fitformula_new = Form("%s*%.3f*(%s)",tspin_formula.c_str(),tpol,fitformula_up.c_str());
+            string fitformula_new = Form("%s*%.3f*(%s)",tspin_formula.c_str(),tpol,fitformula_up.c_str());
             if (fitformula_full=="") fitformula_full = fitformula_new;
             else fitformula_full = Form("%s + %s",fitformula_full.c_str(),fitformula_new.c_str());
         }
         if (fitformula_pp!="") {
-            std::string fitformula_new = Form("%s*%s*%.3f*%.3f*(%s)",helicity_formula.c_str(),tspin_formula.c_str(),bpol,tpol,fitformula_pp.c_str());
+            string fitformula_new = Form("%s*%s*%.3f*%.3f*(%s)",helicity_formula.c_str(),tspin_formula.c_str(),bpol,tpol,fitformula_pp.c_str());
             if (fitformula_full=="") fitformula_full = fitformula_new;
             else fitformula_full = Form("%s + %s",fitformula_full.c_str(),fitformula_new.c_str());
         }
 
         // Isolate the argset for the target spin dependent terms
         RooArgSet *argset_full = getSubRooArgSet(argset, fitformula_full.c_str(), varformulas, argnames);
-        std::string subfitformula_full = getSubFormula(fitformula_full.c_str(), varformulas, argset->size()-1);
+        string subfitformula_full = getSubFormula(fitformula_full.c_str(), varformulas, argset->size()-1);
 
         // Create PDF
         fitformula_full = fitformula_full!="" ? Form("1.0+(%s)",subfitformula_full.c_str()): "1.0";
@@ -331,16 +343,16 @@ std::vector<std::string> getGenAsymPdf(
     //NOTE: `_<int><int>` on the variables below correspond to beam helicity and target spin states (+1) respectively, i.e., (-1,0,1) -> (0,1,2).
 
     // Dummy formula so that unused generic pdfs still compile
-    std::string fitformula_unused = "0.0";
+    string fitformula_unused = "0.0";
 
     //----- Unpolarized and transverse target spin dependent terms -----//
 
     // Isolate the argset for the target spin dependent terms
     RooArgSet *argset_uu = getSubRooArgSet(argset, fitformula_uu!="" ? fitformula_uu.c_str() : fitformula_unused.c_str(), varformulas, argnames);
-    std::string subfitformula_uu = getSubFormula(fitformula_uu!="" ? fitformula_uu.c_str() : fitformula_unused.c_str(), varformulas);
+    string subfitformula_uu = getSubFormula(fitformula_uu!="" ? fitformula_uu.c_str() : fitformula_unused.c_str(), varformulas);
 
     // Create pdf helicity==0
-    std::string fitformula_11 = fitformula_uu!="" ? Form("1.0+(%s)",subfitformula_uu.c_str()): "1.0";
+    string fitformula_11 = fitformula_uu!="" ? Form("1.0+(%s)",subfitformula_uu.c_str()): "1.0";
     RooGenericPdf _model_11(Form("_%s_11",model_name.c_str()), fitformula_11.c_str(), *argset_uu);
 
     // Create extended pdf helicity==0
@@ -348,18 +360,18 @@ std::vector<std::string> getGenAsymPdf(
     RooExtendPdf model_11(Form("%s_11",model_name.c_str()), "extended signal pdf", _model_11, nsig_11);
 
     //----- Create UU/UT starting fit formula -----//
-    std::string fitformula_uu_ut = fitformula_uu!="" ? Form("1.0+(%s)",fitformula_uu.c_str()): "1.0";
+    string fitformula_uu_ut = fitformula_uu!="" ? Form("1.0+(%s)",fitformula_uu.c_str()): "1.0";
 
     //----- Beam helicity and target spin dependent terms for fit of these terms ONLY -----//
 
     // Set the fit formulas
-    std::string fitformula_22_00 = Form("%s+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
-    std::string fitformula_20_02 = Form("%s-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    string fitformula_22_00 = Form("%s+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    string fitformula_20_02 = Form("%s-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
 
     // Isolate the argset for the target spin dependent terms
     RooArgSet *argset_pp = getSubRooArgSet(argset, fitformula_22_00, varformulas, argnames);
-    std::string subfitformula_22_00 = getSubFormula(fitformula_22_00, varformulas);
-    std::string subfitformula_20_02 = getSubFormula(fitformula_20_02, varformulas);
+    string subfitformula_22_00 = getSubFormula(fitformula_22_00, varformulas);
+    string subfitformula_20_02 = getSubFormula(fitformula_20_02, varformulas);
 
     // Create pdf htspin==+1
     RooGenericPdf _model_22_00(Form("_%s_22_00",model_name.c_str()), subfitformula_22_00.c_str(), *argset_pp);
@@ -378,13 +390,13 @@ std::vector<std::string> getGenAsymPdf(
     //----- Beam helicity dependent terms -----//
 
     // Set the fit formulas
-    std::string fitformula_21 = Form("%s+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str());
-    std::string fitformula_01 = Form("%s-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str());
+    string fitformula_21 = Form("%s+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str());
+    string fitformula_01 = Form("%s-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str());
 
     // Isolate the argset for the target spin dependent terms
     RooArgSet *argset_pu = getSubRooArgSet(argset, fitformula_21, varformulas, argnames);
-    std::string subfitformula_21 = getSubFormula(fitformula_21, varformulas);
-    std::string subfitformula_01 = getSubFormula(fitformula_01, varformulas);
+    string subfitformula_21 = getSubFormula(fitformula_21, varformulas);
+    string subfitformula_01 = getSubFormula(fitformula_01, varformulas);
 
     // Create pdf (h,t,ht) -> ( 1, 0, 0)
     RooGenericPdf _model_21(Form("_%s_21",model_name.c_str()), subfitformula_21.c_str(), *argset_pu);
@@ -403,13 +415,13 @@ std::vector<std::string> getGenAsymPdf(
     //----- Target spin dependent terms -----//
 
     // Set the fit formulas
-    std::string fitformula_12 = Form("%s+%.3f*(%s)",fitformula_uu_ut.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str());
-    std::string fitformula_10 = Form("%s-%.3f*(%s)",fitformula_uu_ut.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str());
+    string fitformula_12 = Form("%s+%.3f*(%s)",fitformula_uu_ut.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str());
+    string fitformula_10 = Form("%s-%.3f*(%s)",fitformula_uu_ut.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str());
 
     // Isolate the argset for the target spin dependent terms
     RooArgSet *argset_up = getSubRooArgSet(argset, fitformula_12, varformulas, argnames);
-    std::string subfitformula_12 = getSubFormula(fitformula_12, varformulas);
-    std::string subfitformula_10 = getSubFormula(fitformula_10, varformulas);
+    string subfitformula_12 = getSubFormula(fitformula_12, varformulas);
+    string subfitformula_10 = getSubFormula(fitformula_10, varformulas);
 
     // Create pdf (h,t,ht) -> ( 0, 1, 0)
     RooGenericPdf _model_12(Form("_%s_12",model_name.c_str()), subfitformula_12.c_str(), *argset_up);
@@ -427,7 +439,7 @@ std::vector<std::string> getGenAsymPdf(
 
     //----- Beam helicity and target spin dependent terms -----//
     // Create pdf (h,t,ht) -> ( 1, 1, 1)
-    std::string fitformula_22 = Form("%s+%.3f*(%s)+%.3f*(%s)+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    string fitformula_22 = Form("%s+%.3f*(%s)+%.3f*(%s)+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
     RooGenericPdf _model_22(Form("_%s_22",model_name.c_str()), fitformula_22.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> ( 1, 1, 1)
@@ -435,7 +447,7 @@ std::vector<std::string> getGenAsymPdf(
     RooExtendPdf model_22(Form("%s_22",model_name.c_str()), "extended signal pdf", _model_22, nsig_22);
 
     // Create pdf (h,t,ht) -> (-1,-1, 1)
-    std::string fitformula_00 = Form("%s-%.3f*(%s)-%.3f*(%s)+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    string fitformula_00 = Form("%s-%.3f*(%s)-%.3f*(%s)+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
     RooGenericPdf _model_00(Form("_%s_00",model_name.c_str()), fitformula_00.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> (-1,-1, 1)
@@ -443,7 +455,7 @@ std::vector<std::string> getGenAsymPdf(
     RooExtendPdf model_00(Form("%s_00",model_name.c_str()), "extended signal pdf", _model_00, nsig_00);
 
     // Create pdf (h,t,ht) -> (-1, 1,-1)
-    std::string fitformula_02 = Form("%s-%.3f*(%s)+%.3f*(%s)-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    string fitformula_02 = Form("%s-%.3f*(%s)+%.3f*(%s)-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
     RooGenericPdf _model_02(Form("_%s_02",model_name.c_str()), fitformula_02.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> (-1, 1,-1)
@@ -451,7 +463,7 @@ std::vector<std::string> getGenAsymPdf(
     RooExtendPdf model_02(Form("%s_02",model_name.c_str()), "extended signal pdf", _model_02, nsig_02);
 
     // Create pdf (h,t,ht) -> ( 1,-1,-1)
-    std::string fitformula_20 = Form("%s+%.3f*(%s)-%.3f*(%s)-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    string fitformula_20 = Form("%s+%.3f*(%s)-%.3f*(%s)-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
     RooGenericPdf _model_20(Form("_%s_20",model_name.c_str()), fitformula_20.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> ( 1,-1,-1)
@@ -593,7 +605,7 @@ std::vector<std::string> getGenAsymPdf(
     w->import(*model);
     return model_and_yield_names;
 
-} // std::vector<std::string> getGenAsymPdf()
+} // vector<string> getGenAsymPdf()
 
 /**
 * @brief Fit an asymmetry.
@@ -701,38 +713,38 @@ std::vector<std::string> getGenAsymPdf(
 *
 * @return List of bin count, bin variable means and errors, depolarization variable means and errors, fit parameters and errors
 */
-std::vector<double> fitAsym(
+vector<double> fitAsym(
         RooWorkspace                    *w,
-        std::string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
+        string                      dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
         double                           bpol,
         double                           tpol,
-        std::vector<std::string>         categories_as_float,
-        std::string                      helicity,
-        std::string                      tspin,
-        std::string                      htspin,
-        std::string                      combined_spin_state,
-        std::string                      binid,
-        std::string                      bincut,
-        std::vector<std::string>         binvars,
-        std::vector<std::string>         depolvars,
-        std::vector<std::string>         fitvars,
-        std::string                      fitformula_uu,
-        std::string                      fitformula_pu,
-        std::string                      fitformula_up,
-        std::string                      fitformula_pp,
-        std::vector<double>              initparams,
-        std::vector<std::vector<double>> initparamlims,
+        vector<string>         categories_as_float,
+        string                      helicity,
+        string                      tspin,
+        string                      htspin,
+        string                      combined_spin_state,
+        string                      binid,
+        string                      bincut,
+        vector<string>         binvars,
+        vector<string>         depolvars,
+        vector<string>         fitvars,
+        string                      fitformula_uu,
+        string                      fitformula_pu,
+        string                      fitformula_up,
+        string                      fitformula_pp,
+        vector<double>              initparams,
+        vector<vector<double>> initparamlims,
         bool use_sumw2error              = true,
         bool use_average_depol           = false,
         bool use_extended_nll            = false,
         bool use_binned_fit              = false,
-        std::string sb_dataset_name      = "", //NOTE: If this is non-empty, a simultaneous fit of sg+bg and bg PDFs will be applied to the signal and sideband datasets respectively.
-        std::string bgfracvar            = "",
-        std::ostream &out                = std::cout
+        string sb_dataset_name      = "", //NOTE: If this is non-empty, a simultaneous fit of sg+bg and bg PDFs will be applied to the signal and sideband datasets respectively.
+        string bgfracvar            = "",
+        ostream &out                = cout
     ) {
 
     // Set method name
-    std::string method_name = "fitAsym";
+    string method_name = "fitAsym";
 
     // Load helicity variable from workspace
     RooCategory * h  = w->cat(helicity.c_str());
@@ -756,8 +768,8 @@ std::vector<double> fitAsym(
     auto count = (int)bin_ds->sumEntries();
 
     // Get bin variable means and errors
-    std::vector<double> binvarmeans;
-    std::vector<double> binvarerrs;
+    vector<double> binvarmeans;
+    vector<double> binvarerrs;
     RooRealVar * b[(const int)binvars.size()];
     for (int i=0; i<binvars.size(); i++) {
         b[i] = w->var(binvars[i].c_str());
@@ -768,8 +780,8 @@ std::vector<double> fitAsym(
     }
 
     // Get depolarization factor means and errors
-    std::vector<double> depols;
-    std::vector<double> depolerrs;
+    vector<double> depols;
+    vector<double> depolerrs;
     RooRealVar * d[(const int)depolvars.size()];
     for (int i=0; i<depolvars.size(); i++) {
         d[i] = w->var(depolvars[i].c_str());
@@ -780,18 +792,18 @@ std::vector<double> fitAsym(
     }
 
     // Create asymmetry amplitude parameters
-    std::vector<std::string> anames;
+    vector<string> anames;
     int nparams = initparams.size();
     RooRealVar *a[nparams];
     for (int aa=0; aa<nparams; aa++) {
-        std::string aname = Form("a%d",aa);
+        string aname = Form("a%d",aa);
         anames.push_back(aname);
         a[aa] = new RooRealVar(anames[aa].c_str(),anames[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
     }
 
     // Add parameters to argument list in order
     RooArgSet *argset = new RooArgSet();
-    std::vector<std::string> argnames;
+    vector<string> argnames;
     for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
         argset->add(*f[ff]);
         argnames.push_back(f[ff]->GetName());
@@ -832,11 +844,11 @@ std::vector<double> fitAsym(
     }
 
     // Create asymmetry amplitude parameters for the background pdf
-    std::vector<std::string> anames_sb;
+    vector<string> anames_sb;
     RooRealVar *a_sb[nparams];
     if (sb_dataset_name!="") {
         for (int aa=0; aa<nparams; aa++) {
-            std::string aname = Form("a_bg%d",aa);
+            string aname = Form("a_bg%d",aa);
             anames_sb.push_back(aname);
             a_sb[aa] = new RooRealVar(anames_sb[aa].c_str(),anames_sb[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
         }
@@ -844,7 +856,7 @@ std::vector<double> fitAsym(
 
     // Add parameters to argument list in order for the background pdf
     RooArgSet *argset_sb = new RooArgSet();
-    std::vector<std::string> argnames_sb;
+    vector<string> argnames_sb;
     if (sb_dataset_name!="") {
         for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
             argset_sb->add(*f[ff]);
@@ -863,7 +875,7 @@ std::vector<double> fitAsym(
     }
 
     // Create and load asymmetry PDF
-    std::vector<std::string> model_and_yield_names = getGenAsymPdf(
+    vector<string> model_and_yield_names = getGenAsymPdf(
         w,
         categories_as_float,
         h,
@@ -883,12 +895,12 @@ std::vector<double> fitAsym(
         count,
         use_extended_nll
     );
-    std::string model_name = model_and_yield_names[0];
+    string model_name = model_and_yield_names[0];
 
     // Create the asymmetry PDF for the background data in the case of sideband subtraction
-    std::vector<std::string> model_and_yield_names_bg;
-    std::string model_name_bg;
-    std::string binid_sb;
+    vector<string> model_and_yield_names_bg;
+    string model_name_bg;
+    string binid_sb;
     if (sb_dataset_name!="") {
         binid_sb = Form("%s_sb",binid.c_str());
         model_and_yield_names_bg = getGenAsymPdf(
@@ -932,7 +944,7 @@ std::vector<double> fitAsym(
         model_bg = w->pdf(model_name_bg.c_str());
 
         // Add signal and background PDFs using the bgfrac variable as the coefficient of the background
-        std::string model_bg_plus_sg_name = Form("%s_plus_bg", model_name.c_str());
+        string model_bg_plus_sg_name = Form("%s_plus_bg", model_name.c_str());
         model_bg_plus_sg = new RooAddPdf(model_bg_plus_sg_name.c_str(), model_bg_plus_sg_name.c_str(), RooArgList(*model_bg, *model_sg), RooArgList(*bgf)); //NOTE: ORDER IS IMPORTANT HERE!
 
         // Construct a simultaneous PDF for the signal and background regions
@@ -946,19 +958,19 @@ std::vector<double> fitAsym(
     }
 
     // Fit the pdf to data
-    std::unique_ptr<RooFitResult> r;
+    unique_ptr<RooFitResult> r;
     if (use_binned_fit) {
 
         // Create binned data
-        std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
+        unique_ptr<RooDataHist> dh = (unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit pdf
-        r = (std::unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        r = (unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
 
     } else {
 
         // Fit pdf
-        r = (std::unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
+        r = (unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
     }
     
     // Print fit result
@@ -969,9 +981,9 @@ std::vector<double> fitAsym(
     const TMatrixDSym &covMat = r->covarianceMatrix();
 
     // Print correlation, covariance matrix
-    std::cout << "correlation matrix" << std::endl;
+    cout << "correlation matrix" << endl;
     corMat.Print();
-    std::cout << "covariance matrix" << std::endl;
+    cout << "covariance matrix" << endl;
     covMat.Print();
 
     // // Define the asymmetry as a function
@@ -989,7 +1001,7 @@ std::vector<double> fitAsym(
     //     f_asym.plotOn(xframe, RooFit::LineColor(kRed));
 
     //     // Draw the frame on the canvas
-    //     std::string c1_x_name = Form("c1_%s__fitvar_%s",binid.c_str(),fitvars[idx].c_str());
+    //     string c1_x_name = Form("c1_%s__fitvar_%s",binid.c_str(),fitvars[idx].c_str());
     //     TCanvas *c1_x = new TCanvas(c1_x_name.c_str(), c1_x_name.c_str());
     //     gPad->SetLeftMargin(0.15);
     //     xframe->GetYaxis()->SetTitleOffset(1.4);
@@ -998,8 +1010,8 @@ std::vector<double> fitAsym(
     // }
 
     // Get fit parameter values and errors
-    std::vector<double> params;
-    std::vector<double> paramerrs;
+    vector<double> params;
+    vector<double> paramerrs;
     for (int aa=0; aa<nparams; aa++) {
         RooRealVar *avar = (RooRealVar*)w->var(a[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
         params.push_back((double)avar->getVal());
@@ -1007,8 +1019,8 @@ std::vector<double> fitAsym(
     }
 
     // Get fit parameter values and errors for background values
-    std::vector<double> params_bg;
-    std::vector<double> paramerrs_bg;
+    vector<double> params_bg;
+    vector<double> paramerrs_bg;
     if (sb_dataset_name!="") {
         for (int aa=0; aa<nparams; aa++) {
             RooRealVar *avar_sb = (RooRealVar*)w->var(a_sb[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
@@ -1018,8 +1030,8 @@ std::vector<double> fitAsym(
     }
 
     // Get the raw counts and poissonian errors
-    std::vector<double> counts;
-    std::vector<double> counterrs;
+    vector<double> counts;
+    vector<double> counterrs;
     double count_h_pos  = (double)bin_ds->reduce(Form("%s>0",h->GetName()))->sumEntries();
     double count_h_neg  = (double)bin_ds->reduce(Form("%s<0",h->GetName()))->sumEntries();
     double count_t_pos  = (double)bin_ds->reduce(Form("%s>0",t->GetName()))->sumEntries();
@@ -1146,8 +1158,8 @@ std::vector<double> fitAsym(
     }
 
     // Set the raw asymmetries
-    std::vector<double> rawasyms;
-    std::vector<double> rawasymerrs;
+    vector<double> rawasyms;
+    vector<double> rawasymerrs;
     double asym_h  = (count_h_pos-count_h_neg)/(count_h_pos+count_h_neg);
     double asym_t  = (count_t_pos-count_t_neg)/(count_t_pos+count_t_neg);
     double asym_ht = (count_ht_pos-count_ht_neg)/(count_ht_pos+count_ht_neg);
@@ -1162,60 +1174,60 @@ std::vector<double> fitAsym(
     rawasymerrs.push_back(asymerr_ht);
 
     // Print out fit info
-    out << "--------------------------------------------------" << std::endl;
-    out << " "<<method_name.c_str()<<"():" << std::endl;
-    out << " bpol        = " << bpol << std::endl;
-    out << " tpol        = " << tpol << std::endl;
-    out << " bincut     = " << bincut.c_str() << std::endl;
-    out << " bincount   = " << count << std::endl;
+    out << "--------------------------------------------------" << endl;
+    out << " "<<method_name.c_str()<<"():" << endl;
+    out << " bpol        = " << bpol << endl;
+    out << " tpol        = " << tpol << endl;
+    out << " bincut     = " << bincut.c_str() << endl;
+    out << " bincount   = " << count << endl;
     out << " binvar means = [" ;
     for (int idx=0; idx<binvars.size(); idx++) {
         out << binvarmeans[idx] << "±" << binvarerrs[idx];
         if (idx<binvars.size()-1) { out << " , "; }
     }
-    out << "]" << std::endl;
+    out << "]" << endl;
     out << " depolvars  = [" ;
     for (int idx=0; idx<depolvars.size(); idx++) {
         out << depolvars[idx];
         if (idx<depolvars.size()-1) { out << " , "; }
     }
-    out << "]" << std::endl;
+    out << "]" << endl;
     out << " depols  = [" ;
     for (int idx=0; idx<depols.size(); idx++) {
         out << depols[idx];
         if (idx<depols.size()-1) { out << " , "; }
     }
-    out << "]" << std::endl;
+    out << "]" << endl;
     out << " fitvars  = [" ;
     for (int idx=0; idx<fitvars.size(); idx++) {
         out << fitvars[idx];
         if (idx<fitvars.size()-1) { out << " , "; }
     }
-    out << "]" << std::endl;
-    out << " fitformula_uu  = " << fitformula_uu.c_str() << std::endl;
-    out << " fitformula_pu  = " << fitformula_pu.c_str() << std::endl;
-    out << " fitformula_up  = " << fitformula_up.c_str() << std::endl;
-    out << " fitformula_pp  = " << fitformula_pp.c_str() << std::endl;
-    out << " nparams        = " << nparams <<std::endl;
+    out << "]" << endl;
+    out << " fitformula_uu  = " << fitformula_uu.c_str() << endl;
+    out << " fitformula_pu  = " << fitformula_pu.c_str() << endl;
+    out << " fitformula_up  = " << fitformula_up.c_str() << endl;
+    out << " fitformula_pp  = " << fitformula_pp.c_str() << endl;
+    out << " nparams        = " << nparams <<endl;
     out << " initial params = [" ;
     for (int idx=0; idx<nparams; idx++) {
         out << initparams[idx];
         if (idx<nparams-1) { out << " , "; }
     }
-    out << "]" << std::endl;
+    out << "]" << endl;
     out << " params = [" ;
     for (int idx=0; idx<nparams; idx++) {
         out << params[idx] << "±" << paramerrs[idx];
         if (idx<nparams-1) { out << " , "; }
     }
-    out << "]" << std::endl;
+    out << "]" << endl;
     if (sb_dataset_name!="") {
         out << " params_bg = [" ;
         for (int idx=0; idx<nparams; idx++) {
             out << params_bg[idx] << "±" << paramerrs_bg[idx];
             if (idx<nparams-1) { out << " , "; }
         }
-        out << "]" << std::endl;
+        out << "]" << endl;
     }
     if (use_extended_nll) {
         out << " yields = [" ;
@@ -1224,18 +1236,18 @@ std::vector<double> fitAsym(
             out << yield->getVal() << "±" << yield->getError();
             if (idx<nparams-1) { out << " , "; }
         }
-        out << "]" << std::endl;
+        out << "]" << endl;
     }
     out << " rawasyms = [" ;
     for (int idx=0; idx<rawasyms.size(); idx++) {
         out << rawasyms[idx] << "±" << rawasymerrs[idx];
         if (idx<rawasyms.size()-1) { out << " , "; }
     }
-    out << "]" << std::endl;
-    out << "--------------------------------------------------" << std::endl;
+    out << "]" << endl;
+    out << "--------------------------------------------------" << endl;
 
     // Fill return array
-    std::vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*rawasyms.size()+2*nparams(+2*nparams)
+    vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*rawasyms.size()+2*nparams(+2*nparams)
     arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
         arr.push_back(binvarmeans[idx]);
@@ -1262,7 +1274,7 @@ std::vector<double> fitAsym(
 
     return arr;
 
-} // std::vector<double> fitAsym()
+} // vector<double> fitAsym()
 
 /**
 * @brief Loop kinematic bins and fit an asymmetry, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
@@ -1436,85 +1448,85 @@ std::vector<double> fitAsym(
 * @param out Output stream
 */
 void getKinBinnedAsym(
-        std::string                      scheme_name,
+        string                      scheme_name,
         RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-        std::string                      workspace_name,
-        std::string                      workspace_title,
+        string                      workspace_name,
+        string                      workspace_title,
 
         // parameters passed to data::createDataset()
-        std::string                      dataset_name,
-        std::string                      dataset_title,
-        std::vector<std::string>         categories_as_float,
-        std::string                      helicity,
-        std::map<std::string,int>        helicity_states,
-        std::string                      tspin,
-        std::map<std::string,int>        tspin_states,
-        std::string                      htspin,
-        std::map<std::string,int>        htspin_states,
-        std::string                      combined_spin_state,
-        std::map<int,std::string>        bincuts,
-        std::vector<std::string>         binvars,
-        std::vector<std::string>         binvar_titles,
-        std::vector<std::vector<double>> binvar_lims,
-        std::vector<int>                 binvar_bins,
-        std::vector<std::string>         depolvars,
-        std::vector<std::string>         depolvar_titles,
-        std::vector<std::vector<double>> depolvar_lims,
-        std::vector<int>                 depolvar_bins,
-        std::vector<std::string>         asymfitvars,
-        std::vector<std::string>         asymfitvar_titles,
-        std::vector<std::vector<double>> asymfitvar_lims,
-        std::vector<int>                 asymfitvar_bins,
-        std::vector<std::string>         massfitvars,
-        std::vector<std::string>         massfitvar_titles,
-        std::vector<std::vector<double>> massfitvar_lims,
-        std::vector<int>                 massfitvar_bins,
+        string                      dataset_name,
+        string                      dataset_title,
+        vector<string>         categories_as_float,
+        string                      helicity,
+        map<string,int>        helicity_states,
+        string                      tspin,
+        map<string,int>        tspin_states,
+        string                      htspin,
+        map<string,int>        htspin_states,
+        string                      combined_spin_state,
+        map<int,string>        bincuts,
+        vector<string>         binvars,
+        vector<string>         binvar_titles,
+        vector<vector<double>> binvar_lims,
+        vector<int>                 binvar_bins,
+        vector<string>         depolvars,
+        vector<string>         depolvar_titles,
+        vector<vector<double>> depolvar_lims,
+        vector<int>                 depolvar_bins,
+        vector<string>         asymfitvars,
+        vector<string>         asymfitvar_titles,
+        vector<vector<double>> asymfitvar_lims,
+        vector<int>                 asymfitvar_bins,
+        vector<string>         massfitvars,
+        vector<string>         massfitvar_titles,
+        vector<vector<double>> massfitvar_lims,
+        vector<int>                 massfitvar_bins,
 
         // parameterss passed to analysis::fitAsym()
         double                           bpol,
         double                           tpol,
-        std::string                      asymfit_formula_uu,
-        std::string                      asymfit_formula_pu,
-        std::string                      asymfit_formula_up,
-        std::string                      asymfit_formula_pp,
-        std::vector<double>              asymfitpar_inits,
-        std::vector<std::vector<double>> asymfitpar_initlims,
+        string                      asymfit_formula_uu,
+        string                      asymfit_formula_pu,
+        string                      asymfit_formula_up,
+        string                      asymfit_formula_pp,
+        vector<double>              asymfitpar_inits,
+        vector<vector<double>> asymfitpar_initlims,
         bool                             use_sumw2error,
         bool                             use_average_depol,
         bool                             use_extended_nll,
         bool                             use_binned_fit,
 
         // parameters passed to saga::signal::fitMass()
-        std::map<std::string,std::string> massfit_yamlfile_map,
-        std::string                       massfit_pdf_name,
-        std::string                       massfit_formula_sg,
-        std::string                       massfit_formula_bg,
-        std::string                       massfit_sgYield_name,
-        std::string                       massfit_bgYield_name,
+        map<string,string> massfit_yamlfile_map,
+        string                       massfit_pdf_name,
+        string                       massfit_formula_sg,
+        string                       massfit_formula_bg,
+        string                       massfit_sgYield_name,
+        string                       massfit_bgYield_name,
         double                            massfit_initsgfrac,
-        std::vector<double>               massfit_parinits_sg,
-        std::vector<std::string>          massfit_parnames_sg,
-        std::vector<std::string>          massfit_partitles_sg,
-        std::vector<std::string>          massfit_parunits_sg,
-        std::vector<std::vector<double>>  massfit_parlims_sg,
-        std::vector<double>               massfit_parinits_bg,
-        std::vector<std::string>          massfit_parnames_bg,
-        std::vector<std::string>          massfit_partitles_bg,
-        std::vector<std::string>          massfit_parunits_bg,
-        std::vector<std::vector<double>>  massfit_parlims_bg,
-        std::vector<std::vector<double>>  massfit_sgregion_lims,
+        vector<double>               massfit_parinits_sg,
+        vector<string>          massfit_parnames_sg,
+        vector<string>          massfit_partitles_sg,
+        vector<string>          massfit_parunits_sg,
+        vector<vector<double>>  massfit_parlims_sg,
+        vector<double>               massfit_parinits_bg,
+        vector<string>          massfit_parnames_bg,
+        vector<string>          massfit_partitles_bg,
+        vector<string>          massfit_parunits_bg,
+        vector<vector<double>>  massfit_parlims_bg,
+        vector<vector<double>>  massfit_sgregion_lims,
 
         // Parameters passed to analysis::applySPlots()
         bool                             use_splot,
 
         // Parameters used for sb subtraction
-        std::string                      massfit_sgcut,
-        std::string                      massfit_bgcut,
+        string                      massfit_sgcut,
+        string                      massfit_bgcut,
         bool                             use_sb_subtraction,
         bool                             use_binned_sb_bgfracs,
-        std::map<int,std::string>        asymfitvar_bincuts,
-        std::string                      bgfracvar,
-        std::vector<double>              bgfracvar_lims,
+        map<int,string>        asymfitvar_bincuts,
+        string                      bgfracvar,
+        vector<double>              bgfracvar_lims,
         int                              bgfrac_idx               = 0,
 
         // Parameters passed to signal::fitMass()
@@ -1527,13 +1539,13 @@ void getKinBinnedAsym(
         bool                             massfit_use_binned_fit   = false,
 
         // Ouput stream
-        std::ostream                    &out                      = std::cout
+        ostream                    &out                      = cout
     ) {
 
     // Check arguments
-    if (binvars.size()<1) {std::cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
-    if (depolvars.size()!=asymfitvars.size()) {std::cerr<<"WARNING: depolvars.size() does not match the number of parameters injected."<<std::endl;}
-    if ((use_sb_subtraction && use_binned_sb_bgfracs) || (use_sb_subtraction && use_splot) || (use_binned_sb_bgfracs && use_splot)) {std::cerr<<"ERROR: Sideband subtraction, sideband subtraction with binned background fractions, and the sPlot method are all mutually exclusive.  Exiting...\n"; return;}
+    if (binvars.size()<1) {cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
+    if (depolvars.size()!=asymfitvars.size()) {cerr<<"WARNING: depolvars.size() does not match the number of parameters injected."<<endl;}
+    if ((use_sb_subtraction && use_binned_sb_bgfracs) || (use_sb_subtraction && use_splot) || (use_binned_sb_bgfracs && use_splot)) {cerr<<"ERROR: Sideband subtraction, sideband subtraction with binned background fractions, and the sPlot method are all mutually exclusive.  Exiting...\n"; return;}
 
     // Starting message
     out << "----------------------- getKinBinnedAsym ----------------------\n";
@@ -1552,11 +1564,11 @@ void getKinBinnedAsym(
     bool single_massfit = (massfit_pdf_name!="" && !use_binned_sb_bgfracs && (use_splot || use_sb_subtraction));
 
     // Open output CSV
-    std::string csvpath = Form("%s.csv",scheme_name.c_str());
-    std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
-    std::ostream &csvout = csvoutf;
-    std::string csv_separator = ",";
-    std::vector<std::string> rawasymvars = { "bsa", "tsa", "dsa"};
+    string csvpath = Form("%s.csv",scheme_name.c_str());
+    ofstream csvoutf; csvoutf.open(csvpath.c_str());
+    ostream &csvout = csvoutf;
+    string csv_separator = ",";
+    vector<string> rawasymvars = { "bsa", "tsa", "dsa"};
 
     // Set CSV column headers
     // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}
@@ -1578,7 +1590,7 @@ void getKinBinnedAsym(
         csvout << Form("a%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
         csvout << Form("a%d",aa) << "_err";
         if (aa<asymfitpar_inits.size()-1 || single_massfit || use_binned_sb_bgfracs) csvout << csv_separator.c_str();
-        else csvout << std::endl;//NOTE: IMPORTANT!
+        else csvout << endl;//NOTE: IMPORTANT!
     }
 
     // Optionally add background asymmetries
@@ -1587,7 +1599,7 @@ void getKinBinnedAsym(
             csvout << Form("a_bg%d",aa) << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
             csvout << Form("a_bg%d",aa) << "_err";
             if (aa<asymfitpar_inits.size()-1 || single_massfit) csvout << csv_separator.c_str();
-            else csvout << std::endl;//NOTE: IMPORTANT!
+            else csvout << endl;//NOTE: IMPORTANT!
         }
     }
 
@@ -1626,7 +1638,7 @@ void getKinBinnedAsym(
             csvout << massfit_parnames_bg[aa].c_str() << csv_separator.c_str();
             csvout << massfit_parnames_bg[aa].c_str() << "_err";
             if (aa<massfit_parinits_bg.size()-1) csvout << csv_separator.c_str();
-            else csvout << std::endl;//NOTE: IMPORTANT!
+            else csvout << endl;//NOTE: IMPORTANT!
         }
 
     }
@@ -1636,10 +1648,10 @@ void getKinBinnedAsym(
 
         // Get bin id and cut
         int         bin_id  = it->first;
-        std::string bin_cut = it->second;
+        string bin_cut = it->second;
 
         // Set bin id string
-        std::string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
+        string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
 
         // Create workspace
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
@@ -1683,38 +1695,38 @@ void getKinBinnedAsym(
         );
 
         // Apply a generic mass fit to the FULL bin dataset
-        std::vector<double> massfit_result;
+        vector<double> massfit_result;
         if (single_massfit) {  //NOTE: A mass fit in each bin is needed for basic sideband subtraction and splots.
 
             // Set yaml path for mass fit parameters
-            std::string yamlfile = massfit_yamlfile_map[scheme_binid];
+            string yamlfile = massfit_yamlfile_map[scheme_binid];
 
             // Fit the mass spectrum
-            std::vector<double> massfit_result = saga::signal::fitMass(
+            vector<double> massfit_result = saga::signal::fitMass(
                     ws, // RooWorkspace                    *w,
-                    dataset_name, // std::string                      dataset_name,
-                    scheme_binid, // std::string                      binid,
-                    bin_cut, // std::string                      bincut,
-                    binvars, // std::vector<std::string>         binvars,
-                    massfitvars, // std::vector<std::string>         fitvars,
-                    yamlfile, // std::string                      yamlfile,
-                    massfit_pdf_name, // std::string                      massfit_pdf_name,
-                    massfit_formula_sg, // std::string                      massfit_formula_sg,
-                    massfit_formula_bg, // std::string                      massfit_formula_bg,
-                    massfit_sgYield_name, // std::string                      massfit_sgYield_name,
-                    massfit_bgYield_name, // std::string                      massfit_bgYield_name,
+                    dataset_name, // string                      dataset_name,
+                    scheme_binid, // string                      binid,
+                    bin_cut, // string                      bincut,
+                    binvars, // vector<string>         binvars,
+                    massfitvars, // vector<string>         fitvars,
+                    yamlfile, // string                      yamlfile,
+                    massfit_pdf_name, // string                      massfit_pdf_name,
+                    massfit_formula_sg, // string                      massfit_formula_sg,
+                    massfit_formula_bg, // string                      massfit_formula_bg,
+                    massfit_sgYield_name, // string                      massfit_sgYield_name,
+                    massfit_bgYield_name, // string                      massfit_bgYield_name,
                     massfit_initsgfrac, // double                           massfit_initsgfrac,
-                    massfit_parinits_sg, // std::vector<double>              massfit_parinits_sg,
-                    massfit_parnames_sg, // std::vector<std::string>         massfit_parnames_sg,
-                    massfit_partitles_sg, // std::vector<std::string>         massfit_partitles_sg,
-                    massfit_parunits_sg, // std::vector<std::string>         massfit_parunits_sg,
-                    massfit_parlims_sg, // std::vector<std::vector<double>> massfit_parlims_sg,
-                    massfit_parinits_bg, // std::vector<double>              massfit_parinits_bg,
-                    massfit_parnames_bg, // std::vector<std::string>         massfit_parnames_bg,
-                    massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
-                    massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
-                    massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
-                    massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
+                    massfit_parinits_sg, // vector<double>              massfit_parinits_sg,
+                    massfit_parnames_sg, // vector<string>         massfit_parnames_sg,
+                    massfit_partitles_sg, // vector<string>         massfit_partitles_sg,
+                    massfit_parunits_sg, // vector<string>         massfit_parunits_sg,
+                    massfit_parlims_sg, // vector<vector<double>> massfit_parlims_sg,
+                    massfit_parinits_bg, // vector<double>              massfit_parinits_bg,
+                    massfit_parnames_bg, // vector<string>         massfit_parnames_bg,
+                    massfit_partitles_bg, // vector<string>         massfit_partitles_bg,
+                    massfit_parunits_bg, // vector<string>         massfit_parunits_bg,
+                    massfit_parlims_bg, // vector<vector<double>> massfit_parlims_bg,
+                    massfit_sgregion_lims, // vector<vector<double>> massfit_sgregion_lims,
                     massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
                     massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
                     massfit_lg_ncols, // int                              massfit_lg_ncols         = 1,
@@ -1722,15 +1734,15 @@ void getKinBinnedAsym(
                     massfit_use_sumw2error, // bool                             massfit_use_sumw2error   = false,
                     massfit_use_extended_nll, // bool                             massfit_use_extended_nll = true,
                     massfit_use_binned_fit, // bool                             massfit_use_binned_fit   = false,
-                    out // std::ostream                    &out              = std::cout
+                    out // ostream                    &out              = cout
             );
         }
 
         // Apply sPlot
-        std::string fit_dataset_name = dataset_name; // -> Use this for sPlot
+        string fit_dataset_name = dataset_name; // -> Use this for sPlot
         if (use_splot) {
-            std::string dataset_sg_name = (std::string)Form("%s_sg_sw",dataset_name.c_str());
-            std::string dataset_bg_name = (std::string)Form("%s_bg_sw",dataset_name.c_str());
+            string dataset_sg_name = (string)Form("%s_sg_sw",dataset_name.c_str());
+            string dataset_bg_name = (string)Form("%s_bg_sw",dataset_name.c_str());
             saga::signal::applySPlot(
                 ws,
                 dataset_name,
@@ -1744,44 +1756,44 @@ void getKinBinnedAsym(
         }
 
         // Weight dataset from binned mass fits
-        std::string fit_sb_dataset_name = ""; // -> Use this for binned sideband backgrounds
+        string fit_sb_dataset_name = ""; // -> Use this for binned sideband backgrounds
         if (use_binned_sb_bgfracs) {
-            std::string rds_out_name = (std::string)Form("%s_sg",dataset_name.c_str());
-            std::string sb_rds_out_name = (std::string)Form("%s_sb",dataset_name.c_str());
+            string rds_out_name = (string)Form("%s_sg",dataset_name.c_str());
+            string sb_rds_out_name = (string)Form("%s_sb",dataset_name.c_str());
             saga::signal::setBinnedBGFractions(
                 ws, // RooWorkspace                    *w,
-                dataset_name, // std::string                      dataset_name,
-                scheme_binid, // std::string                      binid,
-                bin_cut, // std::string                      bincut,
-                binvars, // std::vector<std::string>         binvars,
-                massfitvars, // std::vector<std::string>         fitvars,
-                massfit_yamlfile_map, // std::map<std::string,std::string> yamlfile_map
-                massfit_pdf_name, // std::string                      massfit_pdf_name,
-                massfit_formula_sg, // std::string                      massfit_formula_sg,
-                massfit_formula_bg, // std::string                      massfit_formula_bg,
-                massfit_sgYield_name, // std::string                      massfit_sgYield_name,
-                massfit_bgYield_name, // std::string                      massfit_bgYield_name,
+                dataset_name, // string                      dataset_name,
+                scheme_binid, // string                      binid,
+                bin_cut, // string                      bincut,
+                binvars, // vector<string>         binvars,
+                massfitvars, // vector<string>         fitvars,
+                massfit_yamlfile_map, // map<string,string> yamlfile_map
+                massfit_pdf_name, // string                      massfit_pdf_name,
+                massfit_formula_sg, // string                      massfit_formula_sg,
+                massfit_formula_bg, // string                      massfit_formula_bg,
+                massfit_sgYield_name, // string                      massfit_sgYield_name,
+                massfit_bgYield_name, // string                      massfit_bgYield_name,
                 massfit_initsgfrac, // double                           massfit_initsgfrac,
-                massfit_parinits_sg, // std::vector<double>              massfit_parinits_sg,
-                massfit_parnames_sg, // std::vector<std::string>         massfit_parnames_sg,
-                massfit_partitles_sg, // std::vector<std::string>         massfit_partitles_sg,
-                massfit_parunits_sg, // std::vector<std::string>         massfit_parunits_sg,
-                massfit_parlims_sg, // std::vector<std::vector<double>> massfit_parlims_sg,
-                massfit_parinits_bg, // std::vector<double>              massfit_parinits_bg,
-                massfit_parnames_bg, // std::vector<std::string>         massfit_parnames_bg,
-                massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
-                massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
-                massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
-                massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
+                massfit_parinits_sg, // vector<double>              massfit_parinits_sg,
+                massfit_parnames_sg, // vector<string>         massfit_parnames_sg,
+                massfit_partitles_sg, // vector<string>         massfit_partitles_sg,
+                massfit_parunits_sg, // vector<string>         massfit_parunits_sg,
+                massfit_parlims_sg, // vector<vector<double>> massfit_parlims_sg,
+                massfit_parinits_bg, // vector<double>              massfit_parinits_bg,
+                massfit_parnames_bg, // vector<string>         massfit_parnames_bg,
+                massfit_partitles_bg, // vector<string>         massfit_partitles_bg,
+                massfit_parunits_bg, // vector<string>         massfit_parunits_bg,
+                massfit_parlims_bg, // vector<vector<double>> massfit_parlims_bg,
+                massfit_sgregion_lims, // vector<vector<double>> massfit_sgregion_lims,
 
                 binframe, // RNode                            frame, // arguments for this method
-                massfit_bgcut, // std::string                      bgcut, 
-                asymfitvars, // std::vector<std::string>         asymfitvars,
-                asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
-                rds_out_name, // std::string                      rds_out_name,
-                sb_rds_out_name, // std::string                   sb_rds_out_name,
-                bgfracvar, // std::string                      bgfracvar,
-                bgfracvar_lims, // std::vector<double>              bgfracvar_lims,
+                massfit_bgcut, // string                      bgcut, 
+                asymfitvars, // vector<string>         asymfitvars,
+                asymfitvar_bincuts, // map<int,string>        asymfitvar_bincuts,
+                rds_out_name, // string                      rds_out_name,
+                sb_rds_out_name, // string                   sb_rds_out_name,
+                bgfracvar, // string                      bgfracvar,
+                bgfracvar_lims, // vector<double>              bgfracvar_lims,
 
                 massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
                 massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
@@ -1793,7 +1805,7 @@ void getKinBinnedAsym(
 
                 bgfrac_idx, // int                               bgfrac_idx               = 0,
                 0.0, // double                           bgfracs_default  = 0.0 // arguments for this method
-                out // std::ostream                    &out              = std::cout
+                out // ostream                    &out              = cout
             );
             fit_dataset_name = rds_out_name;
             fit_sb_dataset_name = sb_rds_out_name;
@@ -1834,7 +1846,7 @@ void getKinBinnedAsym(
         }
 
         // Compute signal region bin results
-        std::vector<double> asymfit_result = fitAsym(
+        vector<double> asymfit_result = fitAsym(
                                 (use_sb_subtraction ? ws_sg : ws),
                                 fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
                                 bpol,
@@ -1865,8 +1877,8 @@ void getKinBinnedAsym(
                             );
 
         // Compute sideband region bin results
-        std::string sb_scheme_binid = Form("sb_%s",scheme_binid.c_str());
-        std::vector<double> asymfit_result_sb;
+        string sb_scheme_binid = Form("sb_%s",scheme_binid.c_str());
+        vector<double> asymfit_result_sb;
         if (use_sb_subtraction) {
 
             // Make bin cut on sideband frame
@@ -1996,11 +2008,11 @@ void getKinBinnedAsym(
         double eps_sg_pdf_err;
         double eps_pdf;
         double eps_pdf_err;
-        std::vector<double> chi2ndfs;
-        std::vector<double> massfit_pars_sg;
-        std::vector<double> massfit_parerrs_sg;
-        std::vector<double> massfit_pars_bg;
-        std::vector<double> massfit_parerrs_bg;
+        vector<double> chi2ndfs;
+        vector<double> massfit_pars_sg;
+        vector<double> massfit_parerrs_sg;
+        vector<double> massfit_pars_bg;
+        vector<double> massfit_parerrs_bg;
         if (massfit_result.size()>0) {
 
             // Start counter
@@ -2109,7 +2121,7 @@ void getKinBinnedAsym(
             csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
             csvout << eys_corrected[aa];
             if (aa<nparams-1 || single_massfit || use_binned_sb_bgfracs) csvout << csv_separator.c_str();
-            else csvout << std::endl;//NOTE: IMPORTANT!
+            else csvout << endl;//NOTE: IMPORTANT!
         }
 
         // Optionally add background asymmetries
@@ -2118,7 +2130,7 @@ void getKinBinnedAsym(
                 csvout << ys_sb[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
                 csvout << eys_sb[aa];
                 if (aa<nparams-1 || single_massfit) csvout << csv_separator.c_str();
-                else csvout << std::endl;//NOTE: IMPORTANT!
+                else csvout << endl;//NOTE: IMPORTANT!
             }
         }
 
@@ -2158,14 +2170,14 @@ void getKinBinnedAsym(
                 csvout << massfit_pars_sg[aa] << csv_separator.c_str();
                 csvout << massfit_parerrs_bg[aa];
                 if (aa<massfit_pars_bg.size()-1) csvout << csv_separator.c_str();
-                else csvout << std::endl;//NOTE: IMPORTANT!
+                else csvout << endl;//NOTE: IMPORTANT!
             }
 
         }
     }
 
     csvoutf.close();
-    out << " Saved asymmetry fit results to " << csvpath.c_str() << std::endl;
+    out << " Saved asymmetry fit results to " << csvpath.c_str() << endl;
 
     // Ending message
     out << "------------------- END of getKinBinnedAsym -------------------\n";

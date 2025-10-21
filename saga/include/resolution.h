@@ -40,6 +40,18 @@ namespace saga {
 
 namespace resolution {
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::is_same;
+using std::map;
+using std::ofstream;
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 using namespace RooFit;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
@@ -80,32 +92,32 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 *
 * @return List containing fit results
 */
-std::vector<double> fitResolution(
+vector<double> fitResolution(
         RooWorkspace                    *w,
-        std::string                      dataset_name,
-        std::string                      binid,
-        std::string                      bincut,
-        std::vector<std::string>         binvars,
-        std::vector<std::string>         resfitvars,
-        std::string                      yamlfile,
-        std::string                      pdf_name         = "gauss",
-        std::string                      fitformula       = "gaus(x[0],x[1],x[2],x[3])",
-        std::vector<std::string>         parnames         = {"constant","mu","sigma"},
-        std::vector<std::string>         partitles        = {"C","#mu","#sigma"},
-        std::vector<std::string>         parunits         = {"","",""},
-        std::vector<double>              parinits         = {1.0, 0.0, 0.1},
-        std::vector<std::vector<double>> parlims          = {{1.0, 1.0}, {-1.0, 1.0}, {0.0, 1.0}},
-        std::string                      plot_title       = "Fit Resolution",
+        string                      dataset_name,
+        string                      binid,
+        string                      bincut,
+        vector<string>         binvars,
+        vector<string>         resfitvars,
+        string                      yamlfile,
+        string                      pdf_name         = "gauss",
+        string                      fitformula       = "gaus(x[0],x[1],x[2],x[3])",
+        vector<string>         parnames         = {"constant","mu","sigma"},
+        vector<string>         partitles        = {"C","#mu","#sigma"},
+        vector<string>         parunits         = {"","",""},
+        vector<double>              parinits         = {1.0, 0.0, 0.1},
+        vector<vector<double>> parlims          = {{1.0, 1.0}, {-1.0, 1.0}, {0.0, 1.0}},
+        string                      plot_title       = "Fit Resolution",
         double                           lg_text_size     = 0.04,
         double                           lg_margin        = 0.1,
         int                              lg_ncols         = 1,
         bool                             use_sumw2error   = false,
         bool                             use_extended_nll = true,
         bool                             use_binned_fit   = false,
-        std::ostream                    &out              = std::cout
+        ostream                    &out              = cout
     ) {
 
-    std::string method_name = "fitResolution";
+    string method_name = "fitResolution";
 
     // Load YAML
     YAML::Node node;
@@ -114,9 +126,9 @@ std::vector<double> fitResolution(
         try {
             node = YAML::LoadFile(yamlfile.c_str());
             loaded_yaml = true;
-        } catch (std::exception& e) {
-            std::cerr<<"WARNING: "<<method_name.c_str()<<": Could not load yaml: "<<yamlfile.c_str()<<std::endl;
-            std::cerr << e.what() << std::endl;
+        } catch (exception& e) {
+            cerr<<"WARNING: "<<method_name.c_str()<<": Could not load yaml: "<<yamlfile.c_str()<<endl;
+            cerr << e.what() << endl;
         }
     }
 
@@ -124,18 +136,18 @@ std::vector<double> fitResolution(
     if (loaded_yaml) {
 
         // Set parsing parameters
-        std::string message_prefix = "INFO: ";
+        string message_prefix = "INFO: ";
         bool verbose = true;
-        std::ostream &yamlargout = out;
+        ostream &yamlargout = out;
 
         // Parse arguments
-        pdf_name = saga::util::getYamlArg<std::string>(node, "pdf_name", pdf_name, message_prefix, verbose, yamlargout); //NOTE: This must be non-empty!
-        fitformula = saga::util::getYamlArg<std::string>(node, "fitformula", fitformula, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
-        parnames = saga::util::getYamlArg<std::vector<std::string>>(node, "parnames", parnames, message_prefix, verbose, yamlargout);
-        partitles = saga::util::getYamlArg<std::vector<std::string>>(node, "partitles", partitles, message_prefix, verbose, yamlargout);
-        parunits = saga::util::getYamlArg<std::vector<std::string>>(node, "parunits", parunits, message_prefix, verbose, yamlargout);
-        parinits = saga::util::getYamlArg<std::vector<double>>(node, "parinits", parinits, message_prefix, verbose, yamlargout);
-        parlims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "parlims", parlims, message_prefix, verbose, yamlargout);
+        pdf_name = saga::util::getYamlArg<string>(node, "pdf_name", pdf_name, message_prefix, verbose, yamlargout); //NOTE: This must be non-empty!
+        fitformula = saga::util::getYamlArg<string>(node, "fitformula", fitformula, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
+        parnames = saga::util::getYamlArg<vector<string>>(node, "parnames", parnames, message_prefix, verbose, yamlargout);
+        partitles = saga::util::getYamlArg<vector<string>>(node, "partitles", partitles, message_prefix, verbose, yamlargout);
+        parunits = saga::util::getYamlArg<vector<string>>(node, "parunits", parunits, message_prefix, verbose, yamlargout);
+        parinits = saga::util::getYamlArg<vector<double>>(node, "parinits", parinits, message_prefix, verbose, yamlargout);
+        parlims = saga::util::getYamlArg<vector<vector<double>>>(node, "parlims", parlims, message_prefix, verbose, yamlargout);
         lg_text_size = saga::util::getYamlArg<double>(node, "lg_text_size", lg_text_size, message_prefix, verbose, yamlargout);
         lg_margin = saga::util::getYamlArg<double>(node, "lg_margin", lg_margin, message_prefix, verbose, yamlargout);
         lg_ncols = saga::util::getYamlArg<double>(node, "lg_ncols", lg_ncols, message_prefix, verbose, yamlargout);
@@ -157,8 +169,8 @@ std::vector<double> fitResolution(
     auto count = (int)bin_ds->sumEntries();
 
     // Get bin variable means and errors
-    std::vector<double> binvarmeans;
-    std::vector<double> binvarerrs;
+    vector<double> binvarmeans;
+    vector<double> binvarerrs;
     RooRealVar * b[(const int)binvars.size()];
     for (int i=0; i<binvars.size(); i++) {
         b[i] = w->var(binvars[i].c_str());
@@ -191,7 +203,7 @@ std::vector<double> fitResolution(
     }
 
     // Create fit PDF
-    std::string model_name = Form("%s_%s",pdf_name.c_str(),binid.c_str());
+    string model_name = Form("%s_%s",pdf_name.c_str(),binid.c_str());
     RooGenericPdf _model(Form("_%s",model_name.c_str()),Form("_%s",model_name.c_str()),fitformula.c_str(),*argset);
 
     // Create extended fit PDF
@@ -199,26 +211,26 @@ std::vector<double> fitResolution(
     RooExtendPdf model(model_name.c_str(), model_name.c_str(), _model, nsig);
 
     // Fit the PDF to data
-    std::unique_ptr<RooFitResult> r;
+    unique_ptr<RooFitResult> r;
     if (use_binned_fit) {
 
         // Create binned data
-        std::unique_ptr<RooDataHist> dh = (std::unique_ptr<RooDataHist>)bin_ds->binnedClone();
+        unique_ptr<RooDataHist> dh = (unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit PDF
         if (use_extended_nll) {
-            r = (std::unique_ptr<RooFitResult>)model.fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
+            r = (unique_ptr<RooFitResult>)model.fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
         } else {
-            r = (std::unique_ptr<RooFitResult>)_model.fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
+            r = (unique_ptr<RooFitResult>)_model.fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
         }
 
     } else {
 
         // Fit PDF
         if (use_extended_nll) {
-            r = (std::unique_ptr<RooFitResult>)model.fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
+            r = (unique_ptr<RooFitResult>)model.fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
         } else {
-            r = (std::unique_ptr<RooFitResult>)_model.fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
+            r = (unique_ptr<RooFitResult>)_model.fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
         }
     }
     
@@ -230,27 +242,27 @@ std::vector<double> fitResolution(
     const TMatrixDSym &covMat = r->covarianceMatrix();
 
     // Print correlation, covariance matrix
-    std::cout << "correlation matrix" << std::endl;
+    cout << "correlation matrix" << endl;
     corMat.Print();
-    std::cout << "covariance matrix" << std::endl;
+    cout << "covariance matrix" << endl;
     covMat.Print();
 
     // Get signal fit parameter values and errors
-    std::vector<double> fitpars;
-    std::vector<double> fitparerrs;
+    vector<double> fitpars;
+    vector<double> fitparerrs;
     for (int aa=0; aa<nparams; aa++) {
         fitpars.push_back((double)pars[aa]->getVal());
         fitparerrs.push_back((double)pars[aa]->getError());
     }
 
     // Compute chi2 from 1D histograms
-    std::vector<double> chi2ndfs;
+    vector<double> chi2ndfs;
     RooDataHist *rdhs_1d[(const int)resfitvars.size()];
     for (int i=0; i<resfitvars.size(); i++) {
 
         // Import TH1 histogram into RooDataHist //NOTE: For now just use the first fit variable.
-        std::string dh_name = Form("h_%s",f[i]->GetName());
-        std::string dh_title = Form("%s",f[i]->GetTitle());
+        string dh_name = Form("h_%s",f[i]->GetName());
+        string dh_title = Form("%s",f[i]->GetTitle());
         rdhs_1d[i] = new RooDataHist(dh_name.c_str(), dh_title.c_str(), *f[i], *bin_ds);
 
         // Compute chi2/NDF value
@@ -293,19 +305,19 @@ std::vector<double> fitResolution(
         if (lg_ncols>1) legend->SetNColumns(lg_ncols);
 
         // Create legend entries
-        std::string str_chi2 = Form("#chi^{2}/NDF = %.3g",chi2ndfs[i]);
+        string str_chi2 = Form("#chi^{2}/NDF = %.3g",chi2ndfs[i]);
 
         // Add legend entries
         legend->AddEntry((TObject*)0, str_chi2.c_str(), Form(" %g ",0.0));
 
         // Create and add legend entries for PDF parameter values and errors
         for (int i=0; i<nparams; i++) {
-            std::string par_str = Form("%s = %.3g #pm %.3g %s", pars[i]->GetTitle(), pars[i]->getVal(), pars[i]->getError(), parunits[i].c_str());
+            string par_str = Form("%s = %.3g #pm %.3g %s", pars[i]->GetTitle(), pars[i]->getVal(), pars[i]->getError(), parunits[i].c_str());
             legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",chi2ndfs[i]));
         }
 
         // Create canvas and draw
-        std::string cname = Form("c_%s_%s_%s", method_name.c_str(), binid.c_str(), f[i]->GetName());
+        string cname = Form("c_%s_%s_%s", method_name.c_str(), binid.c_str(), f[i]->GetName());
         TCanvas *c = new TCanvas(cname.c_str());
         c->cd();
         gPad->SetLeftMargin(0.15);
@@ -318,47 +330,47 @@ std::vector<double> fitResolution(
     }
 
     // Show fit info
-    out << "------------------------------------------------------------" <<std::endl;
-    out << " "<<method_name.c_str()<<"():" << std::endl;
-    out << " binid:       = " << binid << std::endl;
-    out << " bincut:      = " << bincut << std::endl;
-    out << " bincount     = " << count << std::endl;
+    out << "------------------------------------------------------------" <<endl;
+    out << " "<<method_name.c_str()<<"():" << endl;
+    out << " binid:       = " << binid << endl;
+    out << " bincut:      = " << bincut << endl;
+    out << " bincount     = " << count << endl;
     out << " binvar means = [" ;
     for (int idx=0; idx<binvars.size(); idx++) {
         out << binvarmeans[idx] << "±" << binvarerrs[idx];
         if (idx<binvars.size()-1) { out << " , "; }
     }
-    out << " ]" << std::endl;
+    out << " ]" << endl;
     out << " resfitvars      = [" ;
     for (int idx=0; idx<resfitvars.size(); idx++) {
         out << resfitvars[idx];
         if (idx<resfitvars.size()-1) { out << " , "; }
     }
-    out << " ]" << std::endl;
+    out << " ]" << endl;
     out << " chi2/ndfs  = [" ;
     for (int idx=0; idx<resfitvars.size(); idx++) {
         out << resfitvars[idx] << " : " << chi2ndfs[idx];
         if (idx<resfitvars.size()-1) { out << " , "; }
     }
-    out << "]" << std::endl;
-    out << " fitformula   = " << fitformula.c_str() << std::endl;
-    out << " nparams      = " << nparams <<std::endl;
+    out << "]" << endl;
+    out << " fitformula   = " << fitformula.c_str() << endl;
+    out << " nparams      = " << nparams <<endl;
     out << " parinits     = [" ;
     for (int idx=0; idx<nparams; idx++) {
         out << parinits[idx];
         if (idx<nparams-1) { out << " , "; }
     }
-    out << " ]" << std::endl;
+    out << " ]" << endl;
     out << " pars         = [" ;
     for (int idx=0; idx<nparams; idx++) {
         out << fitpars[idx] << "±" << fitparerrs[idx];
         if (idx<nparams-1) { out << " , "; }
     }
-    out << " ]" << std::endl;
-    out << "------------------------------------------------------------" <<std::endl;
+    out << " ]" << endl;
+    out << "------------------------------------------------------------" <<endl;
 
     // Return bin info and fit info
-    std::vector<double> arr;
+    vector<double> arr;
     arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
         arr.push_back(binvarmeans[idx]);
@@ -373,7 +385,7 @@ std::vector<double> fitResolution(
     }
     return arr;
 
-} // std::vector<double> fitResolution()
+} // vector<double> fitResolution()
 
 /**
 * @brief Loop kinematic bins and fit a resolution distribution.
@@ -453,49 +465,49 @@ std::vector<double> fitResolution(
 * @param out Output stream
 */
 void getKinBinnedResolutions(
-        std::string                      scheme_name,
+        string                      scheme_name,
         RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-        std::string                      workspace_name,
-        std::string                      workspace_title,
+        string                      workspace_name,
+        string                      workspace_title,
 
         // parameters passed to data::createDataset()
-        std::string                      dataset_name,
-        std::string                      dataset_title,
-        std::vector<std::string>         categories_as_float,
-        std::string                      helicity,
-        std::map<std::string,int>        helicity_states,
-        std::string                      tspin,
-        std::map<std::string,int>        tspin_states,
-        std::string                      htspin,
-        std::map<std::string,int>        htspin_states,
-        std::string                      combined_spin_state,
-        std::map<int,std::string>        bincuts,
-        std::vector<std::string>         binvars,
-        std::vector<std::string>         binvar_titles,
-        std::vector<std::vector<double>> binvar_lims,
-        std::vector<int>                 binvar_bins,
-        std::vector<std::string>         depolvars,
-        std::vector<std::string>         depolvar_titles,
-        std::vector<std::vector<double>> depolvar_lims,
-        std::vector<int>                 depolvar_bins,
-        std::vector<std::string>         resfitvars,
-        std::vector<std::string>         resfitvar_titles,
-        std::vector<std::vector<double>> resfitvar_lims,
-        std::vector<int>                 resfitvar_bins,
-        std::vector<std::string>         massfitvars,
-        std::vector<std::string>         massfitvar_titles,
-        std::vector<std::vector<double>> massfitvar_lims,
-        std::vector<int>                 massfitvar_bins,
+        string                      dataset_name,
+        string                      dataset_title,
+        vector<string>         categories_as_float,
+        string                      helicity,
+        map<string,int>        helicity_states,
+        string                      tspin,
+        map<string,int>        tspin_states,
+        string                      htspin,
+        map<string,int>        htspin_states,
+        string                      combined_spin_state,
+        map<int,string>        bincuts,
+        vector<string>         binvars,
+        vector<string>         binvar_titles,
+        vector<vector<double>> binvar_lims,
+        vector<int>                 binvar_bins,
+        vector<string>         depolvars,
+        vector<string>         depolvar_titles,
+        vector<vector<double>> depolvar_lims,
+        vector<int>                 depolvar_bins,
+        vector<string>         resfitvars,
+        vector<string>         resfitvar_titles,
+        vector<vector<double>> resfitvar_lims,
+        vector<int>                 resfitvar_bins,
+        vector<string>         massfitvars,
+        vector<string>         massfitvar_titles,
+        vector<vector<double>> massfitvar_lims,
+        vector<int>                 massfitvar_bins,
 
         // parameters passed to saga::signal::fitResolution()
-        std::map<std::string,std::string> yamlfile_map,
-        std::string                       pdf_name,
-        std::string                       fitformula,
-        std::vector<std::string>          parnames,
-        std::vector<std::string>          partitles,
-        std::vector<std::string>          parunits,
-        std::vector<double>               parinits,
-        std::vector<std::vector<double>>  parlims,
+        map<string,string> yamlfile_map,
+        string                       pdf_name,
+        string                       fitformula,
+        vector<string>          parnames,
+        vector<string>          partitles,
+        vector<string>          parunits,
+        vector<double>               parinits,
+        vector<vector<double>>  parlims,
 
         // Parameters passed to signal::fitResolution()
         double                           lg_text_size     = 0.04,
@@ -506,14 +518,14 @@ void getKinBinnedResolutions(
         bool                             use_binned_fit   = false,
 
         // Ouput stream
-        std::ostream                    &out              = std::cout
+        ostream                    &out              = cout
     ) {
 
     // Check arguments
-    if (binvars.size()<1) {std::cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
+    if (binvars.size()<1) {cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
 
     // Starting message
-    std::string method_name = "getKinBinnedResolutions";
+    string method_name = "getKinBinnedResolutions";
     out << "----------------------- "<<method_name.c_str()<<" ----------------------\n";
     out << "bincuts = { ";
     for (auto it = bincuts.begin(); it != bincuts.end(); it++) {
@@ -522,10 +534,10 @@ void getKinBinnedResolutions(
     out << " }\n";
 
     // Open output CSV
-    std::string csvpath = Form("%s.csv",scheme_name.c_str());
-    std::ofstream csvoutf; csvoutf.open(csvpath.c_str());
-    std::ostream &csvout = csvoutf;
-    std::string csv_separator = ",";
+    string csvpath = Form("%s.csv",scheme_name.c_str());
+    ofstream csvoutf; csvoutf.open(csvpath.c_str());
+    ostream &csvout = csvoutf;
+    string csv_separator = ",";
 
     // Set CSV column headers
     // COLS: bin_id,count,{binvarmean,binvarerr},{chi2ndf},{resfitvar,resfitvarerr}
@@ -542,7 +554,7 @@ void getKinBinnedResolutions(
         csvout << parnames[aa].c_str() << csv_separator.c_str();
         csvout << parnames[aa].c_str() << "_err";
         if (aa<parinits.size()-1) csvout << csv_separator.c_str();
-        else csvout << std::endl;//NOTE: IMPORTANT!
+        else csvout << endl;//NOTE: IMPORTANT!
     }
 
     // Loop bins and get data
@@ -550,10 +562,10 @@ void getKinBinnedResolutions(
 
         // Get bin id and cut
         int         bin_id  = it->first;
-        std::string bin_cut = it->second;
+        string bin_cut = it->second;
 
         // Set bin id string
-        std::string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
+        string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
 
         // Create workspace
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
@@ -594,8 +606,8 @@ void getKinBinnedResolutions(
         );
 
         // Set plot title
-        std::string plot_title = "";
-        std::string bincut_title = bin_cut;
+        string plot_title = "";
+        string bincut_title = bin_cut;
         for (int idx=0; idx<binvars.size(); idx++) {
             saga::util::replaceAll(bincut_title,binvars[idx],binvar_titles[idx]);
         }
@@ -604,8 +616,8 @@ void getKinBinnedResolutions(
         plot_title = Form("%s : %s",plot_title.c_str(),bincut_title.c_str());
 
         // Get resolution fit results
-        std::string yamlfile = yamlfile_map[scheme_binid];
-        std::vector<double> resfitresult = fitResolution(
+        string yamlfile = yamlfile_map[scheme_binid];
+        vector<double> resfitresult = fitResolution(
                                 ws,
                                 dataset_name,
                                 scheme_binid,
@@ -669,12 +681,12 @@ void getKinBinnedResolutions(
             csvout << ys[aa] << csv_separator.c_str();
             csvout << eys[aa];
             if (aa<nparams-1) csvout << csv_separator.c_str();
-            else csvout << std::endl;//NOTE: IMPORTANT!
+            else csvout << endl;//NOTE: IMPORTANT!
         }
     }
 
     csvoutf.close();
-    out << " Saved resolution fit results to " << csvpath.c_str() << std::endl;
+    out << " Saved resolution fit results to " << csvpath.c_str() << endl;
 
     // Ending message
     out << "------------------- END of "<<method_name.c_str()<<" -------------------\n";
