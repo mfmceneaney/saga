@@ -1,12 +1,13 @@
-[![Docker-build](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yaml)
-[![Singularity-build](https://github.com/mfmceneaney/saga/actions/workflows/build-singularity.yml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/build-singularity.yml)
+[![Docker-Image](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/docker-image.yml)
+[![Apptainer-Image](https://github.com/mfmceneaney/saga/actions/workflows/apptainer-image.yml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/apptainer-image.yml)
+[![Singularity-Image](https://github.com/mfmceneaney/saga/actions/workflows/singularity-image.yml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/singularity-image.yml)
 [![Python-3.9](https://github.com/mfmceneaney/saga/actions/workflows/python3.9.yaml/badge.svg)](https://github.com/mfmceneaney/saga/actions/workflows/python3.9.yaml)
 
 # Spin Asymmetry Generic Analysis (SAGA)
 
 Run a generic SIDIS asymmetry analysis with CLAS12 data.
 
-Use [CLAS12-Analysis](https://github.com/mfmceneaney/CLAS12-Analysis.git) or your own software to produce the input ROOT trees with event by event kinematics selecting all unique $e^{-}+X$ combinations.
+Use [saga](https://github.com/mfmceneaney/saga.git) or your own software to produce the input ROOT trees with event by event kinematics selecting all unique $e^{-}+X$ combinations.
 
 ## Install from source
 
@@ -53,59 +54,64 @@ import saga
 
 ## Containerized Installation
 
-You may also install and run the project as a [Docker](https://www.docker.com) or [singularity/apptainer](https://github.com/apptainer/singularity) container.
+You may also install and run the project as a [Docker](https://www.docker.com) or [apptainer/singularity](https://github.com/apptainer/singularity) container.  A Dockerfile (`docker/Dockerfile`) and
+a Singularity/Apptainer definition (`singularity/saga.def`) are provided. Below are minimal build and run examples that
+bind a host directory (for input and output) into the container so you can read/write data between the container and host.
 
-Begin as above by cloning the repository:
+### Docker
+
+Build the image from source:
 ```bash
 git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
+cd saga
+docker build -t saga:latest -f docker/Dockerfile .
 ```
+Or, pull a prebuilt image
+```bash
+docker pull docker://ghcr.io/mfmceneaney/saga:latest
+```
+
+Then, run the container and bind a host folder (e.g. /data) into /data
+in the container with the option `-v <host_dir>:<container_dir>`
+```bash
+docker run --rm -it -v /path/on/host:/data saga:latest
+```
+
+You may run the project from the container like so:
+```bash
+docker run --rm -it -v /path/on/host:/data saga:latest /usr/src/saga/bin/run.sh --help
+```
+
+### Apptainer/Singularity
+
+Similarly, you may also use apptainer/singularity to build and run the container.
+Currently, apptainer and singularity have not diverged much and so they are interchangeable in the following commands.
+However, this is not guaranteed to last.
+
+Build the image from source:
+```bash
+git clone --recurse-submodules https://github.com/mfmceneaney/saga.git
+cd saga
+apptainer build saga.sif singularity/saga.def
+```
+Or, pull a prebuilt image:
+```bash
+apptainer pull saga.sif oras://ghcr.io/mfmceneaney/saga:latest
+```
+
+Then, run the project from the container and bind a host folder (e.g. /data) into /data
+in the container with the option `-v <host_dir>:<container_dir>`:
+```bash
+singularity exec -B /path/on/host:/data saga.sif getKinBinnedAsym
+```
+
+### Environment
 
 Once you build and start the container you should have the following environment variables:
 - `SAGA_HOME`
 - `SAGA_BUILD`
 - `SAGA_BIN`
 Furthermore, the project executables in `$SAGA_BIN` should be available from your `$PATH`.
-
-### Docker
-
-To build the project with docker, run:
-```bash
-docker build -t saga-project /path/to/saga
-```
-and run it with:
-```bash
-docker run --rm -it saga-project
-```
-The `--rm` option tells docker to remove the container and its data once it is shut down.
-To retain the container data though, you can mount a local directory (`src`) to a directory (`dst`)
-inside the container with the following:
-```bash
-docker run --rm -it -v <src>:<dst> saga-project
-```
-
-### Singularity / Apptainer
-
-If you prefer Singularity/Apptainer instead of Docker you can build and run a SIF image.
-
-Build locally (requires Apptainer/ Singularity installed):
-```bash
-# build using apptainer (modern) or singularity (legacy) with fakeroot
-apptainer build --fakeroot saga.sif singularity.def
-# or, if your host uses the older command name:
-singularity build --fakeroot saga.sif singularity.def
-```
-
-Run the image and bind-mount the current repo so changes are visible inside the container:
-```bash
-singularity run -B ${PWD}:/usr/src/saga saga.sif
-# or with apptainer:
-apptainer run -B ${PWD}:/usr/src/saga saga.sif
-```
-
-The Singularity runscript will source the repository environment script (either `bin/env.sh` or `env/env.sh`) and start an interactive bash shell; you can also `exec` into the container:
-```bash
-singularity exec -B ${PWD}:/usr/src/saga saga.sif bash -lc 'source /usr/src/saga/bin/env.sh || source /usr/src/saga/env/env.sh; <your-command>'
-```
 
 ## Documentation
 Check out the documentation page on [Read The Docs](https://saga.readthedocs.io/en/latest/)!
