@@ -46,4 +46,4 @@ RUN cmake -S . -B build -DBUILD_DOXYGEN=TRUE && \
 # Install python modules
 RUN if [ -f pyproject.toml ]; then pip install -e .; fi
 
-CMD ["/bin/bash","-c","source /usr/src/saga/bin/env.sh && exec bash"]
+CMD ["/bin/bash","-c","cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash"]

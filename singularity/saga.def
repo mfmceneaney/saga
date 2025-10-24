@@ -63,9 +63,13 @@ From: docker.io/rootproject/root:6.36.00-ubuntu25.04
     export LANG=C.UTF-8
     export VIRTUAL_ENV=/opt/venv
     export PATH="$VIRTUAL_ENV/bin:$PATH"
+    export SAGA_HOME=/usr/src/saga
+    export SAGA_BUILD=$SAGA_HOME/build
+    export SAGA_BIN=$SAGA_HOME/bin
+    export PATH=$SAGA_BIN\:$PATH
 
 %runscript
-    cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash "$@"
+    exec bash "$@"
 
 %startscript
-    cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash "$@"
+    exec bash "$@"
