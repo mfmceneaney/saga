@@ -50,7 +50,7 @@ From: docker.io/rootproject/root:6.36.00-ubuntu25.04
         cd /usr/src/saga
         cmake -S . -B build -DBUILD_DOXYGEN=TRUE || true
         cmake --build build || true
-        cmake --install build --prefix /usr/bin || true
+        cmake --install build --prefix $PWD/bin || true
     fi
 
     # Install python modules if present
