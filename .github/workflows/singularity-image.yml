@@ -21,6 +21,8 @@ jobs:
 
       - name: Check out code for the container builds
         uses: actions/checkout@v4
+        with:
+          submodules: recursive  # This initializes and updates submodules recursively
 
       - name: Build Singularity Image
         run: |

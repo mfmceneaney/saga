@@ -50,7 +50,8 @@ From: docker.io/rootproject/root:6.36.00-ubuntu25.04
         cd /usr/src/saga
         cmake -S . -B build -DBUILD_DOXYGEN=TRUE || true
         cmake --build build || true
-        cmake --install build --prefix /usr/bin || true
+        mkdir -p /usr/bin/saga
+        cmake --install build --prefix /usr/bin/saga || true
     fi
 
     # Install python modules if present
@@ -63,9 +64,13 @@ From: docker.io/rootproject/root:6.36.00-ubuntu25.04
     export LANG=C.UTF-8
     export VIRTUAL_ENV=/opt/venv
     export PATH="$VIRTUAL_ENV/bin:$PATH"
+    export SAGA_HOME=/usr/src/saga
+    export SAGA_BUILD=$SAGA_HOME/build
+    export SAGA_BIN=/usr/bin/saga
+    export PATH=$SAGA_BIN:$PATH
 
 %runscript
-    cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash "$@"
+    exec bash "$@"
 
 %startscript
-    cd /usr/src/saga && source /usr/src/saga/bin/env.sh && exec bash "$@"
+    exec bash "$@"
