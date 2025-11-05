@@ -35,8 +35,20 @@ jobs:
         run: |
            apptainer build saga.sif singularity/saga.def
 
+      - name: Set image tags dynamically
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # On push to main → publish production tag
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # On PR to main → publish preview image with PR number
+            echo "tag=pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Push SIF to GHCR using ORAS
         # Use default registry user ${{ github.repository_owner }} , or set a secret ${{ secrets.GHCR_USERNAME }}
         run: |
            echo ${{ secrets.GITHUB_TOKEN }} | apptainer registry login -u ${{ github.repository_owner }} --password-stdin oras://ghcr.io
-           apptainer push saga.sif oras://ghcr.io/${{ github.repository }}-apptainer:latest
+           apptainer push saga.sif oras://ghcr.io/${{ github.repository }}-apptainer:${{ steps.vars.outputs.tag }}

@@ -26,10 +26,22 @@ jobs:
       run: |
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+    - name: Set image tags dynamically
+      id: vars
+      shell: bash
+      run: |
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          # On push to main → publish production tag
+          echo "tag=latest" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # On PR to main → publish preview image with PR number
+          echo "tag=pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+        fi
+
     - name: Build the Docker image
       run: |
-        docker build . -f docker/Dockerfile --tag ghcr.io/${{ github.repository }}-docker:latest
+        docker build . -f docker/Dockerfile --tag ghcr.io/${{ github.repository }}-docker:${{ steps.vars.outputs.tag }}
 
     - name: Push image to GHCR
       run: |
-        docker push ghcr.io/${{ github.repository }}-docker:latest
+        docker push ghcr.io/${{ github.repository }}-docker:${{ steps.vars.outputs.tag }}
