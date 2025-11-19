@@ -520,7 +520,6 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
                         }
                     } else {
                         try {
-                            cout<<"node_binvar["<<binvar.c_str()<<"]: "<<node_binvar[binvar]<<endl;
                             binlims = node_binvar[binvar].as<vector<double>>();
                         } catch (exception& e) {
                             cerr<<"ERROR: Could not read bin limits for binvar: "<<binvar.c_str()<<endl;
