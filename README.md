@@ -68,7 +68,7 @@ docker build -t saga:latest -f docker/Dockerfile .
 ```
 Or, pull a prebuilt image
 ```bash
-docker pull docker://ghcr.io/mfmceneaney/saga:latest
+docker pull docker://ghcr.io/mfmceneaney/saga-docker:latest
 ```
 
 Then, run the container and bind a host folder (e.g. /data) into /data
@@ -96,7 +96,7 @@ apptainer build saga.sif singularity/saga.def
 ```
 Or, pull a prebuilt image:
 ```bash
-apptainer pull saga.sif oras://ghcr.io/mfmceneaney/saga:latest
+apptainer pull saga.sif oras://ghcr.io/mfmceneaney/saga-apptainer:latest
 ```
 
 Then, run the project from the container and bind a host folder (e.g. /data) into /data
