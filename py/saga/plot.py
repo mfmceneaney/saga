@@ -334,7 +334,7 @@ def plot_hists(
 
 
 def get_bin_kinematics_title(
-    bin_id, df, cols=None, col_titles=None, err_ext="_err", sep=" , "
+    bin_id, df, cols=None, col_titles=None, col_unit_titles=None, err_ext="_err", sep=" , "
 ):
     """
     Parameters
@@ -345,8 +345,10 @@ def get_bin_kinematics_title(
         Dataframe of kinematic variable means and errors in each kinematic bin
     cols : list, optional
         List of column names of kinematics to add to bin title
-    col_titles : list, optional
-        List of kinematics LaTeX titles
+    col_titles : dict, optional
+        Dictionary of kinematics LaTeX titles
+    col_unit_titles : dict, optional
+        Dictionary of kinematics units titles with any necessary latex formatting
     err_ext : str, optional
         Extension for forming column names of kinematic variable errors
     sep : str, optional
@@ -368,10 +370,12 @@ def get_bin_kinematics_title(
         cols = []
     if col_titles is None:
         col_titles = {}
+    if col_unit_titles is None:
+        col_unit_titles = {}
 
     return sep.join(
         [
-            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[col+err_ext]:.2f}$"
+            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[col+err_ext]:.2f}$" + col_unit_titles.get(col, "")
             for idx, col in enumerate(cols)
         ]
     )
