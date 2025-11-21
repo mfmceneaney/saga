@@ -48,6 +48,9 @@ void execute(const YAML::Node& node) {
     // Allow multithreading
     ROOT::EnableImplicitMT(nthreads);
 
+    // Print actual inputs for debugging
+    yamlargout << message_prefix.c_str() << "DEBUG: creating RDataFrame with tree='" << tree << "' inpath='" << inpath << "'" << std::endl;
+
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
 
