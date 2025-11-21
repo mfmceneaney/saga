@@ -505,6 +505,10 @@ void execute(const YAML::Node& node) {
         return;
     }
 
+    // Create output dataset ROOT file with all variables
+    yamlargout << message_prefix.c_str() << "Creating output dataset with all variables at: "<<out_ds_path.c_str()<<std::endl;
+    frame = frame.Snapshot(tree.c_str(), out_ds_path.c_str(), frame.GetColumnNames());
+
     // Create output log
     std::ofstream outf; outf.open(logpath.c_str());
     std::ostream &out = outf; //std::cout;
