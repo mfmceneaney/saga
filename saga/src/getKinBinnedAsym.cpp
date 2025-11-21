@@ -277,9 +277,6 @@ void execute(const YAML::Node& node) {
     cuts = saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
     yamlargout << message_prefix.c_str() << "cuts: "<<cuts.c_str() << std::endl;
 
-    // Print actual inputs for debugging
-    yamlargout << message_prefix.c_str() << "DEBUG: creating RDataFrame with tree='" << tree << "' inpath='" << inpath << "'" << std::endl;
-
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
 
