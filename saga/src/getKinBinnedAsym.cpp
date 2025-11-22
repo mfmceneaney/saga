@@ -391,7 +391,7 @@ void execute(const YAML::Node& node) {
 
     // Print out nunmber of entries before cuts
     int nentries_precut = d.Count().GetValue();
-    yamlargout << message_prefix.c_str() << "Dataset entries before cuts: "<<nentries
+    yamlargout << message_prefix.c_str() << "Dataset entries before cuts: "<<nentries<<endl;
 
     // Define variables from formulas
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
