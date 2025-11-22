@@ -1679,7 +1679,7 @@ void getKinBinnedAsym(
             cout << c << endl;
         }
 
-        cout << "Entries in binframe: " << binframe.GetTree()->GetEntries() << endl;
+        cout << "Files in binframe: " << binframe.GetNFiles() << endl;
 
         int bin_count = (int)*binframe.Count();
         cout << "Bin count: " << bin_count << endl;
