@@ -389,6 +389,10 @@ void execute(const YAML::Node& node) {
         }
     }
 
+    // Print out nunmber of entries before cuts
+    int nentries_precut = d.Count().GetValue();
+    yamlargout << message_prefix.c_str() << "Dataset entries before cuts: "<<nentries
+
     // Define variables from formulas
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
     for (int idx=0; idx<var_formulas.size(); idx++) {
@@ -421,6 +425,9 @@ void execute(const YAML::Node& node) {
         d2_filtered = d2_filtered.Define(fbgasyms_xs_pp_name.c_str(),fbgasyms_xs_pp_formula.c_str());
     }
     //TODO: Add output message about defined branches
+
+    int nentries_precsv = d2_filtered.Count().GetValue();
+    yamlargout << message_prefix.c_str() << "Dataset entries after cuts and before CSV mapping: "<<nentries_precsv<<endl;
 
     // Define run-dependent columns from CSV
     for (int idx=0; idx<csv_paths.size(); idx++) {
@@ -468,6 +475,10 @@ void execute(const YAML::Node& node) {
                         phi_s_original_name_dn,
                         phi_s_injected_name
                     );
+
+    // DEBUGGING: Count entries after cuts
+    int nentries = frame.Count().GetValue();
+    yamlargout << message_prefix.c_str() << "Dataset entries after cuts: "<<nentries<<endl;
     //TODO: Add output message about defined branches
 
     // Reassign the phi_s fit variable name if present and injecting an asymmetry
