@@ -1667,6 +1667,20 @@ void getKinBinnedAsym(
         auto binframe = frame.Filter(bin_cut.c_str());
         auto binframe_sg = frame_sg.Filter(bin_cut.c_str());
 
+        auto cols = binframe.GetColumnNames();
+        cout << "Columns in binframe:" << endl;
+        for (auto& c : cols) {
+            cout << c << endl;
+        }
+
+        auto defined = binframe.GetDefinedColumnNames();
+        cout << "Defined columns in binframe:" << endl;
+        for (auto& c : defined) {
+            cout << c << endl;
+        }
+
+        cout << "Entries in binframe: " << binframe.GetTree()->GetEntries() << endl;
+
         int bin_count = (int)*binframe.Count();
         cout << "Bin count: " << bin_count << endl;
 
