@@ -503,6 +503,7 @@ void execute(const YAML::Node& node) {
     }
 
     // Create output dataset ROOT file with all variables
+    std::string out_ds_path = Form("%sdataset.root", baseoutpath.c_str());
     yamlargout << message_prefix.c_str() << "Creating output dataset with all variables at: "<<out_ds_path.c_str()<<std::endl;
     frame = frame.Snapshot(tree.c_str(), out_ds_path.c_str(), frame.GetColumnNames());
 
