@@ -1650,19 +1650,25 @@ void getKinBinnedAsym(
         int         bin_id  = it->first;
         string bin_cut = it->second;
 
+        // Starting message
+        cout << "bincut id: " << bin_id << " : " << bin_cut.c_str() << endl;
+
         // Set bin id string
         string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
 
         // Create workspace
+        cout << "Creating workspaces..." << endl;
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
         RooWorkspace *ws_sg = new RooWorkspace(Form("%s_sg",workspace_name.c_str()),Form("%s_signal",workspace_title.c_str()));
         RooWorkspace *ws_sb = new RooWorkspace(Form("%s_sb",workspace_name.c_str()),Form("%s_sideband",workspace_title.c_str())); //NOTE: Use separate signal and sideband workspaces for dataset, variable, and pdf name uniqueness.
 
         // Make bin cut on frame
+        cout << "Creating bin datasets..." << endl;
         auto binframe = frame.Filter(bin_cut.c_str());
         auto binframe_sg = frame_sg.Filter(bin_cut.c_str());
 
         // Create bin dataset
+        cout << "Creating bin RooDataset..." << endl;
         data::createDataset(
             binframe,
             ws,
@@ -1693,6 +1699,8 @@ void getKinBinnedAsym(
             massfitvar_lims,
             massfitvar_bins
         );
+
+        cout << "Created RooDataset..." << endl;
 
         // Apply a generic mass fit to the FULL bin dataset
         vector<double> massfit_result;

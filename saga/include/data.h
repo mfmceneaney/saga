@@ -244,8 +244,10 @@ void createDataset(
     int nvars = vars.size();
 
     // Define RooRealVar variables
+    cout << "Defining RooRealVars..." << endl;
     RooRealVar *rrvars[nvars];
     for (int rr=0; rr<nvars; rr++) {
+        cout << "Defining RooRealVar for variable: " << vars[rr].c_str() << endl;
         rrvars[rr] = new RooRealVar(vars[rr].c_str(), var_titles[rr].c_str(), var_lims[rr][0], var_lims[rr][1]);
         rrvars[rr]->setBins(var_bins[rr]);
     }
@@ -257,6 +259,7 @@ void createDataset(
     }
 
     // Create RDataFrame to RooDataSet pointer
+    cout << "Creating RooDataSet from RDataFrame..." << endl;
     ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult;
     switch (nvars) {
         case 2: //NOTE: Need at least one fit variable and one bin variable.
