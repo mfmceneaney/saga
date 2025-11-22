@@ -1667,7 +1667,7 @@ void getKinBinnedAsym(
         auto binframe = frame.Filter(bin_cut.c_str());
         auto binframe_sg = frame_sg.Filter(bin_cut.c_str());
 
-        int bin_count = binframe.Count();
+        int bin_count = (int)*binframe.Count();
         cout << "Bin count: " << bin_count << endl;
 
         // Create bin dataset
