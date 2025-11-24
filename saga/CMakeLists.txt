@@ -38,7 +38,7 @@ target_link_libraries(saga PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::RooStat
 set(EXECUTABLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_executable(getKinBinnedAsym ${EXECUTABLES_DIR}/getKinBinnedAsym.cpp)
-target_link_libraries(getKinBinnedAsym PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::RooStats ROOT::ROOTDataFrame yaml-cpp)
+target_link_libraries(getKinBinnedAsym PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
 
 add_executable(findBinLims ${EXECUTABLES_DIR}/findBinLims.cpp)
 target_link_libraries(findBinLims PUBLIC ROOT::RIO ROOT::Net ROOT::RooFit ROOT::ROOTDataFrame yaml-cpp)
