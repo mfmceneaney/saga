@@ -559,9 +559,9 @@ void execute(const YAML::Node& node) {
 
         // Get asymmetry fit variables bin scheme
         std::map<int,std::string> asymfitvar_bincuts;
-        if (use_binned_sb_bgfracs) {
-            asymfitvar_bincuts = asymfitvar_bincuts_map[binscheme_name];
-        }
+        // if (use_binned_sb_bgfracs) {
+        //     asymfitvar_bincuts = asymfitvar_bincuts_map[binscheme_name];
+        // }
 
         // Get additional bin variable attributes needed for this binning scheme
         std::vector<std::string> scheme_binvar_titles;
