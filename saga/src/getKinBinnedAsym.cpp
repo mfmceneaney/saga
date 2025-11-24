@@ -35,57 +35,57 @@ void execute(const YAML::Node& node) {
     //----------------------------------------------------------------------//
     // BEGIN ASYMMETRY INJECTION ARGUMENTS
     bool inject_asym = saga::util::getYamlArg<bool>(node, "inject_asym", false, message_prefix, verbose, yamlargout);
-    int inject_seed = saga::util::getYamlArg<int>(node, "inject_seed", 2, message_prefix, verbose, yamlargout);
-    std::string mc_cuts = saga::util::getYamlArg<std::string>(node,"mc_cuts","Q2>1",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
-    std::vector<double> sgasyms = saga::util::getYamlArg<std::vector<double>>(node, "sgasyms", {}, message_prefix, verbose, yamlargout);
-    std::vector<double> bgasyms = saga::util::getYamlArg<std::vector<double>>(node, "bgasyms", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> particle_suffixes = saga::util::getYamlArg<std::vector<std::string>>(node, "particle_suffixes", {}, message_prefix, verbose, yamlargout); // -> For MC matching with mc_sg_match cut
-    std::string mc_sg_match_name = saga::util::getYamlArg<std::string>(node,"mc_sg_match_name","mc_sg_match",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
-    std::string mc_sg_match_formula = saga::util::getYamlArg<std::string>(node,"mc_sg_match_formula","(bool)true",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
-    std::string phi_s_original_name = saga::util::getYamlArg<std::string>(node, "phi_s_original_name", "phi_s_up", message_prefix, verbose, yamlargout);
-    std::string phi_s_original_name_dn = saga::util::getYamlArg<std::string>(node, "phi_s_original_name_dn", "phi_s_dn", message_prefix, verbose, yamlargout);
-    std::string phi_s_injected_name = saga::util::getYamlArg<std::string>(node, "phi_s_injected_name", "phi_s_injected", message_prefix, verbose, yamlargout);
-    std::string fsgasyms_xs_uu_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_uu_name", "fsgasyms_xs_uu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_uu_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_uu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_pu_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pu_name", "fsgasyms_xs_pu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_pu_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_up_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_up_name", "fsgasyms_xs_up", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_up_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_up_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_pp_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pp_name", "fsgasyms_xs_pp", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fsgasyms_xs_pp_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pp_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_uu_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_uu_name", "fbgasyms_xs_uu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_uu_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_uu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_pu_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pu_name", "fbgasyms_xs_pu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_pu_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_up_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_up_name", "fbgasyms_xs_up", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_up_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_up_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_pp_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pp_name", "fbgasyms_xs_pp", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
-    std::string fbgasyms_xs_pp_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pp_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // int inject_seed = saga::util::getYamlArg<int>(node, "inject_seed", 2, message_prefix, verbose, yamlargout);
+    // std::string mc_cuts = saga::util::getYamlArg<std::string>(node,"mc_cuts","Q2>1",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
+    // std::vector<double> sgasyms = saga::util::getYamlArg<std::vector<double>>(node, "sgasyms", {}, message_prefix, verbose, yamlargout);
+    // std::vector<double> bgasyms = saga::util::getYamlArg<std::vector<double>>(node, "bgasyms", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> particle_suffixes = saga::util::getYamlArg<std::vector<std::string>>(node, "particle_suffixes", {}, message_prefix, verbose, yamlargout); // -> For MC matching with mc_sg_match cut
+    // std::string mc_sg_match_name = saga::util::getYamlArg<std::string>(node,"mc_sg_match_name","mc_sg_match",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
+    // std::string mc_sg_match_formula = saga::util::getYamlArg<std::string>(node,"mc_sg_match_formula","(bool)true",message_prefix,verbose,yamlargout); //NOTE: This may not be empty!
+    // std::string phi_s_original_name = saga::util::getYamlArg<std::string>(node, "phi_s_original_name", "phi_s_up", message_prefix, verbose, yamlargout);
+    // std::string phi_s_original_name_dn = saga::util::getYamlArg<std::string>(node, "phi_s_original_name_dn", "phi_s_dn", message_prefix, verbose, yamlargout);
+    // std::string phi_s_injected_name = saga::util::getYamlArg<std::string>(node, "phi_s_injected_name", "phi_s_injected", message_prefix, verbose, yamlargout);
+    // std::string fsgasyms_xs_uu_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_uu_name", "fsgasyms_xs_uu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_uu_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_uu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_pu_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pu_name", "fsgasyms_xs_pu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_pu_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_up_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_up_name", "fsgasyms_xs_up", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_up_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_up_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_pp_name = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pp_name", "fsgasyms_xs_pp", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fsgasyms_xs_pp_formula = saga::util::getYamlArg<std::string>(node, "fsgasyms_xs_pp_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_uu_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_uu_name", "fbgasyms_xs_uu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_uu_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_uu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_pu_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pu_name", "fbgasyms_xs_pu", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_pu_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pu_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_up_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_up_name", "fbgasyms_xs_up", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_up_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_up_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_pp_name = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pp_name", "fbgasyms_xs_pp", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
+    // std::string fbgasyms_xs_pp_formula = saga::util::getYamlArg<std::string>(node, "fbgasyms_xs_pp_formula", "(float)0.0", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
     std::string combined_spin_state = saga::util::getYamlArg<std::string>(node, "combined_spin_state", "ss", message_prefix, verbose, yamlargout); //NOTE: This may not be empty!
 
-    //----------------------------------------------------------------------//
-    // BEGIN RUN-DEPENDENT CSV VARIABLE ARGUMENTS
-    std::vector<std::string> rdf_key_cols = saga::util::getYamlArg<std::vector<std::string>>(node, "rdf_key_cols", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> csv_paths = saga::util::getYamlArg<std::vector<std::string>>(node, "csv_paths", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> csv_key_cols = saga::util::getYamlArg<std::vector<std::string>>(node, "csv_key_cols", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::vector<std::string>> col_names = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "col_names", {}, message_prefix, verbose, yamlargout);
-    std::map<std::string,std::string> col_aliases = saga::util::getYamlArg<std::map<std::string,std::string>>(node, "col_aliases", {}, message_prefix, verbose, yamlargout);
+    // //----------------------------------------------------------------------//
+    // // BEGIN RUN-DEPENDENT CSV VARIABLE ARGUMENTS
+    // std::vector<std::string> rdf_key_cols = saga::util::getYamlArg<std::vector<std::string>>(node, "rdf_key_cols", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> csv_paths = saga::util::getYamlArg<std::vector<std::string>>(node, "csv_paths", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> csv_key_cols = saga::util::getYamlArg<std::vector<std::string>>(node, "csv_key_cols", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::vector<std::string>> col_names = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "col_names", {}, message_prefix, verbose, yamlargout);
+    // std::map<std::string,std::string> col_aliases = saga::util::getYamlArg<std::map<std::string,std::string>>(node, "col_aliases", {}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // VAR_FORMULAS
     std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose, yamlargout);
 
-    //----------------------------------------------------------------------//
-    // BEGIN HELICITY AND SPIN VARIABLES
-    bool use_categories_as_float = saga::util::getYamlArg<bool>(node, "use_categories_as_float", false, message_prefix, verbose, yamlargout);
-    std::string helicity_name = saga::util::getYamlArg<std::string>(node, "helicity_name", "heli", message_prefix, verbose, yamlargout);
-    std::string helicity_formula = saga::util::getYamlArg<std::string>(node, "helicity_formula", "-helicity", message_prefix, verbose, yamlargout); //NOTE: Make sure to flip helicity for RGA fall 2018 data and check if needed for other datasets.
-    std::map<std::string,int> helicity_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "helicity_states", {{"plus",1}, {"zero",0}, {"minus",-1}}, message_prefix, verbose, yamlargout);
-    std::string tspin_name = saga::util::getYamlArg<std::string>(node, "tspin_name", "heli", message_prefix, verbose, yamlargout);
-    std::string tspin_formula = saga::util::getYamlArg<std::string>(node, "tspin_formula", "-tspin", message_prefix, verbose, yamlargout); //NOTE: You will probably need to define this from a run-dependent branch loaded CSV.
-    std::map<std::string,int> tspin_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "tspin_states", {{"plus", 1}, {"zero", 0}, {"minus", -1}}, message_prefix, verbose, yamlargout);
-    std::string htspin_name = saga::util::getYamlArg<std::string>(node, "htspin_name", "htspin", message_prefix, verbose, yamlargout);
-    std::map<std::string,int> htspin_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "htspin_states", {{"plus", 1}, {"zero", 0}, {"minus", -1}}, message_prefix, verbose, yamlargout);
+    // //----------------------------------------------------------------------//
+    // // BEGIN HELICITY AND SPIN VARIABLES
+    // bool use_categories_as_float = saga::util::getYamlArg<bool>(node, "use_categories_as_float", false, message_prefix, verbose, yamlargout);
+    // std::string helicity_name = saga::util::getYamlArg<std::string>(node, "helicity_name", "heli", message_prefix, verbose, yamlargout);
+    // std::string helicity_formula = saga::util::getYamlArg<std::string>(node, "helicity_formula", "-helicity", message_prefix, verbose, yamlargout); //NOTE: Make sure to flip helicity for RGA fall 2018 data and check if needed for other datasets.
+    // std::map<std::string,int> helicity_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "helicity_states", {{"plus",1}, {"zero",0}, {"minus",-1}}, message_prefix, verbose, yamlargout);
+    // std::string tspin_name = saga::util::getYamlArg<std::string>(node, "tspin_name", "heli", message_prefix, verbose, yamlargout);
+    // std::string tspin_formula = saga::util::getYamlArg<std::string>(node, "tspin_formula", "-tspin", message_prefix, verbose, yamlargout); //NOTE: You will probably need to define this from a run-dependent branch loaded CSV.
+    // std::map<std::string,int> tspin_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "tspin_states", {{"plus", 1}, {"zero", 0}, {"minus", -1}}, message_prefix, verbose, yamlargout);
+    // std::string htspin_name = saga::util::getYamlArg<std::string>(node, "htspin_name", "htspin", message_prefix, verbose, yamlargout);
+    // std::map<std::string,int> htspin_states = saga::util::getYamlArg<std::map<std::string,int>>(node, "htspin_states", {{"plus", 1}, {"zero", 0}, {"minus", -1}}, message_prefix, verbose, yamlargout);
 
     //----------------------------------------------------------------------//
     // BEGIN BINNING SCHEME ARGUMENTS
@@ -169,99 +169,99 @@ void execute(const YAML::Node& node) {
     std::vector<std::vector<double>> massfitvar_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfitvar_lims", {}, message_prefix, verbose, yamlargout);
     std::vector<int> massfitvar_bins = saga::util::getYamlArg<std::vector<int>>(node, "massfitvar_bins", {}, message_prefix, verbose, yamlargout);
 
-    //----------------------------------------------------------------------//
-    // BEGIN ASYMMETRY FIT ARGUMENTS
-    double bpol = saga::util::getYamlArg<double>(node, "bpol", 1.0, message_prefix, verbose, yamlargout); // Average beam polarization
-    double tpol = saga::util::getYamlArg<double>(node, "tpol", 1.0, message_prefix, verbose, yamlargout); // Average target polarization
-    std::string asymfit_formula_uu = saga::util::getYamlArg<std::string>(node, "asymfit_formula_uu", "", message_prefix, verbose, yamlargout);
-    std::string asymfit_formula_pu = saga::util::getYamlArg<std::string>(node, "asymfit_formula_pu", "", message_prefix, verbose, yamlargout);
-    std::string asymfit_formula_up = saga::util::getYamlArg<std::string>(node, "asymfit_formula_up", "", message_prefix, verbose, yamlargout);
-    std::string asymfit_formula_pp = saga::util::getYamlArg<std::string>(node, "asymfit_formula_pp", "", message_prefix, verbose, yamlargout);
-    std::vector<double> asymfitpar_inits = saga::util::getYamlArg<std::vector<double>>(node, "asymfitpar_inits", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::vector<double>> asymfitpar_initlims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "asymfitpar_initlims", {}, message_prefix, verbose, yamlargout);
-    bool use_sumw2error = saga::util::getYamlArg<bool>(node, "use_sumw2error", true, message_prefix, verbose, yamlargout);
-    bool use_average_depol = saga::util::getYamlArg<bool>(node, "use_average_depol", true, message_prefix, verbose, yamlargout);   
-    bool use_extended_nll = saga::util::getYamlArg<bool>(node, "use_extended_nll", false, message_prefix, verbose, yamlargout);
-    bool use_binned_fit = saga::util::getYamlArg<bool>(node, "use_binned_fit", false, message_prefix, verbose, yamlargout);
+    // //----------------------------------------------------------------------//
+    // // BEGIN ASYMMETRY FIT ARGUMENTS
+    // double bpol = saga::util::getYamlArg<double>(node, "bpol", 1.0, message_prefix, verbose, yamlargout); // Average beam polarization
+    // double tpol = saga::util::getYamlArg<double>(node, "tpol", 1.0, message_prefix, verbose, yamlargout); // Average target polarization
+    // std::string asymfit_formula_uu = saga::util::getYamlArg<std::string>(node, "asymfit_formula_uu", "", message_prefix, verbose, yamlargout);
+    // std::string asymfit_formula_pu = saga::util::getYamlArg<std::string>(node, "asymfit_formula_pu", "", message_prefix, verbose, yamlargout);
+    // std::string asymfit_formula_up = saga::util::getYamlArg<std::string>(node, "asymfit_formula_up", "", message_prefix, verbose, yamlargout);
+    // std::string asymfit_formula_pp = saga::util::getYamlArg<std::string>(node, "asymfit_formula_pp", "", message_prefix, verbose, yamlargout);
+    // std::vector<double> asymfitpar_inits = saga::util::getYamlArg<std::vector<double>>(node, "asymfitpar_inits", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::vector<double>> asymfitpar_initlims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "asymfitpar_initlims", {}, message_prefix, verbose, yamlargout);
+    // bool use_sumw2error = saga::util::getYamlArg<bool>(node, "use_sumw2error", true, message_prefix, verbose, yamlargout);
+    // bool use_average_depol = saga::util::getYamlArg<bool>(node, "use_average_depol", true, message_prefix, verbose, yamlargout);   
+    // bool use_extended_nll = saga::util::getYamlArg<bool>(node, "use_extended_nll", false, message_prefix, verbose, yamlargout);
+    // bool use_binned_fit = saga::util::getYamlArg<bool>(node, "use_binned_fit", false, message_prefix, verbose, yamlargout);
 
-    //----------------------------------------------------------------------//
-    // BEGIN MASS FIT ARGUMENTS
-    std::map<std::string,std::string> massfit_yamlfile_map = saga::util::getYamlArg<std::map<std::string,std::string>>(node, "massfit_yamlfile_map", {}, message_prefix, verbose, yamlargout);
-    std::string massfit_pdf_name = saga::util::getYamlArg<std::string>(node, "massfit_pdf_name", "", message_prefix, verbose, yamlargout); //NOTE: A mass fit and background correction will only be run if this is non-empty!
-    std::string massfit_formula_sg = saga::util::getYamlArg<std::string>(node, "massfit_formula_sg", "gaus(x[0],x[1],x[2])", message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
-    std::string massfit_formula_bg = saga::util::getYamlArg<std::string>(node, "massfit_formula_bg", "cb2(x[0], x[1], x[2])", message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
-    std::string massfit_sgYield_name = saga::util::getYamlArg<std::string>(node, "massfit_sgYield_name", "sgYield", message_prefix, verbose, yamlargout);
-    std::string massfit_bgYield_name = saga::util::getYamlArg<std::string>(node, "massfit_bgYield_name", "bgYield", message_prefix, verbose, yamlargout);
-    double massfit_initsgfrac = saga::util::getYamlArg<double>(node, "massfit_initsgfrac", 0.1, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfit_parnames_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parnames_sg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfit_partitles_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_partitles_sg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfit_parunits_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_sg", {}, message_prefix, verbose, yamlargout);
-    std::vector<double> massfit_parinits_sg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_sg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::vector<double>> massfit_parlims_sg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_sg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfit_parnames_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parnames_bg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfit_partitles_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_partitles_bg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::string> massfit_parunits_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_bg", {}, message_prefix, verbose, yamlargout);
-    std::vector<double> massfit_parinits_bg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_bg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::vector<double>> massfit_parlims_bg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_bg", {}, message_prefix, verbose, yamlargout);
-    std::vector<std::vector<double>> massfit_sgregion_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_sgregion_lims", {}, message_prefix, verbose, yamlargout);
-    double massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", 0.04, message_prefix, verbose, yamlargout);
-    double massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", 0.1, message_prefix, verbose, yamlargout);
-    double massfit_lg_ncols = saga::util::getYamlArg<double>(node, "massfit_lg_ncols", 1, message_prefix, verbose, yamlargout);
-    bool massfit_plot_bg_pars = saga::util::getYamlArg<bool>(node, "massfit_plot_bg_pars", false, message_prefix, verbose, yamlargout);
-    bool massfit_use_sumw2error = saga::util::getYamlArg<bool>(node, "massfit_use_sumw2error", false, message_prefix, verbose, yamlargout);
-    bool massfit_use_extended_nll = saga::util::getYamlArg<bool>(node, "massfit_use_extended_nll", true, message_prefix, verbose, yamlargout);
-    bool massfit_use_binned_fit = saga::util::getYamlArg<bool>(node, "massfit_use_binned_fit", false, message_prefix, verbose, yamlargout);
+    // //----------------------------------------------------------------------//
+    // // BEGIN MASS FIT ARGUMENTS
+    // std::map<std::string,std::string> massfit_yamlfile_map = saga::util::getYamlArg<std::map<std::string,std::string>>(node, "massfit_yamlfile_map", {}, message_prefix, verbose, yamlargout);
+    // std::string massfit_pdf_name = saga::util::getYamlArg<std::string>(node, "massfit_pdf_name", "", message_prefix, verbose, yamlargout); //NOTE: A mass fit and background correction will only be run if this is non-empty!
+    // std::string massfit_formula_sg = saga::util::getYamlArg<std::string>(node, "massfit_formula_sg", "gaus(x[0],x[1],x[2])", message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
+    // std::string massfit_formula_bg = saga::util::getYamlArg<std::string>(node, "massfit_formula_bg", "cb2(x[0], x[1], x[2])", message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
+    // std::string massfit_sgYield_name = saga::util::getYamlArg<std::string>(node, "massfit_sgYield_name", "sgYield", message_prefix, verbose, yamlargout);
+    // std::string massfit_bgYield_name = saga::util::getYamlArg<std::string>(node, "massfit_bgYield_name", "bgYield", message_prefix, verbose, yamlargout);
+    // double massfit_initsgfrac = saga::util::getYamlArg<double>(node, "massfit_initsgfrac", 0.1, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> massfit_parnames_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parnames_sg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> massfit_partitles_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_partitles_sg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> massfit_parunits_sg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_sg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<double> massfit_parinits_sg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_sg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::vector<double>> massfit_parlims_sg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_sg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> massfit_parnames_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parnames_bg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> massfit_partitles_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_partitles_bg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> massfit_parunits_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_bg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<double> massfit_parinits_bg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_bg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::vector<double>> massfit_parlims_bg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_bg", {}, message_prefix, verbose, yamlargout);
+    // std::vector<std::vector<double>> massfit_sgregion_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_sgregion_lims", {}, message_prefix, verbose, yamlargout);
+    // double massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", 0.04, message_prefix, verbose, yamlargout);
+    // double massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", 0.1, message_prefix, verbose, yamlargout);
+    // double massfit_lg_ncols = saga::util::getYamlArg<double>(node, "massfit_lg_ncols", 1, message_prefix, verbose, yamlargout);
+    // bool massfit_plot_bg_pars = saga::util::getYamlArg<bool>(node, "massfit_plot_bg_pars", false, message_prefix, verbose, yamlargout);
+    // bool massfit_use_sumw2error = saga::util::getYamlArg<bool>(node, "massfit_use_sumw2error", false, message_prefix, verbose, yamlargout);
+    // bool massfit_use_extended_nll = saga::util::getYamlArg<bool>(node, "massfit_use_extended_nll", true, message_prefix, verbose, yamlargout);
+    // bool massfit_use_binned_fit = saga::util::getYamlArg<bool>(node, "massfit_use_binned_fit", false, message_prefix, verbose, yamlargout);
 
-    //----------------------------------------------------------------------//
-    // BEGIN SPLOT ARGUMENTS
-    bool use_splot = saga::util::getYamlArg<bool>(node, "use_splot", true, message_prefix, verbose, yamlargout);
+    // //----------------------------------------------------------------------//
+    // // BEGIN SPLOT ARGUMENTS
+    // bool use_splot = saga::util::getYamlArg<bool>(node, "use_splot", true, message_prefix, verbose, yamlargout);
 
-    //----------------------------------------------------------------------//
-    // BEGIN SIDEBAND SUBTRACTION ARGUMENTS
-    std::string massfit_sgcut = saga::util::getYamlArg<std::string>(node, "massfit_sgcut", "", message_prefix, verbose, yamlargout);
-    std::string massfit_bgcut = saga::util::getYamlArg<std::string>(node, "massfit_bgcut", "", message_prefix, verbose, yamlargout);
-    bool use_sb_subtraction = saga::util::getYamlArg<bool>(node, "use_sb_subtraction", false, message_prefix, verbose, yamlargout);
-    bool use_binned_sb_bgfracs = saga::util::getYamlArg<bool>(node, "use_binned_sb_bgfracs", false, message_prefix, verbose, yamlargout);
-    std::string bgfracvar = saga::util::getYamlArg<std::string>(node, "bgfracvar", "", message_prefix, verbose, yamlargout);
-    std::vector<double> bgfracvar_lims = saga::util::getYamlArg<std::vector<double>>(node, "bgfracvar_lims", {}, message_prefix, verbose, yamlargout);
-    int bgfrac_idx = saga::util::getYamlArg<int>(node, "bgfrac_idx", 0, message_prefix, verbose, yamlargout);
+    // //----------------------------------------------------------------------//
+    // // BEGIN SIDEBAND SUBTRACTION ARGUMENTS
+    // std::string massfit_sgcut = saga::util::getYamlArg<std::string>(node, "massfit_sgcut", "", message_prefix, verbose, yamlargout);
+    // std::string massfit_bgcut = saga::util::getYamlArg<std::string>(node, "massfit_bgcut", "", message_prefix, verbose, yamlargout);
+    // bool use_sb_subtraction = saga::util::getYamlArg<bool>(node, "use_sb_subtraction", false, message_prefix, verbose, yamlargout);
+    // bool use_binned_sb_bgfracs = saga::util::getYamlArg<bool>(node, "use_binned_sb_bgfracs", false, message_prefix, verbose, yamlargout);
+    // std::string bgfracvar = saga::util::getYamlArg<std::string>(node, "bgfracvar", "", message_prefix, verbose, yamlargout);
+    // std::vector<double> bgfracvar_lims = saga::util::getYamlArg<std::vector<double>>(node, "bgfracvar_lims", {}, message_prefix, verbose, yamlargout);
+    // int bgfrac_idx = saga::util::getYamlArg<int>(node, "bgfrac_idx", 0, message_prefix, verbose, yamlargout);
 
-    // ASYMFITVAR_BINSCHEMES
-    std::map<std::string,std::map<int,std::string>> asymfitvar_bincuts_map;
-    if (node["asymfitvar_binschemes"] && node["asymfitvar_binschemes"].IsMap()) {
+    // // ASYMFITVAR_BINSCHEMES
+    // std::map<std::string,std::map<int,std::string>> asymfitvar_bincuts_map;
+    // if (node["asymfitvar_binschemes"] && node["asymfitvar_binschemes"].IsMap()) {
 
-        // Get bin scheme node and get bin cuts maps
-        asymfitvar_bincuts_map = saga::bins::getBinCutsMap(node["asymfitvar_binschemes"]);
+    //     // Get bin scheme node and get bin cuts maps
+    //     asymfitvar_bincuts_map = saga::bins::getBinCutsMap(node["asymfitvar_binschemes"]);
 
-        // Show the asymmetry fit variables bin cuts map
-        if (verbose) {
-            for (auto it = asymfitvar_bincuts_map.begin(); it != asymfitvar_bincuts_map.end(); ++it) {
-                yamlargout << message_prefix.c_str() << "asymfitvar_bincuts_map["<<it->first<<"]: { \n";
-                for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    yamlargout <<"\t\t"<< it2->first<<": "<<it2->second<<", \n";
-                }
-                yamlargout << "}" << std::endl;
-            }
-        }
-    }
+    //     // Show the asymmetry fit variables bin cuts map
+    //     if (verbose) {
+    //         for (auto it = asymfitvar_bincuts_map.begin(); it != asymfitvar_bincuts_map.end(); ++it) {
+    //             yamlargout << message_prefix.c_str() << "asymfitvar_bincuts_map["<<it->first<<"]: { \n";
+    //             for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+    //                 yamlargout <<"\t\t"<< it2->first<<": "<<it2->second<<", \n";
+    //             }
+    //             yamlargout << "}" << std::endl;
+    //         }
+    //     }
+    // }
 
     //----------------------------------------------------------------------------------------------------//
     // Additional arguments
     std::string logpath = saga::util::getYamlArg<std::string>(node, "logpath", "out.txt", message_prefix, verbose, yamlargout);
-    bool dump_dataset = saga::util::getYamlArg<bool>(node, "dump_dataset", false, message_prefix, verbose, yamlargout);
-    std::vector<std::string> dump_vars = saga::util::getYamlArg<std::vector<std::string>>(node, "dump_vars", {}, message_prefix, verbose, yamlargout); //NOTE: If empty ALL variables from dataset will be dumped if dump_dataset==true.
+    // bool dump_dataset = saga::util::getYamlArg<bool>(node, "dump_dataset", false, message_prefix, verbose, yamlargout);
+    // std::vector<std::string> dump_vars = saga::util::getYamlArg<std::vector<std::string>>(node, "dump_vars", {}, message_prefix, verbose, yamlargout); //NOTE: If empty ALL variables from dataset will be dumped if dump_dataset==true.
 
-    //----------------------------------------------------------------------------------------------------//
-    // Create list of categories to use as float  //NOTE: Ordering is important!
-    std::vector<std::string> categories_as_float;
-    if (use_categories_as_float) {
-        if (asymfit_formula_pu!="" || asymfit_formula_pp!="") {
-            categories_as_float.push_back(helicity_name);
-        }
-        if (asymfit_formula_up!="" || asymfit_formula_pp!="") {
-            categories_as_float.push_back(tspin_name);
-        }
-    }
+    // //----------------------------------------------------------------------------------------------------//
+    // // Create list of categories to use as float  //NOTE: Ordering is important!
+    // std::vector<std::string> categories_as_float;
+    // if (use_categories_as_float) {
+    //     if (asymfit_formula_pu!="" || asymfit_formula_pp!="") {
+    //         categories_as_float.push_back(helicity_name);
+    //     }
+    //     if (asymfit_formula_up!="" || asymfit_formula_pp!="") {
+    //         categories_as_float.push_back(tspin_name);
+    //     }
+    // }
 
     //----------------------------------------------------------------------------------------------------//
     // ANALYSIS
@@ -456,20 +456,20 @@ void execute(const YAML::Node& node) {
     int nentries_precsv = d2_filtered.Count().GetValue();
     yamlargout << message_prefix.c_str() << "Dataset entries after cuts and before CSV mapping: "<<nentries_precsv<<std::endl;
 
-    // Define run-dependent columns from CSV
-    for (int idx=0; idx<csv_paths.size(); idx++) {
-        d2_filtered = saga::data::mapDataFromCSV<Long64_t,double>(
-            d2_filtered,
-            rdf_key_cols[idx],
-            csv_paths[idx],
-            csv_key_cols[idx],
-            col_names[idx],
-            col_aliases,
-            true,
-            ','
-        );
-    }
-    //TODO: Add output messages about defined branches
+    // // Define run-dependent columns from CSV
+    // for (int idx=0; idx<csv_paths.size(); idx++) {
+    //     d2_filtered = saga::data::mapDataFromCSV<Long64_t,double>(
+    //         d2_filtered,
+    //         rdf_key_cols[idx],
+    //         csv_paths[idx],
+    //         csv_key_cols[idx],
+    //         col_names[idx],
+    //         col_aliases,
+    //         true,
+    //         ','
+    //     );
+    // }
+    // //TODO: Add output messages about defined branches
 
     // Define helicity variable, injecting and applying MC matching cuts if requested
     std::string combined_spin_state_formula  = Form("(int)(10*(%s+1)+%s+1)",helicity_name.c_str(),tspin_name.c_str());
@@ -533,15 +533,15 @@ void execute(const YAML::Node& node) {
         double my_testvar2 = (double)*frame.Mean(tspin_name.c_str());
     }
 
-    // Dump dataset to ROOT file and exit
-    if (dump_dataset) {
-        std::string out_ds_path = Form("%sdataset.root", baseoutpath.c_str());
-        yamlargout << message_prefix.c_str() << "Dumping dataset to: "<<out_ds_path.c_str()<<std::endl;
-        if (dump_vars.size()==0) frame.Snapshot(tree.c_str(), out_ds_path.c_str());
-        else frame.Snapshot(tree.c_str(), out_ds_path.c_str(), dump_vars);
+    // // Dump dataset to ROOT file and exit
+    // if (dump_dataset) {
+    //     std::string out_ds_path = Form("%sdataset.root", baseoutpath.c_str());
+    //     yamlargout << message_prefix.c_str() << "Dumping dataset to: "<<out_ds_path.c_str()<<std::endl;
+    //     if (dump_vars.size()==0) frame.Snapshot(tree.c_str(), out_ds_path.c_str());
+    //     else frame.Snapshot(tree.c_str(), out_ds_path.c_str(), dump_vars);
 
-        return;
-    }
+    //     return;
+    // }
 
     // Create output log
     std::ofstream outf; outf.open(logpath.c_str());
