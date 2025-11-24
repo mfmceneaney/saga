@@ -414,8 +414,9 @@ void execute(const YAML::Node& node) {
     yamlargout << message_prefix.c_str() << "Dataset entries after defines: "<<nentries_precut<<std::endl;
 
     // Apply overall cuts AFTER defining depolarization and fit variables
-    auto d2_filtered = (!inject_asym) ? d2.Filter(cuts.c_str()) :
-                    d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
+    auto d2_filtered = d2.Filter("x>0"); // Dummy initial assignment
+    // auto d2_filtered = (!inject_asym) ? d2.Filter(cuts.c_str()) :
+    //                 d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
 
     // Print out nunmber of entries after defines
     nentries_precut = d2_filtered.Count().GetValue();
