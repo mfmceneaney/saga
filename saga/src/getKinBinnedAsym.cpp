@@ -400,13 +400,25 @@ void execute(const YAML::Node& node) {
         yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
 
+    // Print out nunmber of entries after defines
+    nentries_precut = d2.Count().GetValue();
+    yamlargout << message_prefix.c_str() << "Dataset entries after defines: "<<nentries_precut<<std::endl;
+
     // Apply overall cuts AFTER defining depolarization and fit variables
     auto d2_filtered = (!inject_asym) ? d2.Filter(cuts.c_str()) :
                     d2.Filter(Form("(%s) && (%s)",cuts.c_str(),mc_cuts.c_str()));
 
+    // Print out nunmber of entries after defines
+    nentries_precut = d2_filtered.Count().GetValue();
+    yamlargout << message_prefix.c_str() << "Dataset entries after mc and data cuts: "<<nentries_precut<<std::endl;
+
     // Define angular difference variables
     if (inject_asym) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
     //TODO: Add output message about defined branches
+
+    // Print out nunmber of entries after defines
+    nentries_precut = d2_filtered.Count().GetValue();
+    yamlargout << message_prefix.c_str() << "Dataset entries after angular diff definitions: "<<nentries_precut<<std::endl;
 
     // Define signal matching condition, and XS values branches
     if (inject_asym) {
