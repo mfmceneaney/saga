@@ -405,7 +405,7 @@ void execute(const YAML::Node& node) {
         yamlargout << message_prefix.c_str() << "\t" << c << std::endl; 
     }
 
-    yamlargout << message_prefix.c_str() << "cuts = " << cuts.c_str() << endl;
+    yamlargout << message_prefix.c_str() << "cuts = " << cuts.c_str() << std::endl;
 
     // Print out nunmber of entries after defines
     nentries_precut = d2.Count().GetValue();
