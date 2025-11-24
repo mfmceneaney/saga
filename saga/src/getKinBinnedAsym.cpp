@@ -511,27 +511,27 @@ void execute(const YAML::Node& node) {
     yamlargout << message_prefix.c_str() << "Dataset entries after cuts: "<<nentries<<std::endl;
     //TODO: Add output message about defined branches
 
-    // Reassign the phi_s fit variable name if present and injecting an asymmetry
-    if (inject_asym && phi_s_original_name!="") {
+    // // Reassign the phi_s fit variable name if present and injecting an asymmetry
+    // if (inject_asym && phi_s_original_name!="") {
 
-        // Make sure the new name is initialized
-        if (phi_s_injected_name=="") phi_s_injected_name = Form("%s_injected",phi_s_original_name.c_str());
+    //     // Make sure the new name is initialized
+    //     if (phi_s_injected_name=="") phi_s_injected_name = Form("%s_injected",phi_s_original_name.c_str());
 
-        // Loop asymmetry fit variables and find the first match
-        for (int idx=0; idx<asymfitvars.size(); idx++) {
-            if (asymfitvars[idx]==phi_s_original_name) {
-                asymfitvars[idx] = phi_s_injected_name;
-                break;
-            }
-        }
-    }
+    //     // Loop asymmetry fit variables and find the first match
+    //     for (int idx=0; idx<asymfitvars.size(); idx++) {
+    //         if (asymfitvars[idx]==phi_s_original_name) {
+    //             asymfitvars[idx] = phi_s_injected_name;
+    //             break;
+    //         }
+    //     }
+    // }
 
-    // Make sure injection values are all computed before running analysis
-    if (inject_asym) {
-        double my_testvar  = (double)*frame.Mean(combined_spin_state.c_str());
-        double my_testvar1 = (double)*frame.Mean(helicity_name.c_str());
-        double my_testvar2 = (double)*frame.Mean(tspin_name.c_str());
-    }
+    // // Make sure injection values are all computed before running analysis
+    // if (inject_asym) {
+    //     double my_testvar  = (double)*frame.Mean(combined_spin_state.c_str());
+    //     double my_testvar1 = (double)*frame.Mean(helicity_name.c_str());
+    //     double my_testvar2 = (double)*frame.Mean(tspin_name.c_str());
+    // }
 
     // // Dump dataset to ROOT file and exit
     // if (dump_dataset) {
