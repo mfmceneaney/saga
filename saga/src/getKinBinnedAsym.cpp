@@ -541,7 +541,7 @@ void execute(const YAML::Node& node) {
         else frame.Snapshot(tree.c_str(), out_ds_path.c_str(), dump_vars);
 
         return;
-    }c\
+    }
 
     // Create output log
     std::ofstream outf; outf.open(logpath.c_str());
