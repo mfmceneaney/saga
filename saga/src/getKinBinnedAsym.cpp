@@ -280,114 +280,114 @@ void execute(const YAML::Node& node) {
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
 
-    // Create branch names for mc variables assuming they all append `_mc` to the corresponding data branch name
-    std::vector<std::string> asymfitvars_mc;
-    for (int idx=0; idx<asymfitvars.size(); idx++) {
-        asymfitvars_mc.push_back(Form("%s_mc",asymfitvars[idx].c_str()));
-        yamlargout << message_prefix.c_str() << "Defined MC variable : " << asymfitvars_mc[idx].c_str() << std::endl;
-    }
-    std::vector<std::string> depolvars_mc;
-    for (int idx=0; idx<depolvars.size(); idx++) {
-        depolvars_mc.push_back(Form("%s_mc",depolvars[idx].c_str()));
-        yamlargout << message_prefix.c_str() << "Defined MC variable : " << depolvars_mc[idx].c_str() << std::endl;
-    }
+    // // Create branch names for mc variables assuming they all append `_mc` to the corresponding data branch name
+    // std::vector<std::string> asymfitvars_mc;
+    // for (int idx=0; idx<asymfitvars.size(); idx++) {
+    //     asymfitvars_mc.push_back(Form("%s_mc",asymfitvars[idx].c_str()));
+    //     yamlargout << message_prefix.c_str() << "Defined MC variable : " << asymfitvars_mc[idx].c_str() << std::endl;
+    // }
+    // std::vector<std::string> depolvars_mc;
+    // for (int idx=0; idx<depolvars.size(); idx++) {
+    //     depolvars_mc.push_back(Form("%s_mc",depolvars[idx].c_str()));
+    //     yamlargout << message_prefix.c_str() << "Defined MC variable : " << depolvars_mc[idx].c_str() << std::endl;
+    // }
 
-    // Define the tspin==+1 and tspin==-1 A_{UT} asymmetry names
-    std::string fsgasyms_xs_uu_pos_name = Form("_%s_pos",fsgasyms_xs_uu_name.c_str());
-    std::string fsgasyms_xs_uu_neg_name = Form("_%s_neg",fsgasyms_xs_uu_name.c_str());
-    std::string fsgasyms_xs_pu_pos_name = Form("_%s_pos",fsgasyms_xs_pu_name.c_str());
-    std::string fsgasyms_xs_pu_neg_name = Form("_%s_neg",fsgasyms_xs_pu_name.c_str());
-    std::string fbgasyms_xs_uu_pos_name = Form("_%s_pos",fbgasyms_xs_uu_name.c_str());
-    std::string fbgasyms_xs_uu_neg_name = Form("_%s_neg",fbgasyms_xs_uu_name.c_str());
-    std::string fbgasyms_xs_pu_pos_name = Form("_%s_pos",fbgasyms_xs_pu_name.c_str());
-    std::string fbgasyms_xs_pu_neg_name = Form("_%s_neg",fbgasyms_xs_pu_name.c_str());
+    // // Define the tspin==+1 and tspin==-1 A_{UT} asymmetry names
+    // std::string fsgasyms_xs_uu_pos_name = Form("_%s_pos",fsgasyms_xs_uu_name.c_str());
+    // std::string fsgasyms_xs_uu_neg_name = Form("_%s_neg",fsgasyms_xs_uu_name.c_str());
+    // std::string fsgasyms_xs_pu_pos_name = Form("_%s_pos",fsgasyms_xs_pu_name.c_str());
+    // std::string fsgasyms_xs_pu_neg_name = Form("_%s_neg",fsgasyms_xs_pu_name.c_str());
+    // std::string fbgasyms_xs_uu_pos_name = Form("_%s_pos",fbgasyms_xs_uu_name.c_str());
+    // std::string fbgasyms_xs_uu_neg_name = Form("_%s_neg",fbgasyms_xs_uu_name.c_str());
+    // std::string fbgasyms_xs_pu_pos_name = Form("_%s_pos",fbgasyms_xs_pu_name.c_str());
+    // std::string fbgasyms_xs_pu_neg_name = Form("_%s_neg",fbgasyms_xs_pu_name.c_str());
 
-    // Define the tspin==+1 and tspin==-1 A_{UT} asymmetry formulas
-    std::string fsgasyms_xs_uu_pos_formula = fsgasyms_xs_uu_formula;
-    std::string fsgasyms_xs_uu_neg_formula = fsgasyms_xs_uu_formula;
-    std::string fsgasyms_xs_pu_pos_formula = fsgasyms_xs_pu_formula;
-    std::string fsgasyms_xs_pu_neg_formula = fsgasyms_xs_pu_formula;
-    std::string fbgasyms_xs_uu_pos_formula = fbgasyms_xs_uu_formula;
-    std::string fbgasyms_xs_uu_neg_formula = fbgasyms_xs_uu_formula;
-    std::string fbgasyms_xs_pu_pos_formula = fbgasyms_xs_pu_formula;
-    std::string fbgasyms_xs_pu_neg_formula = fbgasyms_xs_pu_formula;
+    // // Define the tspin==+1 and tspin==-1 A_{UT} asymmetry formulas
+    // std::string fsgasyms_xs_uu_pos_formula = fsgasyms_xs_uu_formula;
+    // std::string fsgasyms_xs_uu_neg_formula = fsgasyms_xs_uu_formula;
+    // std::string fsgasyms_xs_pu_pos_formula = fsgasyms_xs_pu_formula;
+    // std::string fsgasyms_xs_pu_neg_formula = fsgasyms_xs_pu_formula;
+    // std::string fbgasyms_xs_uu_pos_formula = fbgasyms_xs_uu_formula;
+    // std::string fbgasyms_xs_uu_neg_formula = fbgasyms_xs_uu_formula;
+    // std::string fbgasyms_xs_pu_pos_formula = fbgasyms_xs_pu_formula;
+    // std::string fbgasyms_xs_pu_neg_formula = fbgasyms_xs_pu_formula;
 
-    // Replace variable names in XS formulas with their MC counter parts and asymmetries with their injected values
-    if (inject_asym) {
-        // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
-        for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fsgasyms_xs_pu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fsgasyms_xs_up_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fsgasyms_xs_pp_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-        }
-        for (int idx=0; idx<sgasyms.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_uu_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
-            saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
-            saga::util::replaceAll(fsgasyms_xs_up_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
-            saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
-        }
-        for (int idx=0; idx<depolvars.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_uu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fsgasyms_xs_pu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fsgasyms_xs_up_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fsgasyms_xs_pp_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-        }
-        yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_uu_name.c_str() << " = " << fsgasyms_xs_uu_formula.c_str() << std::endl;
-        yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_pu_name.c_str() << " = " << fsgasyms_xs_pu_formula.c_str() << std::endl;
-        yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_up_name.c_str() << " = " << fsgasyms_xs_up_formula.c_str() << std::endl;
-        yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_pp_name.c_str() << " = " << fsgasyms_xs_pp_formula.c_str() << std::endl;
+    // // Replace variable names in XS formulas with their MC counter parts and asymmetries with their injected values
+    // if (inject_asym) {
+    //     // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
+    //     for (int idx=0; idx<asymfitvars.size(); idx++) {
+    //         saga::util::replaceAll(fsgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fsgasyms_xs_pu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fsgasyms_xs_up_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fsgasyms_xs_pp_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //     }
+    //     for (int idx=0; idx<sgasyms.size(); idx++) {
+    //         saga::util::replaceAll(fsgasyms_xs_uu_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+    //         saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+    //         saga::util::replaceAll(fsgasyms_xs_up_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+    //         saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("sgasyms[%d]",idx), Form("%.8f",sgasyms[idx])); // Replace sgasyms[idx] with actual injected asymmetry value
+    //     }
+    //     for (int idx=0; idx<depolvars.size(); idx++) {
+    //         saga::util::replaceAll(fsgasyms_xs_uu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fsgasyms_xs_pu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fsgasyms_xs_up_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fsgasyms_xs_pp_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //     }
+    //     yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_uu_name.c_str() << " = " << fsgasyms_xs_uu_formula.c_str() << std::endl;
+    //     yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_pu_name.c_str() << " = " << fsgasyms_xs_pu_formula.c_str() << std::endl;
+    //     yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_up_name.c_str() << " = " << fsgasyms_xs_up_formula.c_str() << std::endl;
+    //     yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_pp_name.c_str() << " = " << fsgasyms_xs_pp_formula.c_str() << std::endl;
 
-        // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
-        for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fbgasyms_xs_pu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fbgasyms_xs_up_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fbgasyms_xs_pp_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
-        }
-        for (int idx=0; idx<bgasyms.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_uu_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
-            saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
-            saga::util::replaceAll(fbgasyms_xs_up_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
-            saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
-        }
-        for (int idx=0; idx<depolvars.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_uu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fbgasyms_xs_pu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fbgasyms_xs_up_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-            saga::util::replaceAll(fbgasyms_xs_pp_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
-        }
-        yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_uu_name.c_str() << " = " << fbgasyms_xs_uu_formula.c_str() << std::endl;
-        yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_pu_name.c_str() << " = " << fbgasyms_xs_pu_formula.c_str() << std::endl;
-        yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_up_name.c_str() << " = " << fbgasyms_xs_up_formula.c_str() << std::endl;
-        yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_pp_name.c_str() << " = " << fbgasyms_xs_pp_formula.c_str() << std::endl;
+    //     // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
+    //     for (int idx=0; idx<asymfitvars.size(); idx++) {
+    //         saga::util::replaceAll(fbgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fbgasyms_xs_pu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fbgasyms_xs_up_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fbgasyms_xs_pp_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
+    //     }
+    //     for (int idx=0; idx<bgasyms.size(); idx++) {
+    //         saga::util::replaceAll(fbgasyms_xs_uu_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+    //         saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+    //         saga::util::replaceAll(fbgasyms_xs_up_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+    //         saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("bgasyms[%d]",idx), Form("%.8f",bgasyms[idx])); // Replace bgasyms[idx] with actual injected asymmetry value
+    //     }
+    //     for (int idx=0; idx<depolvars.size(); idx++) {
+    //         saga::util::replaceAll(fbgasyms_xs_uu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fbgasyms_xs_pu_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fbgasyms_xs_up_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //         saga::util::replaceAll(fbgasyms_xs_pp_formula, depolvars[idx].c_str(), depolvars_mc[idx].c_str()); // Replace depolvars_mc[idx] with actual branch name
+    //     }
+    //     yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_uu_name.c_str() << " = " << fbgasyms_xs_uu_formula.c_str() << std::endl;
+    //     yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_pu_name.c_str() << " = " << fbgasyms_xs_pu_formula.c_str() << std::endl;
+    //     yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_up_name.c_str() << " = " << fbgasyms_xs_up_formula.c_str() << std::endl;
+    //     yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_pp_name.c_str() << " = " << fbgasyms_xs_pp_formula.c_str() << std::endl;
 
-        // Reassign the tspin==+1 and tspin==-1 A_{UT} asymmetry formulas
-        fsgasyms_xs_uu_pos_formula = fsgasyms_xs_uu_formula;
-        fsgasyms_xs_uu_neg_formula = fsgasyms_xs_uu_formula;
-        fsgasyms_xs_pu_pos_formula = fsgasyms_xs_pu_formula;
-        fsgasyms_xs_pu_neg_formula = fsgasyms_xs_pu_formula;
-        fbgasyms_xs_uu_pos_formula = fbgasyms_xs_uu_formula;
-        fbgasyms_xs_uu_neg_formula = fbgasyms_xs_uu_formula;
-        fbgasyms_xs_pu_pos_formula = fbgasyms_xs_pu_formula;
-        fbgasyms_xs_pu_neg_formula = fbgasyms_xs_pu_formula;
+    //     // Reassign the tspin==+1 and tspin==-1 A_{UT} asymmetry formulas
+    //     fsgasyms_xs_uu_pos_formula = fsgasyms_xs_uu_formula;
+    //     fsgasyms_xs_uu_neg_formula = fsgasyms_xs_uu_formula;
+    //     fsgasyms_xs_pu_pos_formula = fsgasyms_xs_pu_formula;
+    //     fsgasyms_xs_pu_neg_formula = fsgasyms_xs_pu_formula;
+    //     fbgasyms_xs_uu_pos_formula = fbgasyms_xs_uu_formula;
+    //     fbgasyms_xs_uu_neg_formula = fbgasyms_xs_uu_formula;
+    //     fbgasyms_xs_pu_pos_formula = fbgasyms_xs_pu_formula;
+    //     fbgasyms_xs_pu_neg_formula = fbgasyms_xs_pu_formula;
 
-        // Check if you have phi_s variable names to replace
-        if (phi_s_original_name!="" && phi_s_original_name_dn!="") {
+    //     // Check if you have phi_s variable names to replace
+    //     if (phi_s_original_name!="" && phi_s_original_name_dn!="") {
 
-            // And put the appropriate sign on the phi_s variable for A_{UT} and A_{LT} asymmetries
-            std::string phi_s_original_name_mc = Form("%s_mc", phi_s_original_name.c_str());
-            std::string phi_s_original_name_mc_neg = Form("%s_mc",phi_s_original_name_dn.c_str());//NOTE: Need to multiply spin vector by -1 and then take phi in g*N CM frame which equates to flipping the angle vector, i.e., phi -> pi + phi = phi', if (phi'>2pi) phi' = phi' - 2pi
-            saga::util::replaceAll(fsgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-            saga::util::replaceAll(fbgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-            saga::util::replaceAll(fsgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-            saga::util::replaceAll(fbgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
-            yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_uu_neg_name.c_str() << " = " << fsgasyms_xs_uu_neg_formula.c_str() << std::endl;
-            yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_uu_neg_name.c_str() << " = " << fbgasyms_xs_uu_neg_formula.c_str() << std::endl;
-            yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_pu_neg_name.c_str() << " = " << fsgasyms_xs_pu_neg_formula.c_str() << std::endl;
-            yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_pu_neg_name.c_str() << " = " << fbgasyms_xs_pu_neg_formula.c_str() << std::endl;
-        }
-    }
+    //         // And put the appropriate sign on the phi_s variable for A_{UT} and A_{LT} asymmetries
+    //         std::string phi_s_original_name_mc = Form("%s_mc", phi_s_original_name.c_str());
+    //         std::string phi_s_original_name_mc_neg = Form("%s_mc",phi_s_original_name_dn.c_str());//NOTE: Need to multiply spin vector by -1 and then take phi in g*N CM frame which equates to flipping the angle vector, i.e., phi -> pi + phi = phi', if (phi'>2pi) phi' = phi' - 2pi
+    //         saga::util::replaceAll(fsgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+    //         saga::util::replaceAll(fbgasyms_xs_uu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+    //         saga::util::replaceAll(fsgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+    //         saga::util::replaceAll(fbgasyms_xs_pu_neg_formula, phi_s_original_name_mc, phi_s_original_name_mc_neg);
+    //         yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_uu_neg_name.c_str() << " = " << fsgasyms_xs_uu_neg_formula.c_str() << std::endl;
+    //         yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_uu_neg_name.c_str() << " = " << fbgasyms_xs_uu_neg_formula.c_str() << std::endl;
+    //         yamlargout << message_prefix.c_str() << "Updated " << fsgasyms_xs_pu_neg_name.c_str() << " = " << fsgasyms_xs_pu_neg_formula.c_str() << std::endl;
+    //         yamlargout << message_prefix.c_str() << "Updated " << fbgasyms_xs_pu_neg_name.c_str() << " = " << fbgasyms_xs_pu_neg_formula.c_str() << std::endl;
+    //     }
+    // }
 
     // Print out nunmber of entries before cuts
     int nentries_precut = d.Count().GetValue();
@@ -399,6 +399,11 @@ void execute(const YAML::Node& node) {
     //     d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
     //     yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     // }
+
+    // Create and draw a dummy histogram
+    yamlargout << message_prefix.c_str() << "Creating dummy histogram to force RDF to process all defines..."<<std::endl;
+    auto h1 = d.Histo1D({"h1","h1",100,0,1},"x"); //NOTE: Create a dummy histogram to force RDF to process all defines up to this point.
+    h1->Draw();
 
     auto d2 = d; //NOTE: No variable definitions for now
 
@@ -422,31 +427,31 @@ void execute(const YAML::Node& node) {
     nentries_precut = d2_filtered.Count().GetValue();
     yamlargout << message_prefix.c_str() << "Dataset entries after mc and data cuts: "<<nentries_precut<<std::endl;
 
-    // Define angular difference variables
-    if (inject_asym) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
-    //TODO: Add output message about defined branches
+    // // Define angular difference variables
+    // if (inject_asym) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
+    // //TODO: Add output message about defined branches
 
     // Print out nunmber of entries after defines
     nentries_precut = d2_filtered.Count().GetValue();
     yamlargout << message_prefix.c_str() << "Dataset entries after angular diff definitions: "<<nentries_precut<<std::endl;
 
-    // Define signal matching condition, and XS values branches
-    if (inject_asym) {
-        d2_filtered = d2_filtered.Define(mc_sg_match_name.c_str(),mc_sg_match_formula.c_str()); //TODO: Throw error if formulas are empty
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_uu_pos_name.c_str(),fsgasyms_xs_uu_pos_formula.c_str());
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_uu_neg_name.c_str(),fsgasyms_xs_uu_neg_formula.c_str());
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_pu_pos_name.c_str(),fsgasyms_xs_pu_pos_formula.c_str());
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_pu_neg_name.c_str(),fsgasyms_xs_pu_neg_formula.c_str());
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_up_name.c_str(),fsgasyms_xs_up_formula.c_str());
-        d2_filtered = d2_filtered.Define(fsgasyms_xs_pp_name.c_str(),fsgasyms_xs_pp_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_uu_pos_name.c_str(),fbgasyms_xs_uu_pos_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_uu_neg_name.c_str(),fbgasyms_xs_uu_neg_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_pu_pos_name.c_str(),fbgasyms_xs_pu_pos_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_pu_neg_name.c_str(),fbgasyms_xs_pu_neg_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_up_name.c_str(),fbgasyms_xs_up_formula.c_str());
-        d2_filtered = d2_filtered.Define(fbgasyms_xs_pp_name.c_str(),fbgasyms_xs_pp_formula.c_str());
-    }
-    //TODO: Add output message about defined branches
+    // // Define signal matching condition, and XS values branches
+    // if (inject_asym) {
+    //     d2_filtered = d2_filtered.Define(mc_sg_match_name.c_str(),mc_sg_match_formula.c_str()); //TODO: Throw error if formulas are empty
+    //     d2_filtered = d2_filtered.Define(fsgasyms_xs_uu_pos_name.c_str(),fsgasyms_xs_uu_pos_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fsgasyms_xs_uu_neg_name.c_str(),fsgasyms_xs_uu_neg_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fsgasyms_xs_pu_pos_name.c_str(),fsgasyms_xs_pu_pos_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fsgasyms_xs_pu_neg_name.c_str(),fsgasyms_xs_pu_neg_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fsgasyms_xs_up_name.c_str(),fsgasyms_xs_up_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fsgasyms_xs_pp_name.c_str(),fsgasyms_xs_pp_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fbgasyms_xs_uu_pos_name.c_str(),fbgasyms_xs_uu_pos_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fbgasyms_xs_uu_neg_name.c_str(),fbgasyms_xs_uu_neg_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fbgasyms_xs_pu_pos_name.c_str(),fbgasyms_xs_pu_pos_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fbgasyms_xs_pu_neg_name.c_str(),fbgasyms_xs_pu_neg_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fbgasyms_xs_up_name.c_str(),fbgasyms_xs_up_formula.c_str());
+    //     d2_filtered = d2_filtered.Define(fbgasyms_xs_pp_name.c_str(),fbgasyms_xs_pp_formula.c_str());
+    // }
+    // //TODO: Add output message about defined branches
 
     int nentries_precsv = d2_filtered.Count().GetValue();
     yamlargout << message_prefix.c_str() << "Dataset entries after cuts and before CSV mapping: "<<nentries_precsv<<std::endl;
