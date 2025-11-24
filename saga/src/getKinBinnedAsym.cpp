@@ -471,11 +471,11 @@ void execute(const YAML::Node& node) {
     // }
     // //TODO: Add output messages about defined branches
 
-    // Define helicity variable, injecting and applying MC matching cuts if requested
-    std::string combined_spin_state_formula  = Form("(int)(10*(%s+1)+%s+1)",helicity_name.c_str(),tspin_name.c_str());
-    auto frame = d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str())
-                                .Define(tspin_name.c_str(), tspin_formula.c_str())
-                                .Define(combined_spin_state.c_str(), combined_spin_state_formula.c_str());
+    // // Define helicity variable, injecting and applying MC matching cuts if requested
+    // std::string combined_spin_state_formula  = Form("(int)(10*(%s+1)+%s+1)",helicity_name.c_str(),tspin_name.c_str());
+    // auto frame = d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str())
+    //                             .Define(tspin_name.c_str(), tspin_formula.c_str())
+    //                             .Define(combined_spin_state.c_str(), combined_spin_state_formula.c_str());
     // auto frame = (!inject_asym) ?
     //                 d2_filtered.Define(helicity_name.c_str(), helicity_formula.c_str())
     //                             .Define(tspin_name.c_str(), tspin_formula.c_str())
@@ -506,10 +506,10 @@ void execute(const YAML::Node& node) {
     //                     phi_s_injected_name
     //                 );
 
-    // DEBUGGING: Count entries after cuts
-    int nentries = frame.Count().GetValue();
-    yamlargout << message_prefix.c_str() << "Dataset entries after cuts: "<<nentries<<std::endl;
-    //TODO: Add output message about defined branches
+    // // DEBUGGING: Count entries after cuts
+    // int nentries = frame.Count().GetValue();
+    // yamlargout << message_prefix.c_str() << "Dataset entries after cuts: "<<nentries<<std::endl;
+    // //TODO: Add output message about defined branches
 
     // // Reassign the phi_s fit variable name if present and injecting an asymmetry
     // if (inject_asym && phi_s_original_name!="") {
