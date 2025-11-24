@@ -393,12 +393,14 @@ void execute(const YAML::Node& node) {
     int nentries_precut = d.Count().GetValue();
     yamlargout << message_prefix.c_str() << "Dataset entries before cuts: "<<nentries_precut<<std::endl;
 
-    // Define variables from formulas
-    auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
-    for (int idx=0; idx<var_formulas.size(); idx++) {
-        d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
-        yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
-    }
+    // // Define variables from formulas
+    // auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
+    // for (int idx=0; idx<var_formulas.size(); idx++) {
+    //     d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
+    //     yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
+    // }
+
+    auto d2 = d; //NOTE: No variable definitions for now
 
     // Print out all column names and defined column names
     for (auto &c : d2.GetColumnNames()) {
