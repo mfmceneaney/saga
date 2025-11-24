@@ -400,6 +400,13 @@ void execute(const YAML::Node& node) {
         yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
     }
 
+    // Print out all column names and defined column names
+    for (auto &c : d2.GetColumnNames()) {
+        yamlargout << message_prefix.c_str() << "\t" << c << std::endl; 
+    }
+
+    yamlargout << message_prefix.c_str() << "cuts = " << cuts.c_str() << endl;
+
     // Print out nunmber of entries after defines
     nentries_precut = d2.Count().GetValue();
     yamlargout << message_prefix.c_str() << "Dataset entries after defines: "<<nentries_precut<<std::endl;
