@@ -45,8 +45,8 @@ void execute(const YAML::Node& node) {
     // FINDBINLIMS
     //----------------------------------------------------------------------------------------------------//
     
-    // Allow multithreading
-    ROOT::EnableImplicitMT(nthreads);
+    // // Allow multithreading
+    // ROOT::EnableImplicitMT(nthreads);
 
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
