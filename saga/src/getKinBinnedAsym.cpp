@@ -12,7 +12,7 @@
 #include <TMath.h>
 
 // Project Includes
-#include <analysis.h>
+// #include <analysis.h>
 #include <bins.h>
 #include <data.h>
 #include <util.h>
@@ -541,7 +541,7 @@ void execute(const YAML::Node& node) {
         else frame.Snapshot(tree.c_str(), out_ds_path.c_str(), dump_vars);
 
         return;
-    }
+    }c\
 
     // Create output log
     std::ofstream outf; outf.open(logpath.c_str());
@@ -578,100 +578,100 @@ void execute(const YAML::Node& node) {
 
         // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
         std::string scheme_name = Form("%s%s",baseoutpath.c_str(),binscheme_name.c_str());
-        saga::analysis::getKinBinnedAsym(
-            scheme_name, // std::string                      scheme_name,
-            frame, // RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
-            "w", // std::string                      workspace_name,
-            "workspace", // std::string                      workspace_title,
+        // saga::analysis::getKinBinnedAsym(
+        //     scheme_name, // std::string                      scheme_name,
+        //     frame, // RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
+        //     "w", // std::string                      workspace_name,
+        //     "workspace", // std::string                      workspace_title,
 
-            // // parameters passed to data::createDataset()
-            "dataset", // std::string                      dataset_name,
-            "dataset", // std::string                      dataset_title,
-            categories_as_float, // std::vector<std::string>         categories_as_float,
-            helicity_name, // std::string                      helicity,
-            helicity_states, // std::map<std::string,int>        helicity_states,
-            tspin_name, // std::string                      tspin,
-            tspin_states, // std::map<std::string,int>        tspin_states,
-            htspin_name, // std::string                      htspin,
-            htspin_states, // std::map<std::string,int>        htspin_states,
-            combined_spin_state, // std::string                      combined_spin_state,
-            bincuts, // std::map<int,std::string>        bincuts,
-            scheme_binvars, // std::vector<std::string>         binvars,
-            scheme_binvar_titles, // std::vector<std::string>         binvar_titles,
-            scheme_binvar_lims, // std::vector<std::vector<double>> binvar_lims,
-            scheme_binvar_bins, // std::vector<int>                 binvar_bins,
-            depolvars, // std::vector<std::string>         depolvars,
-            depolvar_titles, // std::vector<std::string>         depolvar_titles,
-            depolvar_lims, // std::vector<std::vector<double>> depolvar_lims,
-            depolvar_bins, // std::vector<int>                 depolvar_bins,
-            asymfitvars, // std::vector<std::string>         asymfitvars,
-            asymfitvar_titles, // std::vector<std::string>         asymfitvar_titles,
-            asymfitvar_lims, // std::vector<std::vector<double>> asymfitvar_lims,
-            asymfitvar_bins, // std::vector<int>                 asymfitvar_bins,
-            massfitvars, // std::vector<std::string>         massfitvars,
-            massfitvar_titles, // std::vector<std::string>         massfitvar_titles,
-            massfitvar_lims, // std::vector<std::vector<double>> massfitvar_lims,
-            massfitvar_bins, // std::vector<int>                 massfitvar_bins,
+        //     // // parameters passed to data::createDataset()
+        //     "dataset", // std::string                      dataset_name,
+        //     "dataset", // std::string                      dataset_title,
+        //     categories_as_float, // std::vector<std::string>         categories_as_float,
+        //     helicity_name, // std::string                      helicity,
+        //     helicity_states, // std::map<std::string,int>        helicity_states,
+        //     tspin_name, // std::string                      tspin,
+        //     tspin_states, // std::map<std::string,int>        tspin_states,
+        //     htspin_name, // std::string                      htspin,
+        //     htspin_states, // std::map<std::string,int>        htspin_states,
+        //     combined_spin_state, // std::string                      combined_spin_state,
+        //     bincuts, // std::map<int,std::string>        bincuts,
+        //     scheme_binvars, // std::vector<std::string>         binvars,
+        //     scheme_binvar_titles, // std::vector<std::string>         binvar_titles,
+        //     scheme_binvar_lims, // std::vector<std::vector<double>> binvar_lims,
+        //     scheme_binvar_bins, // std::vector<int>                 binvar_bins,
+        //     depolvars, // std::vector<std::string>         depolvars,
+        //     depolvar_titles, // std::vector<std::string>         depolvar_titles,
+        //     depolvar_lims, // std::vector<std::vector<double>> depolvar_lims,
+        //     depolvar_bins, // std::vector<int>                 depolvar_bins,
+        //     asymfitvars, // std::vector<std::string>         asymfitvars,
+        //     asymfitvar_titles, // std::vector<std::string>         asymfitvar_titles,
+        //     asymfitvar_lims, // std::vector<std::vector<double>> asymfitvar_lims,
+        //     asymfitvar_bins, // std::vector<int>                 asymfitvar_bins,
+        //     massfitvars, // std::vector<std::string>         massfitvars,
+        //     massfitvar_titles, // std::vector<std::string>         massfitvar_titles,
+        //     massfitvar_lims, // std::vector<std::vector<double>> massfitvar_lims,
+        //     massfitvar_bins, // std::vector<int>                 massfitvar_bins,
 
-            // // parameterss passed to analysis::fitAsym()
-            bpol, // double                           bpol,
-            tpol, // double                           tpol,
-            asymfit_formula_uu, // std::string                      asymfit_formula_uu,
-            asymfit_formula_pu, // std::string                      asymfit_formula_pu,
-            asymfit_formula_up, // std::string                      asymfit_formula_up,
-            asymfit_formula_pp, // std::string                      asymfit_formula_pp,
-            asymfitpar_inits, // std::vector<double>              asymfitpar_inits,
-            asymfitpar_initlims, // std::vector<std::vector<double>> asymfitpar_initlims,
-            use_sumw2error, // bool                             use_sumw2error,
-            use_average_depol, // bool                             use_average_depol,
-            use_extended_nll, // bool                             use_extended_nll,
-            use_binned_fit, // bool                             use_binned_fit,
+        //     // // parameterss passed to analysis::fitAsym()
+        //     bpol, // double                           bpol,
+        //     tpol, // double                           tpol,
+        //     asymfit_formula_uu, // std::string                      asymfit_formula_uu,
+        //     asymfit_formula_pu, // std::string                      asymfit_formula_pu,
+        //     asymfit_formula_up, // std::string                      asymfit_formula_up,
+        //     asymfit_formula_pp, // std::string                      asymfit_formula_pp,
+        //     asymfitpar_inits, // std::vector<double>              asymfitpar_inits,
+        //     asymfitpar_initlims, // std::vector<std::vector<double>> asymfitpar_initlims,
+        //     use_sumw2error, // bool                             use_sumw2error,
+        //     use_average_depol, // bool                             use_average_depol,
+        //     use_extended_nll, // bool                             use_extended_nll,
+        //     use_binned_fit, // bool                             use_binned_fit,
 
-            // // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
-            massfit_yamlfile_map, 
-            massfit_pdf_name, // std::string                      massfit_pdf_name,
-            massfit_formula_sg, // std::string                      massfit_formula_sg,
-            massfit_formula_bg, // std::string                      massfit_formula_bg,
-            massfit_sgYield_name, // std::string                      massfit_sgYield_name,
-            massfit_bgYield_name, // std::string                      massfit_bgYield_name,
-            massfit_initsgfrac, // double                           massfit_initsgfrac,
-            massfit_parinits_sg, // std::vector<double>              massfit_parinits_sg,
-            massfit_parnames_sg, // std::vector<std::string>         massfit_parnames_sg,
-            massfit_partitles_sg, // std::vector<std::string>         massfit_partitles_sg,
-            massfit_parunits_sg, // std::vector<std::string>         massfit_parunits_sg,
-            massfit_parlims_sg, // std::vector<std::vector<double>> massfit_parlims_sg,
-            massfit_parinits_bg, // std::vector<double>              massfit_parinits_bg,
-            massfit_parnames_bg, // std::vector<std::string>         massfit_parnames_bg,
-            massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
-            massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
-            massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
-            massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
+        //     // // parameters passed to saga::signal::fitMass() //TODO: Add init fit parameter value and limits arguments here...assuming you always want a chebychev polynomial background...
+        //     massfit_yamlfile_map, 
+        //     massfit_pdf_name, // std::string                      massfit_pdf_name,
+        //     massfit_formula_sg, // std::string                      massfit_formula_sg,
+        //     massfit_formula_bg, // std::string                      massfit_formula_bg,
+        //     massfit_sgYield_name, // std::string                      massfit_sgYield_name,
+        //     massfit_bgYield_name, // std::string                      massfit_bgYield_name,
+        //     massfit_initsgfrac, // double                           massfit_initsgfrac,
+        //     massfit_parinits_sg, // std::vector<double>              massfit_parinits_sg,
+        //     massfit_parnames_sg, // std::vector<std::string>         massfit_parnames_sg,
+        //     massfit_partitles_sg, // std::vector<std::string>         massfit_partitles_sg,
+        //     massfit_parunits_sg, // std::vector<std::string>         massfit_parunits_sg,
+        //     massfit_parlims_sg, // std::vector<std::vector<double>> massfit_parlims_sg,
+        //     massfit_parinits_bg, // std::vector<double>              massfit_parinits_bg,
+        //     massfit_parnames_bg, // std::vector<std::string>         massfit_parnames_bg,
+        //     massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
+        //     massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
+        //     massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
+        //     massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
 
-            // // Parameters passed to analysis::applySPlots()
-            use_splot, // bool                             use_splot,
+        //     // // Parameters passed to analysis::applySPlots()
+        //     use_splot, // bool                             use_splot,
 
-            // // Parameters used for sb subtraction
-            massfit_sgcut, // std::string                      massfit_sgcut,
-            massfit_bgcut, // std::string                      massfit_bgcut,
-            use_sb_subtraction, // bool                             use_sb_subtraction,
-            use_binned_sb_bgfracs, // bool                             use_binned_sb_bgfracs,
-            asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
-            bgfracvar, // std::string                      bgfracvar,
-            bgfracvar_lims, // std::vector<double>              bgfracvar_lims,
-            bgfrac_idx, // int                              bgfrac_idx               = 0,
+        //     // // Parameters used for sb subtraction
+        //     massfit_sgcut, // std::string                      massfit_sgcut,
+        //     massfit_bgcut, // std::string                      massfit_bgcut,
+        //     use_sb_subtraction, // bool                             use_sb_subtraction,
+        //     use_binned_sb_bgfracs, // bool                             use_binned_sb_bgfracs,
+        //     asymfitvar_bincuts, // std::map<int,std::string>        asymfitvar_bincuts,
+        //     bgfracvar, // std::string                      bgfracvar,
+        //     bgfracvar_lims, // std::vector<double>              bgfracvar_lims,
+        //     bgfrac_idx, // int                              bgfrac_idx               = 0,
 
-            // // Parameters passed to signal::fitMass()
-            massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
-            massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
-            massfit_lg_ncols, // int                              massfit_lg_ncols         = 1,
-            massfit_plot_bg_pars, // bool                             massfit_plot_bg_pars     = false,
-            massfit_use_sumw2error, // bool                             massfit_use_sumw2error   = false,
-            massfit_use_extended_nll, // bool                             massfit_use_extended_nll = true,
-            massfit_use_binned_fit, // bool                             massfit_use_binned_fit   = false,
+        //     // // Parameters passed to signal::fitMass()
+        //     massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
+        //     massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
+        //     massfit_lg_ncols, // int                              massfit_lg_ncols         = 1,
+        //     massfit_plot_bg_pars, // bool                             massfit_plot_bg_pars     = false,
+        //     massfit_use_sumw2error, // bool                             massfit_use_sumw2error   = false,
+        //     massfit_use_extended_nll, // bool                             massfit_use_extended_nll = true,
+        //     massfit_use_binned_fit, // bool                             massfit_use_binned_fit   = false,
 
-            // // Ouput stream
-            out // std::ostream                    &out                      = std::cout
-        );
+        //     // // Ouput stream
+        //     out // std::ostream                    &out                      = std::cout
+        // );
     } // for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 
 } // void execute()
