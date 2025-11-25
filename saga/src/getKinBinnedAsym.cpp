@@ -267,8 +267,11 @@ void execute(const YAML::Node& node) {
     // ANALYSIS
     //----------------------------------------------------------------------------------------------------//
     
-    // Allow multithreading
-    ROOT::EnableImplicitMT(nthreads);
+    // // DO NOT Allow multithreading.
+    // // This will cause issues with TTreeReader
+    // // Internally in RDataFrame.  Furthermore,
+    // // it is incompatible with RooFit RooDataset.
+    // ROOT::EnableImplicitMT(nthreads);
 
     // Add all absolute variable limits to overall cuts
     cuts = saga::util::addLimitCuts(cuts,binvars,binvar_lims);
