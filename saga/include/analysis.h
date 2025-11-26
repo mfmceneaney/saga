@@ -642,6 +642,7 @@ vector<string> getGenAsymPdf(
         }
     }
 
+    LOG_DEBUG(Form("Importing model %s into workspace...", model_name.c_str()));
     w->import(*model);
     return model_and_yield_names;
 
