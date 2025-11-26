@@ -106,12 +106,14 @@ RooArgSet* getSubRooArgSet(
     for (int idx = 0; idx<varformulas.size(); idx++) {
 
         // Check if fit formula contains variable formula
+        LOG_DEBUG(Form("Checking if fit formula contains variable formula: %s", varformulas[idx].c_str()));
         if (fitformula.find(varformulas[idx]) != string::npos) {
 
             // Find the RooRealVar in the argset
+            LOG_DEBUG(Form("Adding variable \"%s\" with formula \"%s\" to subargset", varnames[idx].c_str(), varformulas[idx].c_str()));
             RooRealVar *var = (RooRealVar*)argset->find(varnames[idx].c_str());
             if (var==nullptr) {
-                cerr << "ERROR: RooRealVar \"" << varnames[idx].c_str() << "\" with formula \"" << varformulas[idx].c_str() << "\" not found in argset" << endl;
+                LOG_WARNING(Form("Skipping RooRealVar \"%s\" with formula \"%s\" since not found in argset", varnames[idx].c_str(), varformulas[idx].c_str()));
                 continue;
             }
             subargset->add(*var);
@@ -150,6 +152,7 @@ string getSubFormula(
         for (int idx = 0; idx<varformulas.size(); idx++) {
 
             // Check if fit formula contains variable formula
+            LOG_DEBUG(Form("Checking if fit formula contains variable formula: %s", varformulas[idx].c_str()));
             if (fitformula.find(varformulas[idx]) != string::npos) {
 
                 // Replace variable and increment index of variables added
@@ -162,6 +165,7 @@ string getSubFormula(
         for (int idx = varformulas.size()-1; idx>=0; idx--) {
 
             // Check if fit formula contains variable formula
+            LOG_DEBUG(Form("Checking if fit formula contains variable formula: %s", varformulas[idx].c_str()));
             if (fitformula.find(varformulas[idx]) != string::npos) {
 
                 // Replace variable and increment index of variables added
@@ -281,6 +285,8 @@ vector<string> getGenAsymPdf(
     string model_name = Form("model_%s_%s",method_name.c_str(),binid.c_str());
     vector<string> model_and_yield_names;
 
+    LOG_DEBUG(Form("Creating PDF: %s", model_name.c_str()));
+
     // Create simple pdf here if not using simultaneous PDF
     if (categories_as_float.size()>0) {
 
@@ -317,10 +323,12 @@ vector<string> getGenAsymPdf(
 
         // Create PDF
         fitformula_full = fitformula_full!="" ? Form("1.0+(%s)",subfitformula_full.c_str()): "1.0";
+        LOG_DEBUG(Form("Creating generic pdf %s with formula: %s", model_name.c_str(), fitformula_full.c_str()));
         RooGenericPdf _model_full(Form("_%s_full",model_name.c_str()), fitformula_full.c_str(), *argset_full);
 
         // Create extended PDF
         RooRealVar nsig_full(Form("nsig_%s_full",model_name.c_str()), "number of signal events", count, 0.0, 2.0*count);
+        LOG_DEBUG(Form("Creating extended pdf %s with nsig: %s", model_name.c_str(), nsig_full.GetName()));
         RooExtendPdf model_full(Form("%s_full",model_name.c_str()), "extended signal pdf", _model_full, nsig_full);
 
         // Import the PDF and return the model and yield names
@@ -353,10 +361,12 @@ vector<string> getGenAsymPdf(
 
     // Create pdf helicity==0
     string fitformula_11 = fitformula_uu!="" ? Form("1.0+(%s)",subfitformula_uu.c_str()): "1.0";
+    LOG_DEBUG(Form("Creating generic pdf %s_11 for helicity=0 with formula: %s", model_name.c_str(), fitformula_11.c_str()));
     RooGenericPdf _model_11(Form("_%s_11",model_name.c_str()), fitformula_11.c_str(), *argset_uu);
 
     // Create extended pdf helicity==0
     RooRealVar nsig_11(Form("nsig_%s_11",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_11 with nsig: %s", model_name.c_str(), nsig_11.GetName()));
     RooExtendPdf model_11(Form("%s_11",model_name.c_str()), "extended signal pdf", _model_11, nsig_11);
 
     //----- Create UU/UT starting fit formula -----//
@@ -374,17 +384,21 @@ vector<string> getGenAsymPdf(
     string subfitformula_20_02 = getSubFormula(fitformula_20_02, varformulas);
 
     // Create pdf htspin==+1
+    LOG_DEBUG(Form("Creating generic pdf %s_22_00 for htspin=+1 with formula: %s", model_name.c_str(), fitformula_22_00.c_str()));
     RooGenericPdf _model_22_00(Form("_%s_22_00",model_name.c_str()), subfitformula_22_00.c_str(), *argset_pp);
 
     // Create extended pdf htspin==+1
     RooRealVar nsig_22_00(Form("nsig_%s_22_00",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_22_00 with nsig: %s", model_name.c_str(), Form("nsig_%s_22_00",model_name.c_str())));
     RooExtendPdf model_22_00(Form("%s_22_00",model_name.c_str()), "extended signal pdf", _model_22_00, nsig_22_00);
 
     // Create pdf htspin==-1
+    LOG_DEBUG(Form("Creating generic pdf %s_20_02 for htspin=-1 with formula: %s", model_name.c_str(), fitformula_20_02.c_str()));
     RooGenericPdf _model_20_02(Form("_%s_20_02",model_name.c_str()), subfitformula_20_02.c_str(), *argset_pp);
 
     // Create extended pdf htspin==-1
     RooRealVar nsig_20_02(Form("nsig_%s_20_02",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_20_02 with nsig: %s", model_name.c_str(), Form("nsig_%s_20_02",model_name.c_str())));
     RooExtendPdf model_20_02(Form("%s_20_02",model_name.c_str()), "extended signal pdf", _model_20_02, nsig_20_02);
 
     //----- Beam helicity dependent terms -----//
@@ -399,17 +413,21 @@ vector<string> getGenAsymPdf(
     string subfitformula_01 = getSubFormula(fitformula_01, varformulas);
 
     // Create pdf (h,t,ht) -> ( 1, 0, 0)
+    LOG_DEBUG(Form("Creating generic pdf %s_21 for helicity=+1 with formula: %s", model_name.c_str(), fitformula_21.c_str()));
     RooGenericPdf _model_21(Form("_%s_21",model_name.c_str()), subfitformula_21.c_str(), *argset_pu);
 
     // Create extended pdf (h,t,ht) -> ( 1, 0, 0)
     RooRealVar nsig_21(Form("nsig_%s_21",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_21 with nsig: %s", model_name.c_str(), nsig_21.GetName()));
     RooExtendPdf model_21(Form("%s_21",model_name.c_str()), "extended signal pdf", _model_21, nsig_21);
 
     // Create pdf (h,t,ht) -> (-1, 0, 0)
+    LOG_DEBUG(Form("Creating generic pdf %s_01 for helicity=-1 with formula: %s", model_name.c_str(), fitformula_01.c_str()));
     RooGenericPdf _model_01(Form("_%s_01",model_name.c_str()), subfitformula_01.c_str(), *argset_pu);
 
     // Create extended pdf (h,t,ht) -> (-1, 0, 0)
     RooRealVar nsig_01(Form("nsig_%s_01",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_01 with nsig: %s", model_name.c_str(), nsig_01.GetName()));
     RooExtendPdf model_01(Form("%s_01",model_name.c_str()), "extended signal pdf", _model_01, nsig_01);
 
     //----- Target spin dependent terms -----//
@@ -424,50 +442,62 @@ vector<string> getGenAsymPdf(
     string subfitformula_10 = getSubFormula(fitformula_10, varformulas);
 
     // Create pdf (h,t,ht) -> ( 0, 1, 0)
+    LOG_DEBUG(Form("Creating generic pdf %s_12 for tspin=+1 with formula: %s", model_name.c_str(), fitformula_12.c_str()));
     RooGenericPdf _model_12(Form("_%s_12",model_name.c_str()), subfitformula_12.c_str(), *argset_up);
 
     // Create extended pdf (h,t,ht) -> ( 0, 1, 0)
     RooRealVar nsig_12(Form("nsig_%s_12",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_12 with nsig: %s", model_name.c_str(), nsig_12.GetName()));
     RooExtendPdf model_12(Form("%s_12",model_name.c_str()), "extended signal pdf", _model_12, nsig_12);
 
     // Create pdf (h,t,ht) -> ( 0,-1, 0)
+    LOG_DEBUG(Form("Creating generic pdf %s_10 for tspin=-1 with formula: %s", model_name.c_str(), fitformula_10.c_str()));
     RooGenericPdf _model_10(Form("_%s_10",model_name.c_str()), subfitformula_10.c_str(), *argset_up);
 
     // Create extended pdf (h,t,ht) -> ( 0,-1, 0)
     RooRealVar nsig_10(Form("nsig_%s_10",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_10 with nsig: %s", model_name.c_str(), nsig_10.GetName()));
     RooExtendPdf model_10(Form("%s_10",model_name.c_str()), "extended signal pdf", _model_10, nsig_10);
 
     //----- Beam helicity and target spin dependent terms -----//
     // Create pdf (h,t,ht) -> ( 1, 1, 1)
     string fitformula_22 = Form("%s+%.3f*(%s)+%.3f*(%s)+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    LOG_DEBUG(Form("Creating generic pdf %s_22 for (h,t,ht)=(1,1,1) with formula: %s", model_name.c_str(), fitformula_22.c_str()));
     RooGenericPdf _model_22(Form("_%s_22",model_name.c_str()), fitformula_22.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> ( 1, 1, 1)
     RooRealVar nsig_22(Form("nsig_%s_22",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_22 with nsig: %s", model_name.c_str(), nsig_22.GetName()));
     RooExtendPdf model_22(Form("%s_22",model_name.c_str()), "extended signal pdf", _model_22, nsig_22);
 
     // Create pdf (h,t,ht) -> (-1,-1, 1)
     string fitformula_00 = Form("%s-%.3f*(%s)-%.3f*(%s)+%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    LOG_DEBUG(Form("Creating generic pdf %s_00 for (h,t,ht)=(-1,-1,1) with formula: %s", model_name.c_str(), fitformula_00.c_str()));
     RooGenericPdf _model_00(Form("_%s_00",model_name.c_str()), fitformula_00.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> (-1,-1, 1)
     RooRealVar nsig_00(Form("nsig_%s_00",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_00 with nsig: %s", model_name.c_str(), nsig_00.GetName()));
     RooExtendPdf model_00(Form("%s_00",model_name.c_str()), "extended signal pdf", _model_00, nsig_00);
 
     // Create pdf (h,t,ht) -> (-1, 1,-1)
     string fitformula_02 = Form("%s-%.3f*(%s)+%.3f*(%s)-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    LOG_DEBUG(Form("Creating generic pdf %s_02 for (h,t,ht)=(-1,1,-1) with formula: %s", model_name.c_str(), fitformula_02.c_str()));
     RooGenericPdf _model_02(Form("_%s_02",model_name.c_str()), fitformula_02.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> (-1, 1,-1)
     RooRealVar nsig_02(Form("nsig_%s_02",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_02 with nsig: %s", model_name.c_str(), nsig_02.GetName()));
     RooExtendPdf model_02(Form("%s_02",model_name.c_str()), "extended signal pdf", _model_02, nsig_02);
 
     // Create pdf (h,t,ht) -> ( 1,-1,-1)
     string fitformula_20 = Form("%s+%.3f*(%s)-%.3f*(%s)-%.3f*(%s)",fitformula_uu_ut.c_str(),bpol,fitformula_pu!="" ? fitformula_pu.c_str() : fitformula_unused.c_str(),tpol,fitformula_up!="" ? fitformula_up.c_str() : fitformula_unused.c_str(),bpol*tpol,fitformula_pp!="" ? fitformula_pp.c_str() : fitformula_unused.c_str());
+    LOG_DEBUG(Form("Creating generic pdf %s_20 for (h,t,ht)=(1,-1,-1) with formula: %s", model_name.c_str(), fitformula_20.c_str()));
     RooGenericPdf _model_20(Form("_%s_20",model_name.c_str()), fitformula_20.c_str(), *argset);
 
     // Create extended pdf (h,t,ht) -> ( 1,-1,-1)
     RooRealVar nsig_20(Form("nsig_%s_20",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("Creating extended pdf %s_20 with nsig: %s", model_name.c_str(), nsig_20.GetName()));
     RooExtendPdf model_20(Form("%s_20",model_name.c_str()), "extended signal pdf", _model_20, nsig_20);
 
     // Construct helicity dependent pdf
@@ -475,6 +505,7 @@ vector<string> getGenAsymPdf(
 
         // Create the simultaneous pdf
         if (use_extended_nll) {
+            LOG_DEBUG("Creating beam helicity dependent simultaneous extended pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {h->lookupName(1), &model_21}, {h->lookupName(0), &model_11}, {h->lookupName(-1), &model_01}
@@ -485,6 +516,7 @@ vector<string> getGenAsymPdf(
             model_and_yield_names.push_back(nsig_01.GetName());
         }
         else {
+            LOG_DEBUG("Creating beam helicity dependent simultaneous pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {h->lookupName(1), &_model_21}, {h->lookupName(0), &_model_11}, {h->lookupName(-1), &_model_01}
@@ -498,6 +530,7 @@ vector<string> getGenAsymPdf(
 
         // Create the simultaneous pdf
         if (use_extended_nll) {
+            LOG_DEBUG("Creating target spin dependent simultaneous extended pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {t->lookupName(1), &model_12}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_10}
@@ -508,6 +541,7 @@ vector<string> getGenAsymPdf(
             model_and_yield_names.push_back(nsig_10.GetName());
         }
         else {
+            LOG_DEBUG("Creating target spin dependent simultaneous pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {t->lookupName(1), &_model_12}, {t->lookupName(0), &_model_11}, {t->lookupName(-1), &_model_10}
@@ -521,6 +555,7 @@ vector<string> getGenAsymPdf(
 
         // Create the simultaneous pdf
         if (use_extended_nll) {
+            LOG_DEBUG("Creating beam helicity times target spin dependent simultaneous extended pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {ht->lookupName(1), &model_22_00}, {ht->lookupName(0), &model_11}, {ht->lookupName(-1), &model_20_02}
@@ -531,6 +566,7 @@ vector<string> getGenAsymPdf(
             model_and_yield_names.push_back(nsig_20_02.GetName());
         }
         else {
+            LOG_DEBUG("Creating beam helicity times target spin dependent simultaneous pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {ht->lookupName(1), &_model_22_00}, {ht->lookupName(0), &_model_11}, {ht->lookupName(-1), &_model_20_02}
@@ -544,6 +580,7 @@ vector<string> getGenAsymPdf(
 
         // Create the simultaneous pdf
         if (use_extended_nll) {
+            LOG_DEBUG("Creating full beam helicity and target spin dependent simultaneous extended pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {ss->lookupName(11), &model_11}, // Polarization states: UU
@@ -558,6 +595,7 @@ vector<string> getGenAsymPdf(
             model_and_yield_names.push_back(nsig_02.GetName()); model_and_yield_names.push_back(nsig_20.GetName());            
         }
         else {
+            LOG_DEBUG("Creating beam helicity and target spin dependent simultaneous pdf");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {ss->lookupName(11), &_model_11}, // Polarization states: UU
@@ -574,6 +612,7 @@ vector<string> getGenAsymPdf(
 
         // Create the simultaneous pdf
         if (use_extended_nll) {
+            LOG_DEBUG("Creating beam helicity and target spin dependent simultaneous extended pdf with unpolarized terms");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {ss->lookupName(11), &model_11}, // Polarization states: UU
@@ -590,6 +629,7 @@ vector<string> getGenAsymPdf(
             model_and_yield_names.push_back(nsig_02.GetName()); model_and_yield_names.push_back(nsig_20.GetName());            
         }
         else {
+            LOG_DEBUG("Creating beam helicity and target spin dependent simultaneous pdf with unpolarized terms");
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
                 {ss->lookupName(11), &_model_11}, // Polarization states: UU
@@ -747,6 +787,7 @@ vector<double> fitAsym(
     string method_name = "fitAsym";
 
     // Load helicity variable from workspace
+    LOG_DEBUG(Form("[%s] Loading RooCategory variables %s, %s, %s, and %s from workspace...", method_name.c_str(), helicity.c_str(), tspin.c_str(), htspin.c_str(), combined_spin_state.c_str()));
     RooCategory * h  = w->cat(helicity.c_str());
     RooCategory * t  = w->cat(tspin.c_str());
     RooCategory * ht = w->cat(htspin.c_str());
@@ -755,16 +796,20 @@ vector<double> fitAsym(
     // Load fit variables from workspace
     RooRealVar * f[(const int)fitvars.size()];
     for (int i=0; i<fitvars.size(); i++) {
+        LOG_DEBUG(Form("[%s] Loading RooRealVar fit variable %s from workspace...", method_name.c_str(), fitvars[i].c_str()));
         f[i] = w->var(fitvars[i].c_str());
     }
 
     // Load dataset from workspace
+    LOG_DEBUG(Form("[%s] Loading RooDataSet %s from workspace...", method_name.c_str(), dataset_name.c_str()));
     RooDataSet *ds = (RooDataSet*)w->data(dataset_name.c_str());
 
     // Apply bin cuts
+    LOG_DEBUG(Form("[%s] Applying bin cut: %s", method_name.c_str(), bincut.c_str()));
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
 
     // Get count
+    LOG_DEBUG(Form("[%s] Getting bin count...", method_name.c_str()));
     auto count = (int)bin_ds->sumEntries();
 
     // Get bin variable means and errors
@@ -772,6 +817,7 @@ vector<double> fitAsym(
     vector<double> binvarerrs;
     RooRealVar * b[(const int)binvars.size()];
     for (int i=0; i<binvars.size(); i++) {
+        LOG_DEBUG(Form("[%s] Getting mean and error for bin variable %s...", method_name.c_str(), binvars[i].c_str()));
         b[i] = w->var(binvars[i].c_str());
         double mean   = bin_ds->mean(*b[i]);
         double stddev = TMath::Sqrt(bin_ds->moment(*b[i],2.0));
@@ -784,6 +830,7 @@ vector<double> fitAsym(
     vector<double> depolerrs;
     RooRealVar * d[(const int)depolvars.size()];
     for (int i=0; i<depolvars.size(); i++) {
+        LOG_DEBUG(Form("[%s] Getting mean and error for depolarization variable %s...", method_name.c_str(), depolvars[i].c_str()));
         d[i] = w->var(depolvars[i].c_str());
         double mean   = bin_ds->mean(*d[i]);
         double stddev = TMath::Sqrt(bin_ds->moment(*d[i],2.0));
@@ -796,12 +843,14 @@ vector<double> fitAsym(
     int nparams = initparams.size();
     RooRealVar *a[nparams];
     for (int aa=0; aa<nparams; aa++) {
+        LOG_DEBUG(Form("[%s] Creating asymmetry parameter a%d with initial value %.3f and limits [%.3f, %.3f]...", method_name.c_str(), aa, initparams[aa], initparamlims[aa][0], initparamlims[aa][1]));
         string aname = Form("a%d",aa);
         anames.push_back(aname);
         a[aa] = new RooRealVar(anames[aa].c_str(),anames[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
     }
 
     // Add parameters to argument list in order
+    LOG_DEBUG(Form("[%s] Creating RooArgSet for asymmetry PDF parameters...", method_name.c_str()));
     RooArgSet *argset = new RooArgSet();
     vector<string> argnames;
     for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
@@ -827,18 +876,23 @@ vector<double> fitAsym(
     if (sb_dataset_name!="") {
 
         // Load bgfrac variable from workspace
+        LOG_DEBUG(Form("[%s] Loading binned background fraction variable %s from workspace...", method_name.c_str(), bgfracvar.c_str()));
         bgf = w->var(bgfracvar.c_str());
 
         // Initialize region category
+        LOG_DEBUG(Form("[%s] Creating RooCategory variable region for signal and sideband datasets...", method_name.c_str()));
         region = new RooCategory("region", "region");
         region->defineType("signal");
         region->defineType("sideband");
 
         // Load sideband dataset and apply bin cut
+        LOG_DEBUG(Form("[%s] Loading RooDataSet %s from workspace...", method_name.c_str(), sb_dataset_name.c_str()));
         ds_sb = (RooDataSet*)w->data(sb_dataset_name.c_str());
+        LOG_DEBUG(Form("[%s] Applying bin cut: %s", method_name.c_str(), bincut.c_str()));
         bin_ds_sb = (RooDataSet*)ds_sb->reduce(bincut.c_str());
 
         // Construct combined dataset indexed on signal and background
+        LOG_DEBUG(Form("[%s] Creating combined RooDataSet indexed on signal and sideband regions...", method_name.c_str()));
         bin_ds = new RooDataSet(bin_ds->GetName(), bin_ds->GetTitle(), *bin_ds->get(), Index(*region),
                             Import({{"signal", bin_ds}, {"sideband", bin_ds_sb}}));
     }
@@ -848,6 +902,7 @@ vector<double> fitAsym(
     RooRealVar *a_sb[nparams];
     if (sb_dataset_name!="") {
         for (int aa=0; aa<nparams; aa++) {
+            LOG_DEBUG(Form("[%s] Creating background asymmetry parameter a_bg%d with initial value %.3f and limits [%.3f, %.3f]...", method_name.c_str(), aa, initparams[aa], initparamlims[aa][0], initparamlims[aa][1]));
             string aname = Form("a_bg%d",aa);
             anames_sb.push_back(aname);
             a_sb[aa] = new RooRealVar(anames_sb[aa].c_str(),anames_sb[aa].c_str(),initparams[aa],initparamlims[aa][0],initparamlims[aa][1]);
@@ -858,6 +913,7 @@ vector<double> fitAsym(
     RooArgSet *argset_sb = new RooArgSet();
     vector<string> argnames_sb;
     if (sb_dataset_name!="") {
+        LOG_DEBUG(Form("[%s] Creating RooArgSet for background asymmetry PDF parameters...", method_name.c_str()));
         for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
             argset_sb->add(*f[ff]);
             argnames_sb.push_back(f[ff]->GetName());
@@ -875,6 +931,7 @@ vector<double> fitAsym(
     }
 
     // Create and load asymmetry PDF
+    LOG_DEBUG(Form("[%s] Creating asymmetry PDF...", method_name.c_str()));
     vector<string> model_and_yield_names = getGenAsymPdf(
         w,
         categories_as_float,
@@ -903,6 +960,7 @@ vector<double> fitAsym(
     string binid_sb;
     if (sb_dataset_name!="") {
         binid_sb = Form("%s_sb",binid.c_str());
+        LOG_DEBUG(Form("[%s] Creating background asymmetry PDF...", method_name.c_str()));
         model_and_yield_names_bg = getGenAsymPdf(
             w,
             categories_as_float,
@@ -934,12 +992,13 @@ vector<double> fitAsym(
 
     // Load the signal PDF
     if (sb_dataset_name=="") {
-
+        LOG_DEBUG(Form("[%s] Loading signal PDF %s from workspace...", method_name.c_str(), model_name.c_str()));
         model = w->pdf(model_name.c_str());
 
     } else {
 
         // Load signal and background PDFs
+        LOG_DEBUG(Form("[%s] Loading signal PDF %s and background PDF %s from workspace...", method_name.c_str(), model_name.c_str(), model_name_bg.c_str()));
         model_sg = w->pdf(model_name.c_str());
         model_bg = w->pdf(model_name_bg.c_str());
 
@@ -948,6 +1007,7 @@ vector<double> fitAsym(
         model_bg_plus_sg = new RooAddPdf(model_bg_plus_sg_name.c_str(), model_bg_plus_sg_name.c_str(), RooArgList(*model_bg, *model_sg), RooArgList(*bgf)); //NOTE: ORDER IS IMPORTANT HERE!
 
         // Construct a simultaneous PDF for the signal and background regions
+        LOG_DEBUG(Form("[%s] Creating simultaneous PDF for signal and sideband regions...", method_name.c_str()));
         model = new RooSimultaneous(Form("%s_sb_bgfracs",model_name.c_str()), "simultaneous pdf",
                 {
                     {"signal", model_bg_plus_sg},
@@ -962,14 +1022,17 @@ vector<double> fitAsym(
     if (use_binned_fit) {
 
         // Create binned data
+        LOG_DEBUG(Form("[%s] Creating binned dataset for binned fit...", method_name.c_str()));
         unique_ptr<RooDataHist> dh = (unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit pdf
+        LOG_DEBUG(Form("[%s] Fitting binned dataset to asymmetry PDF...", method_name.c_str()));
         r = (unique_ptr<RooFitResult>)model->fitTo(*dh, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
 
     } else {
 
         // Fit pdf
+        LOG_DEBUG(Form("[%s] Fitting unbinned dataset to asymmetry PDF...", method_name.c_str()));
         r = (unique_ptr<RooFitResult>)model->fitTo(*bin_ds, RooFit::Save(), RooFit::SumW2Error(use_sumw2error), RooFit::PrintLevel(-1));
     }
     
@@ -977,6 +1040,7 @@ vector<double> fitAsym(
     r->Print("v");
 
     // Extract covariance and correlation matrix as TMatrixDSym
+    LOG_DEBUG(Form("[%s] Extracting covariance and correlation matrices...", method_name.c_str()));
     const TMatrixDSym &corMat = r->correlationMatrix();
     const TMatrixDSym &covMat = r->covarianceMatrix();
 
@@ -1013,6 +1077,7 @@ vector<double> fitAsym(
     vector<double> params;
     vector<double> paramerrs;
     for (int aa=0; aa<nparams; aa++) {
+        LOG_DEBUG(Form("[%s] Getting fit parameter %s value and error...", method_name.c_str(), a[aa]->GetName()));
         RooRealVar *avar = (RooRealVar*)w->var(a[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
         params.push_back((double)avar->getVal());
         paramerrs.push_back((double)avar->getError());
@@ -1023,6 +1088,7 @@ vector<double> fitAsym(
     vector<double> paramerrs_bg;
     if (sb_dataset_name!="") {
         for (int aa=0; aa<nparams; aa++) {
+            LOG_DEBUG(Form("[%s] Getting background fit parameter %s value and error...", method_name.c_str(), a_sb[aa]->GetName()));
             RooRealVar *avar_sb = (RooRealVar*)w->var(a_sb[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
             params_bg.push_back((double)avar_sb->getVal());
             paramerrs_bg.push_back((double)avar_sb->getError());
@@ -1030,6 +1096,7 @@ vector<double> fitAsym(
     }
 
     // Get the raw counts and poissonian errors
+    LOG_DEBUG(Form("[%s] Getting raw counts and poissonian errors for helicity and spin states...", method_name.c_str()));
     vector<double> counts;
     vector<double> counterrs;
     double count_h_pos  = (double)bin_ds->reduce(Form("%s>0",h->GetName()))->sumEntries();
@@ -1050,6 +1117,7 @@ vector<double> fitAsym(
 
         // Loop fitted yields and get values and errors
         for (int nn=1; nn<model_and_yield_names.size(); nn++) {
+            LOG_DEBUG(Form("[%s] Getting fitted yield for %s...", method_name.c_str(), model_and_yield_names[nn].c_str()));
             RooRealVar *avar = (RooRealVar*)w->var(model_and_yield_names[nn].c_str()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
             counts.push_back((double)avar->getVal());
             counterrs.push_back((double)avar->getError());
@@ -1057,6 +1125,8 @@ vector<double> fitAsym(
 
         // Get yields for helicity dependent pdf
         if (fitformula_pu!="" && fitformula_up=="" && fitformula_pp=="") {
+
+            LOG_DEBUG(Form("[%s] Getting fitted yields for beam helicity dependent pdf...", method_name.c_str()));
 
             int j = 0;
             double nsig_21 = counts[j++];
@@ -1076,6 +1146,8 @@ vector<double> fitAsym(
         // Get yields for target spin dependent pdf
         if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp=="") {
 
+            LOG_DEBUG(Form("[%s] Getting fitted yields for target spin dependent pdf...", method_name.c_str()));
+
             int j = 0;
             double nsig_12 = counts[j++];
             double nsig_11 = counts[j++];
@@ -1093,6 +1165,8 @@ vector<double> fitAsym(
 
         // Get yields for beam helicity and target spin dependent pdf
         if (fitformula_pu=="" && fitformula_up=="" && fitformula_pp!="") {
+
+            LOG_DEBUG(Form("[%s] Getting fitted yields for beam helicity and target spin dependent pdf...", method_name.c_str()));
 
             int j = 0;
             double nsig_22_00 = counts[j++];
@@ -1112,6 +1186,8 @@ vector<double> fitAsym(
         // Get yields for FULL beam helicity and target spin dependent pdf **WITHOUT** PU asymmetries
         if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp!="") {
 
+            LOG_DEBUG(Form("[%s] Getting fitted yields for FULL beam helicity and target spin dependent pdf WITHOUT PU asymmetries...", method_name.c_str()));
+
             int j = 0;
             double nsig_11 = counts[j++];
             double nsig_12 = counts[j++]; double nsig_10 = counts[j++];
@@ -1126,6 +1202,8 @@ vector<double> fitAsym(
 
         // Get yields for FULL beam helicity and target spin dependent pdf
         if (fitformula_pu!="" && fitformula_up!="" && fitformula_pp!="") {
+
+            LOG_DEBUG(Form("[%s] Getting fitted yields for FULL beam helicity and target spin dependent pdf...", method_name.c_str()));
 
             int j = 0;
             double nsig_11 = counts[j++];
@@ -1158,6 +1236,7 @@ vector<double> fitAsym(
     }
 
     // Set the raw asymmetries
+    LOG_DEBUG(Form("[%s] Calculating raw asymmetries and errors...", method_name.c_str()));
     vector<double> rawasyms;
     vector<double> rawasymerrs;
     double asym_h  = (count_h_pos-count_h_neg)/(count_h_pos+count_h_neg);
@@ -1174,6 +1253,7 @@ vector<double> fitAsym(
     rawasymerrs.push_back(asymerr_ht);
 
     // Print out fit info
+    LOG_DEBUG(Form("[%s] Printing fit information...", method_name.c_str()));
     out << "--------------------------------------------------" << endl;
     out << " "<<method_name.c_str()<<"():" << endl;
     out << " bpol        = " << bpol << endl;
@@ -1247,6 +1327,7 @@ vector<double> fitAsym(
     out << "--------------------------------------------------" << endl;
 
     // Fill return array
+    LOG_DEBUG(Form("[%s] Filling return array...", method_name.c_str()));
     vector<double> arr; //NOTE: Dimension = 1+2*binvars.size()+2*depolvars.size()+2*rawasyms.size()+2*nparams(+2*nparams)
     arr.push_back(count);
     for (int idx=0; idx<binvars.size(); idx++) {
