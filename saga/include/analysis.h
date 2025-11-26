@@ -1446,6 +1446,8 @@ vector<double> fitAsym(
 * @param massfit_use_binned_fit Option to use a binned fit to the data for the signal and background mass fit
 
 * @param out Output stream
+
+* @throws runtime_error if invalid arguments are provided
 */
 void getKinBinnedAsym(
         string                      scheme_name,
@@ -1543,9 +1545,16 @@ void getKinBinnedAsym(
     ) {
 
     // Check arguments
-    if (binvars.size()<1) {cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
-    if (depolvars.size()!=asymfitvars.size()) {cerr<<"WARNING: depolvars.size() does not match the number of parameters injected."<<endl;}
-    if ((use_sb_subtraction && use_binned_sb_bgfracs) || (use_sb_subtraction && use_splot) || (use_binned_sb_bgfracs && use_splot)) {cerr<<"ERROR: Sideband subtraction, sideband subtraction with binned background fractions, and the sPlot method are all mutually exclusive.  Exiting...\n"; return;}
+    if (binvars.size()<1) {
+        string msg = "Number of bin variables is <1";
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+    if ((use_sb_subtraction && use_binned_sb_bgfracs) || (use_sb_subtraction && use_splot) || (use_binned_sb_bgfracs && use_splot)) {
+        string msg = "Sideband subtraction, sideband subtraction with binned background fractions, and the sPlot method are all mutually exclusive.";
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
 
     // Starting message
     out << "----------------------- getKinBinnedAsym ----------------------\n";
@@ -1556,6 +1565,7 @@ void getKinBinnedAsym(
     out << " }\n";
 
     // Filter frames for signal and sideband
+    LOG_DEBUG("Filtering frames for signal and sideband regions...");
     massfit_sgcut = (massfit_sgcut.size()>0) ? massfit_sgcut : saga::util::addLimitCuts("",massfitvars,massfit_sgregion_lims);
     auto frame_sg = (massfit_sgcut.size()>0) ? frame.Filter(massfit_sgcut.c_str()) : frame;
     auto frame_sb = (massfit_bgcut.size()>0) ? frame.Filter(massfit_bgcut.c_str()) : frame;
@@ -1564,6 +1574,7 @@ void getKinBinnedAsym(
     bool single_massfit = (massfit_pdf_name!="" && !use_binned_sb_bgfracs && (use_splot || use_sb_subtraction));
 
     // Open output CSV
+    LOG_DEBUG("Opening output CSV file...");
     string csvpath = Form("%s.csv",scheme_name.c_str());
     ofstream csvoutf; csvoutf.open(csvpath.c_str());
     ostream &csvout = csvoutf;
@@ -1572,6 +1583,7 @@ void getKinBinnedAsym(
 
     // Set CSV column headers
     // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr},{fitvar_info if requested}
+    LOG_DEBUG("Setting CSV headers...");
     csvout << "bin_id" << csv_separator.c_str();
     csvout << "count" << csv_separator.c_str();
     for (int bb=0; bb<binvars.size(); bb++) {
@@ -1652,17 +1664,21 @@ void getKinBinnedAsym(
 
         // Set bin id string
         string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
+        LOG_DEBUG(Form("Processing bin id %d with cut: %s",bin_id,bin_cut.c_str()));
 
         // Create workspace
+        LOG_DEBUG("Creating workspaces...");
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
         RooWorkspace *ws_sg = new RooWorkspace(Form("%s_sg",workspace_name.c_str()),Form("%s_signal",workspace_title.c_str()));
         RooWorkspace *ws_sb = new RooWorkspace(Form("%s_sb",workspace_name.c_str()),Form("%s_sideband",workspace_title.c_str())); //NOTE: Use separate signal and sideband workspaces for dataset, variable, and pdf name uniqueness.
 
         // Make bin cut on frame
+        LOG_DEBUG("Filtering frame for bin...");
         auto binframe = frame.Filter(bin_cut.c_str());
         auto binframe_sg = frame_sg.Filter(bin_cut.c_str());
 
         // Create bin dataset
+        LOG_DEBUG("Creating dataset...");
         data::createDataset(
             binframe,
             ws,
@@ -1702,6 +1718,7 @@ void getKinBinnedAsym(
             string yamlfile = massfit_yamlfile_map[scheme_binid];
 
             // Fit the mass spectrum
+            LOG_DEBUG("Fitting mass spectrum...");
             vector<double> massfit_result = saga::signal::fitMass(
                     ws, // RooWorkspace                    *w,
                     dataset_name, // string                      dataset_name,
@@ -1741,6 +1758,7 @@ void getKinBinnedAsym(
         // Apply sPlot
         string fit_dataset_name = dataset_name; // -> Use this for sPlot
         if (use_splot) {
+            LOG_DEBUG("Applying sPlot to dataset...");
             string dataset_sg_name = (string)Form("%s_sg_sw",dataset_name.c_str());
             string dataset_bg_name = (string)Form("%s_bg_sw",dataset_name.c_str());
             saga::signal::applySPlot(
@@ -1760,6 +1778,7 @@ void getKinBinnedAsym(
         if (use_binned_sb_bgfracs) {
             string rds_out_name = (string)Form("%s_sg",dataset_name.c_str());
             string sb_rds_out_name = (string)Form("%s_sb",dataset_name.c_str());
+            LOG_DEBUG(Form("Setting binned background fractions for dataset %s...",dataset_name.c_str()));
             saga::signal::setBinnedBGFractions(
                 ws, // RooWorkspace                    *w,
                 dataset_name, // string                      dataset_name,
@@ -1813,6 +1832,7 @@ void getKinBinnedAsym(
 
         // Create signal region dataset for sideband subtraction
         if (use_sb_subtraction) {
+            LOG_DEBUG("Creating sideband dataset...");
             data::createDataset(
                 binframe_sg,
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
@@ -1846,6 +1866,7 @@ void getKinBinnedAsym(
         }
 
         // Compute signal region bin results
+        LOG_DEBUG("Fitting asymmetry...");
         vector<double> asymfit_result = fitAsym(
                                 (use_sb_subtraction ? ws_sg : ws),
                                 fit_dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
@@ -1885,6 +1906,7 @@ void getKinBinnedAsym(
             auto binframe_sb = frame_sb.Filter(bin_cut.c_str());
 
             // Create sideband dataset
+            LOG_DEBUG("Creating sideband dataset...");
             data::createDataset(
                 binframe_sb,
                 ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
@@ -1917,6 +1939,7 @@ void getKinBinnedAsym(
             );
 
             // Compute sideband bin results
+            LOG_DEBUG("Fitting sideband asymmetry...");
             asymfit_result_sb = fitAsym(
                                 ws_sb,
                                 dataset_name, //NOTE: DATASET SHOULD ALREADY BE FILTERED WITH OVERALL CUTS AND CONTAIN WEIGHT VARIABLE IF NEEDED
@@ -1949,6 +1972,7 @@ void getKinBinnedAsym(
         }
 
         // Initialize data
+        LOG_DEBUG("Extracting results...");
         int nbinvars = binvars.size();
         int nparams  = asymfitpar_inits.size();
         double xs[nbinvars];
@@ -2060,6 +2084,7 @@ void getKinBinnedAsym(
         // Apply sideband subtraction to asymmetries
         double epsilon, epsilon_err;
         if (use_sb_subtraction) {
+            LOG_DEBUG("Applying sideband subtraction...");
             int k2 = 1 + binvars.size() + depolvars.size();
             epsilon = eps_bg_pdf;
             epsilon_err = eps_bg_pdf_err;
@@ -2073,6 +2098,7 @@ void getKinBinnedAsym(
 
         // Divide out depolarization factors
         if (use_average_depol) {
+            LOG_DEBUG("Dividing out depolarization factors...");
             for (int idx=0; idx<nparams; idx++) {
                 ys_corrected[idx] = ys[idx] / depols[idx];
                 eys_corrected[idx] = eys[idx] / depols[idx];
@@ -2103,6 +2129,7 @@ void getKinBinnedAsym(
 
         // Write out a row of data to csv
         // COLS: bin_id,count,{binvarmean,binvarerr},{depolvarmean,depolvarerr},{rawasym,rawasymerr},{asymfitvar,asymfitvarerr}(,{bg_asymfitvar,bg_asymfitvarerr})
+        LOG_DEBUG("Writing results to CSV...");
         csvout << bin_id << csv_separator.c_str();
         csvout << count << csv_separator.c_str();
         for (int bb=0; bb<binvars.size(); bb++) {

@@ -19,6 +19,9 @@
 #include <RooArgList.h>
 #include <RooWorkspace.h>
 
+// Local Includes
+#include <log.h>
+
 #pragma once
 
 /**
@@ -115,24 +118,28 @@ void createDataset(
     ) {
 
     // Define the helicity variable
+    LOG_DEBUG(Form("Defining RooCategory for helicity variable: %s", helicity.c_str()));
     RooCategory h(helicity.c_str(), helicity.c_str());
     for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
         h.defineType(it->first.c_str(), it->second);
     }
 
     // Define the target spin variable
+    LOG_DEBUG(Form("Defining RooCategory for target spin variable: %s", tspin.c_str()));
     RooCategory t(tspin.c_str(), tspin.c_str());
     for (auto it = tspin_states.begin(); it != tspin_states.end(); it++) {
         t.defineType(it->first.c_str(), it->second);
     }
 
-    // Define the target spin variable
+    // Define the helicity timestarget spin variable
+    LOG_DEBUG(Form("Defining RooCategory for helicity times target spin variable: %s", htspin.c_str()));
     RooCategory ht(htspin.c_str(), htspin.c_str());
     for (auto it = htspin_states.begin(); it != htspin_states.end(); it++) {
         ht.defineType(it->first.c_str(), it->second);
     }
 
     // Define the combined spin state variable
+    LOG_DEBUG(Form("Defining RooCategory for combined spin state variable: %s", combined_spin_state.c_str()));
     RooCategory ss(combined_spin_state.c_str(), combined_spin_state.c_str());
     for (auto it_h = helicity_states.begin(); it_h != helicity_states.end(); it_h++) {
         for (auto it_t = htspin_states.begin(); it_t != htspin_states.end(); it_t++) {
@@ -147,6 +154,7 @@ void createDataset(
 
         // Check for beam helicity variable
         if (categories_as_float[idx]==helicity) {
+            LOG_DEBUG(Form("Converting category to float: %s", helicity.c_str()));
 
             // Set helicity variable name and formula
             string h_as_float = Form("%s_as_float",helicity.c_str());
@@ -186,6 +194,7 @@ void createDataset(
 
         // Check for target spin variable
         if (categories_as_float[idx]==tspin) {
+            LOG_DEBUG(Form("Converting category to float: %s", tspin.c_str()));
 
             // Set helicity variable name and formula
             string h_as_float = Form("%s_as_float",tspin.c_str());
@@ -221,21 +230,25 @@ void createDataset(
     }
 
     // Define the full variables and limits lists
+    LOG_DEBUG("Creating list of variables...");
     vector<string> vars;
     for (int idx=0; idx<binvars.size();     idx++) vars.push_back(binvars[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) vars.push_back(depolvars[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) vars.push_back(asymfitvars[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) vars.push_back(massfitvars[idx]);
+    LOG_DEBUG("Creating list of variable titles...");
     vector<string> var_titles;
     for (int idx=0; idx<binvars.size();     idx++) var_titles.push_back(binvar_titles[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_titles.push_back(depolvar_titles[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_titles.push_back(asymfitvar_titles[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) var_titles.push_back(massfitvar_titles[idx]);
+    LOG_DEBUG("Creating list of variable limits...");
     vector<vector<double>> var_lims;
     for (int idx=0; idx<binvars.size();     idx++) var_lims.push_back(binvar_lims[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_lims.push_back(depolvar_lims[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_lims.push_back(asymfitvar_lims[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) var_lims.push_back(massfitvar_lims[idx]);
+    LOG_DEBUG("Creating list of variable bins...");
     vector<int> var_bins;
     for (int idx=0; idx<binvars.size();     idx++) var_bins.push_back(binvar_bins[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_bins.push_back(depolvar_bins[idx]);
@@ -244,6 +257,7 @@ void createDataset(
     int nvars = vars.size();
 
     // Define RooRealVar variables
+    LOG_DEBUG("Creating RooRealVar variables...");
     RooRealVar *rrvars[nvars];
     for (int rr=0; rr<nvars; rr++) {
         rrvars[rr] = new RooRealVar(vars[rr].c_str(), var_titles[rr].c_str(), var_lims[rr][0], var_lims[rr][1]);
@@ -251,12 +265,14 @@ void createDataset(
     }
 
     // Define variable list for RooDataSetHelper
+    LOG_DEBUG("Creating RooArgSet of variables...");
     RooArgSet *argset = new RooArgSet();
     for (int rr=0; rr<nvars; rr++) {
         argset->add(*rrvars[rr]);
     }
 
     // Create RDataFrame to RooDataSet pointer
+    LOG_DEBUG(Form("Creating dataset: %s , %s, with %d variables...", name.c_str(), title.c_str(), nvars));
     ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult;
     switch (nvars) {
         case 2: //NOTE: Need at least one fit variable and one bin variable.
@@ -362,14 +378,17 @@ void createDataset(
             );
             break;
         default:
-            cerr<<"ERROR: nvars="<<nvars<<" is outside the allowed range [2,18]"<<endl;
-            return;
+            string msg = Form("Number of variables %d is outside the allowed range [2,18]", nvars);
+            LOG_ERROR(msg);
+            throw runtime_error(msg);
     }
 
     // Manually create dataset containing helicity as a RooCategory variable
+    LOG_DEBUG("Creating RooDataSet with RooCategories...");
     RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h,t,ht,ss));
 
     // Set cuts for variable limits so that new dataset will have same length as old dataset
+    LOG_DEBUG("Creating variable limits cuts...");
     string varlims_cuts = "";
     for (int vv=0; vv<nvars; vv++) {
         if (varlims_cuts.size()==0) {
@@ -380,6 +399,7 @@ void createDataset(
     }
 
     // Loop RDataFrame and fill helicity dataset
+    LOG_DEBUG("Filling RooDataSet with RooCategories...");
     frame.Filter(varlims_cuts.c_str()).Foreach(
                   [&h,&t,&ht,&ss,&ds_h](float h_val, float tspin_val, int ss_val){
 
@@ -421,9 +441,11 @@ void createDataset(
                   );
 
     // Merge datasets
+    LOG_DEBUG("Merging RooDataSets...");
     static_cast<RooDataSet&>(*rooDataSetResult).merge(&static_cast<RooDataSet&>(*ds_h));
 
     // Import variables into workspace
+    LOG_DEBUG("Importing variables into RooWorkspace...");
     w->import(h);
     w->import(t);
     w->import(ht);
@@ -431,6 +453,7 @@ void createDataset(
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
 
     // Import data into the workspace
+    LOG_DEBUG("Importing RooDataSet into RooWorkspace...");
     w->import(*rooDataSetResult);
 
     return;

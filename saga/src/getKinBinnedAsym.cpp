@@ -12,6 +12,7 @@
 #include <TMath.h>
 
 // Project Includes
+#include <log.h>
 #include <analysis.h>
 #include <bins.h>
 #include <data.h>
@@ -26,6 +27,9 @@ void execute(const YAML::Node& node) {
 
     //----------------------------------------------------------------------//
     // BEGIN ARGUMENTS
+    saga::log::Logger::instance().setOutputStream(yamlargout);
+    std::string log_level = saga::util::getYamlArg<std::string>(node, "log_level", "INFO", message_prefix, verbose, yamlargout);
+    saga::log::Logger::instance().setLogLevelFromString(log_level);
     std::string baseoutpath = saga::util::getYamlArg<std::string>(node,"baseoutpath","",message_prefix,verbose,yamlargout); //NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>.csv`.
     std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose,yamlargout);
     std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose,yamlargout);
