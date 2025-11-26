@@ -10,6 +10,7 @@
 #include <ROOT/RDataFrame.hxx>
 
 // Project Includes
+#include <log.h>
 #include <bins.h>
 
 void execute(const YAML::Node& node) {
@@ -21,6 +22,9 @@ void execute(const YAML::Node& node) {
 
     //----------------------------------------------------------------------//
     // BEGIN ARGUMENTS
+    saga::log::Logger::instance().setOutputStream(yamlargout);
+    std::string log_level = saga::util::getYamlArg<std::string>(node, "log_level", "INFO", message_prefix, verbose, yamlargout);
+    saga::log::Logger::instance().setLogLevelFromString(log_level);
     std::string outpath = saga::util::getYamlArg<std::string>(node,"outpath","out.yaml",message_prefix,verbose,yamlargout);
     std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose,yamlargout);
     std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose,yamlargout);
