@@ -113,7 +113,7 @@ RooArgSet* getSubRooArgSet(
             LOG_DEBUG(Form("Adding variable \"%s\" with formula \"%s\" to subargset", varnames[idx].c_str(), varformulas[idx].c_str()));
             RooRealVar *var = (RooRealVar*)argset->find(varnames[idx].c_str());
             if (var==nullptr) {
-                LOG_WARNING(Form("Skipping RooRealVar \"%s\" with formula \"%s\" since not found in argset", varnames[idx].c_str(), varformulas[idx].c_str()));
+                LOG_WARN(Form("Skipping RooRealVar \"%s\" with formula \"%s\" since not found in argset", varnames[idx].c_str(), varformulas[idx].c_str()));
                 continue;
             }
             subargset->add(*var);
