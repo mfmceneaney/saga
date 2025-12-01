@@ -106,18 +106,20 @@ public:
             return;
         }
 
-        std::string out = timestamp() + " [" + levelToString(level) + "] " + msg;
+        
 
         if (outStream_) {
             // Apply color (if enabled and printing to a terminal)
             if (colorEnabled_ && outStream_ == &std::cout) {  // NEW
-                (*outStream_) << colorCode(level) << out << resetCode();
+                (*outStream_) << timestamp() << colorCode(level) << " [" + levelToString(level) + "] " << resetCode() << msg;
             } else {
+                std::string out = timestamp() + " [" + levelToString(level) + "] " + msg;
                 (*outStream_) << out;
             }
             (*outStream_) << std::endl;
         }
         if (file_.is_open()) {
+            std::string out = timestamp() + " [" + levelToString(level) + "] " + msg;
             file_ << out << std::endl;
         }
     }

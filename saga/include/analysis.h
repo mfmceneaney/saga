@@ -43,10 +43,10 @@
 #include <RooFitResult.h>
 #include <RooWorkspace.h>
 
-// // RooStats includes
+// // RooStats Includes
 // #include <RooStats/SPlot.h>
 
-// Local includes
+// Local Includes
 #include <data.h>
 #include <bins.h>
 #include <util.h>

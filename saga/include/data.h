@@ -490,12 +490,15 @@ RNode mapDataFromCSV(RNode filtered_df,
     ) {
 
     // Read CSV once
+    LOG_DEBUG(Form("Loading CSV from: %s", csv_path.c_str()));
     ROOT::RDataFrame csv_df = ROOT::RDF::FromCSV(csv_path, readHeaders, delimiter);
 
     // Get keys from csv
+    LOG_DEBUG(Form("Grabing keys from column: %s", csv_key_col.c_str()));
     auto keys = csv_df.Take<CsvKeyType>(csv_key_col);
 
     // Loop the column names and define variables from a CSV map
+    LOG_DEBUG("Looping CSV columns...");
     auto df_with_new_column = filtered_df;
     for (int cc=0; cc<col_names.size(); cc++) {
         
@@ -624,6 +627,7 @@ RNode injectAsym(
     ) {
 
     // Define a lambda to inject an asymmetry for each rdf entry
+    LOG_DEBUG("Defining lambda function for injected spin state variable...");
     auto getEntrySlot = [seed,bpol,tpol](
                         ULong64_t iEntry,
                         bool mc_sg_match,
@@ -688,6 +692,7 @@ RNode injectAsym(
     };
 
     // Define random variable
+    LOG_DEBUG(Form("Defining injected spin state variable %s", combined_spin_state_name.c_str()));
     auto frame = df.Define(
                         combined_spin_state_name.c_str(),
                         getEntrySlot,
@@ -720,6 +725,7 @@ RNode injectAsym(
     if (phi_s_up_name!="" && phi_s_dn_name!="") {
         string _phi_s_name_injected = phi_s_name_injected;
         if (_phi_s_name_injected=="") _phi_s_name_injected = Form("%s_injected",phi_s_up_name.c_str());
+        LOG_DEBUG(Form("Defining injected phi_s variable %s", _phi_s_name_injected.c_str()));
         frame = frame.Define(_phi_s_name_injected.c_str(), [](float tspin, float phi_s_up, float phi_s_dn) -> float { return (float)(tspin>0 ? phi_s_up : phi_s_dn);},{tspin_name.c_str(),phi_s_up_name.c_str(),phi_s_dn_name.c_str()});
     }
 
@@ -773,12 +779,14 @@ RNode defineAngularDiffVars(
     if (particle_suffixes.size()==0) {
         return frame;
     }
+    LOG_DEBUG(Form("Defining angular difference variables %s and %s", dtheta_vars[0].c_str(), dphi_vars[0].c_str()));
     auto newframe = frame.Define(dtheta_vars[0].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[0].c_str(),theta_mc_vars[0].c_str()})
         .Define(dphi_vars[0].c_str(),[](float phi, float phi_mc){
             return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
             ? TMath::Abs(phi-phi_mc) : 2*TMath::Pi() - TMath::Abs(phi-phi_mc));
             },{phi_vars[0].c_str(),phi_mc_vars[0].c_str()});
     for (int idx=1; idx<particle_suffixes.size(); idx++) {
+        LOG_DEBUG(Form("Defining angular difference variables %s and %s", dtheta_vars[idx].c_str(), dphi_vars[idx].c_str()));
         newframe = newframe.Define(dtheta_vars[idx].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[idx].c_str(),theta_mc_vars[idx].c_str()})
             .Define(dphi_vars[idx].c_str(),[](float phi, float phi_mc){
                 return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()

@@ -43,13 +43,14 @@
 #include <RooFitResult.h>
 #include <RooWorkspace.h>
 
-// RooStats includes
+// RooStats Includes
 #include <RooStats/SPlot.h>
 
-// Yaml includes
+// Yaml Includes
 #include <yaml-cpp/yaml.h>
 
-// Local includes
+// Local Includes
+#include <log.h>
 #include <util.h>
 
 #pragma once
@@ -138,10 +139,12 @@ vector<string> getGenMassPdf(
     // Create the summed PDF
     RooAddPdf * model;
     string model_name = Form("%s_%s",pdf_name.c_str(),binid.c_str());
+    LOG_DEBUG(Form("Creating signal model %s", model_name.c_str()));
 
     //----- Signal PDF -----//
 
     // Create signal PDF
+    LOG_DEBUG(Form("Creating signal model from formula %s", fitformula_sg.c_str()));
     RooGenericPdf sg(Form("%s_sg",model_name.c_str()), fitformula_sg.c_str(), *argset_sg);
 
     // Create extended signal PDF
@@ -150,6 +153,7 @@ vector<string> getGenMassPdf(
     //----- Background PDF -----//
 
     // Create signal PDF
+    LOG_DEBUG(Form("Creating background model from formula %s", fitformula_bg.c_str()));
     RooGenericPdf bg(Form("%s_bg",model_name.c_str()), fitformula_bg.c_str(), *argset_bg);
 
     // Create extended signal PDF
@@ -158,17 +162,21 @@ vector<string> getGenMassPdf(
     //----- Summed PDF -----//
 
     // Create the signal fraction parameter
+    LOG_DEBUG(Form("Creating signal fraction parameter sgfrac_%s", binid.c_str()));
     RooRealVar sgfrac(Form("sgfrac_%s",binid.c_str()), "signal fraction", initsgfrac, 0.0, 1.0);
 
     // Create the summed PDF
     if (use_extended_nll) {
+        LOG_DEBUG("Creating extended RooAddPdf...");
         model = new RooAddPdf(model_name.c_str(), model_name.c_str(), RooArgList(sg,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
     }
     else {
+        LOG_DEBUG("Creating RooAddPdf...");
         model = new RooAddPdf(model_name.c_str(), model_name.c_str(), RooArgList(sg,bg), RooArgList(sgfrac)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
     }
 
     // Import yield variables and model to workspace
+    LOG_DEBUG("Importing variables and model into workspace...");
     w->import(sgYield);
     w->import(bgYield);
     w->import(*model);
@@ -314,11 +322,12 @@ vector<double> fitMass(
     bool loaded_yaml = false;
     if (yamlfile!="") {
         try {
+            LOG_DEBUG(Form("[%s]: Loading yaml %s", method_name.c_str(), yamlfile.c_str()));
             node = YAML::LoadFile(yamlfile.c_str());
             loaded_yaml = true;
         } catch (exception& e) {
-            cerr<<"WARNING: "<<method_name.c_str()<<": Could not load yaml: "<<yamlfile.c_str()<<endl;
-            cerr << e.what() << endl;
+            LOG_ERROR(Form("[%s]: Could not load yaml %s", method_name.c_str(), yamlfile.c_str()));
+            throw runtime_error(e.what());
         }
     }
 
@@ -326,41 +335,41 @@ vector<double> fitMass(
     if (loaded_yaml) {
 
         // Set parsing parameters
-        string message_prefix = "INFO: ";
+        string message_prefix = "["+method_name + "]: ";
         bool verbose = true;
-        ostream &yamlargout = out;
 
         // Parse arguments
-        massfit_pdf_name = saga::util::getYamlArg<string>(node, "massfit_pdf_name", massfit_pdf_name, message_prefix, verbose, yamlargout); //NOTE: This must be non-empty!
-        massfit_formula_sg = saga::util::getYamlArg<string>(node, "massfit_formula_sg", massfit_formula_sg, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
-        massfit_formula_bg = saga::util::getYamlArg<string>(node, "massfit_formula_bg", massfit_formula_bg, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
-        massfit_sgYield_name = saga::util::getYamlArg<string>(node, "massfit_sgYield_name", massfit_sgYield_name, message_prefix, verbose, yamlargout);
-        massfit_bgYield_name = saga::util::getYamlArg<string>(node, "massfit_bgYield_name", massfit_bgYield_name, message_prefix, verbose, yamlargout);
-        massfit_initsgfrac = saga::util::getYamlArg<double>(node, "massfit_initsgfrac", massfit_initsgfrac, message_prefix, verbose, yamlargout);
-        massfit_parnames_sg = saga::util::getYamlArg<vector<string>>(node, "massfit_parnames_sg", massfit_parnames_sg, message_prefix, verbose, yamlargout);
-        massfit_partitles_sg = saga::util::getYamlArg<vector<string>>(node, "massfit_partitles_sg", massfit_partitles_sg, message_prefix, verbose, yamlargout);
-        massfit_parunits_sg = saga::util::getYamlArg<vector<string>>(node, "massfit_parunits_sg", massfit_parunits_sg, message_prefix, verbose, yamlargout);
-        massfit_parinits_sg = saga::util::getYamlArg<vector<double>>(node, "massfit_parinits_sg", massfit_parinits_sg, message_prefix, verbose, yamlargout);
-        massfit_parlims_sg = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_parlims_sg", massfit_parlims_sg, message_prefix, verbose, yamlargout);
-        massfit_parnames_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_parnames_bg", massfit_parnames_bg, message_prefix, verbose, yamlargout);
-        massfit_partitles_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_partitles_bg", massfit_partitles_bg, message_prefix, verbose, yamlargout);
-        massfit_parunits_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_parunits_bg", massfit_parunits_bg, message_prefix, verbose, yamlargout);
-        massfit_parinits_bg = saga::util::getYamlArg<vector<double>>(node, "massfit_parinits_bg", massfit_parinits_bg, message_prefix, verbose, yamlargout);
-        massfit_parlims_bg = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_parlims_bg", massfit_parlims_bg, message_prefix, verbose, yamlargout);
-        massfit_sgregion_lims = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_sgregion_lims", massfit_sgregion_lims, message_prefix, verbose, yamlargout);
-        massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", massfit_lg_text_size, message_prefix, verbose, yamlargout);
-        massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", massfit_lg_margin, message_prefix, verbose, yamlargout);
-        massfit_lg_ncols = saga::util::getYamlArg<double>(node, "massfit_lg_ncols", massfit_lg_ncols, message_prefix, verbose, yamlargout);
-        massfit_plot_bg_pars = saga::util::getYamlArg<bool>(node, "massfit_plot_bg_pars", massfit_plot_bg_pars, message_prefix, verbose, yamlargout);
-        massfit_use_sumw2error = saga::util::getYamlArg<bool>(node, "massfit_use_sumw2error", massfit_use_sumw2error, message_prefix, verbose, yamlargout);
-        massfit_use_extended_nll = saga::util::getYamlArg<bool>(node, "massfit_use_extended_nll", massfit_use_extended_nll, message_prefix, verbose, yamlargout);
-        massfit_use_binned_fit = saga::util::getYamlArg<bool>(node, "massfit_use_binned_fit", massfit_use_binned_fit, message_prefix, verbose, yamlargout);
+        massfit_pdf_name = saga::util::getYamlArg<string>(node, "massfit_pdf_name", massfit_pdf_name, message_prefix, verbose); //NOTE: This must be non-empty!
+        massfit_formula_sg = saga::util::getYamlArg<string>(node, "massfit_formula_sg", massfit_formula_sg, message_prefix, verbose); //NOTE: This is parsed by RooGenericPdf using TFormula
+        massfit_formula_bg = saga::util::getYamlArg<string>(node, "massfit_formula_bg", massfit_formula_bg, message_prefix, verbose); //NOTE: This is parsed by RooGenericPdf using TFormula
+        massfit_sgYield_name = saga::util::getYamlArg<string>(node, "massfit_sgYield_name", massfit_sgYield_name, message_prefix, verbose);
+        massfit_bgYield_name = saga::util::getYamlArg<string>(node, "massfit_bgYield_name", massfit_bgYield_name, message_prefix, verbose);
+        massfit_initsgfrac = saga::util::getYamlArg<double>(node, "massfit_initsgfrac", massfit_initsgfrac, message_prefix, verbose);
+        massfit_parnames_sg = saga::util::getYamlArg<vector<string>>(node, "massfit_parnames_sg", massfit_parnames_sg, message_prefix, verbose);
+        massfit_partitles_sg = saga::util::getYamlArg<vector<string>>(node, "massfit_partitles_sg", massfit_partitles_sg, message_prefix, verbose);
+        massfit_parunits_sg = saga::util::getYamlArg<vector<string>>(node, "massfit_parunits_sg", massfit_parunits_sg, message_prefix, verbose);
+        massfit_parinits_sg = saga::util::getYamlArg<vector<double>>(node, "massfit_parinits_sg", massfit_parinits_sg, message_prefix, verbose);
+        massfit_parlims_sg = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_parlims_sg", massfit_parlims_sg, message_prefix, verbose);
+        massfit_parnames_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_parnames_bg", massfit_parnames_bg, message_prefix, verbose);
+        massfit_partitles_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_partitles_bg", massfit_partitles_bg, message_prefix, verbose);
+        massfit_parunits_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_parunits_bg", massfit_parunits_bg, message_prefix, verbose);
+        massfit_parinits_bg = saga::util::getYamlArg<vector<double>>(node, "massfit_parinits_bg", massfit_parinits_bg, message_prefix, verbose);
+        massfit_parlims_bg = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_parlims_bg", massfit_parlims_bg, message_prefix, verbose);
+        massfit_sgregion_lims = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_sgregion_lims", massfit_sgregion_lims, message_prefix, verbose);
+        massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", massfit_lg_text_size, message_prefix, verbose);
+        massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", massfit_lg_margin, message_prefix, verbose);
+        massfit_lg_ncols = saga::util::getYamlArg<double>(node, "massfit_lg_ncols", massfit_lg_ncols, message_prefix, verbose);
+        massfit_plot_bg_pars = saga::util::getYamlArg<bool>(node, "massfit_plot_bg_pars", massfit_plot_bg_pars, message_prefix, verbose);
+        massfit_use_sumw2error = saga::util::getYamlArg<bool>(node, "massfit_use_sumw2error", massfit_use_sumw2error, message_prefix, verbose);
+        massfit_use_extended_nll = saga::util::getYamlArg<bool>(node, "massfit_use_extended_nll", massfit_use_extended_nll, message_prefix, verbose);
+        massfit_use_binned_fit = saga::util::getYamlArg<bool>(node, "massfit_use_binned_fit", massfit_use_binned_fit, message_prefix, verbose);
     }
 
     // Switch off histogram stats
     gStyle->SetOptStat(0);
 
     // Load fit variables from workspace
+    LOG_DEBUG(Form("[%s]: Loading fit variables from workspace...", method_name.c_str()));
     RooRealVar * f[(const int)fitvars.size()];
     for (int i=0; i<fitvars.size(); i++) {
         f[i] = w->var(fitvars[i].c_str());
@@ -368,15 +377,18 @@ vector<double> fitMass(
     }
 
     // Load dataset from workspace
+    LOG_DEBUG(Form("[%s]: Loading dataset from workspace...", method_name.c_str()));
     RooDataSet *ds = (RooDataSet*)w->data(dataset_name.c_str());
 
     // Apply bin cuts
+    LOG_DEBUG(Form("[%s]: Applying bin cuts...", method_name.c_str()));
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
 
     // Get count
     auto count = (int)bin_ds->sumEntries();
 
     // Get bin variable means and errors
+    LOG_DEBUG(Form("[%s]: Loading bin variables from workspace...", method_name.c_str()));
     vector<double> binvarmeans;
     vector<double> binvarerrs;
     RooRealVar * b[(const int)binvars.size()];
@@ -389,6 +401,7 @@ vector<double> fitMass(
     }
 
     // Create mass fit signal parameters
+    LOG_DEBUG(Form("[%s]: Creating signal fit parameters...", method_name.c_str()));
     int nparams_sg = massfit_parinits_sg.size();
     RooRealVar *a_sg[nparams_sg];
     for (int aa=0; aa<nparams_sg; aa++) {
@@ -396,6 +409,7 @@ vector<double> fitMass(
     }
 
     // Add parameters to signal argument list in order
+    LOG_DEBUG(Form("[%s]: Adding signal fit parameters to RooArgSet...", method_name.c_str()));
     RooArgSet *argset_sg = new RooArgSet();
     for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
         argset_sg->add(*f[ff]);
@@ -405,6 +419,7 @@ vector<double> fitMass(
     }
 
     // Create mass fit background parameters
+    LOG_DEBUG(Form("[%s]: Creating background fit parameters...", method_name.c_str()));
     int nparams_bg = massfit_parinits_bg.size();
     RooRealVar *a_bg[nparams_bg];
     for (int aa=0; aa<nparams_bg; aa++) {
@@ -412,6 +427,7 @@ vector<double> fitMass(
     }
 
     // Add parameters to background argument list in order
+    LOG_DEBUG(Form("[%s]: Adding background fit parameters to RooArgSet...", method_name.c_str()));
     RooArgSet *argset_bg = new RooArgSet();
     for (int ff=0; ff<fitvars.size(); ff++) { // Fit independent variables
         argset_bg->add(*f[ff]);
@@ -421,6 +437,7 @@ vector<double> fitMass(
     }
 
     // Create and load combined signal and background mass PDF names and yield variables to workspace
+    LOG_DEBUG(Form("[%s]: Creating mass fit pdf...", method_name.c_str()));
     vector<string> ws_obj_names = getGenMassPdf(
         w,
         argset_sg,
@@ -437,6 +454,7 @@ vector<double> fitMass(
     );
 
     // Set pdf and variable names for signal+background fit
+    LOG_DEBUG(Form("[%s]: Adding signal fit parameters to RooArgSet...", method_name.c_str()));
     string model_name    = ws_obj_names[0];
     string sg_name       = ws_obj_names[1];
     string bg_name       = ws_obj_names[2];
@@ -444,6 +462,7 @@ vector<double> fitMass(
     string _bgYield_name = ws_obj_names[4];
 
     // Load pdfs and yield variables from workspace
+    LOG_DEBUG(Form("[%s]: Loading models and variables from workspace...", method_name.c_str()));
     RooAbsPdf *model    = w->pdf(model_name.c_str());
     RooAbsPdf *sg       = w->pdf(sg_name.c_str());
     RooAbsPdf *bg       = w->pdf(bg_name.c_str());
@@ -455,14 +474,17 @@ vector<double> fitMass(
     if (massfit_use_binned_fit) {
 
         // Create binned data
+        LOG_DEBUG(Form("[%s]: Creating binned dataset...", method_name.c_str()));
         unique_ptr<RooDataHist> dh = (unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit PDF
+        LOG_DEBUG(Form("[%s]: Fitting pdf to dataset...", method_name.c_str()));
         r = (unique_ptr<RooFitResult>)model->fitTo(*dh, Save(), SumW2Error(massfit_use_sumw2error), PrintLevel(-1));
 
     } else {
 
         // Fit PDF
+        LOG_DEBUG(Form("[%s]: Fitting pdf to dataset...", method_name.c_str()));
         r = (unique_ptr<RooFitResult>)model->fitTo(*bin_ds, Save(), SumW2Error(massfit_use_sumw2error), PrintLevel(-1));
     }
     
@@ -480,6 +502,7 @@ vector<double> fitMass(
     covMat.Print();
 
     // Get signal fit parameter values and errors
+    LOG_DEBUG(Form("[%s]: Getting signal pdf parameter values and errors...", method_name.c_str()));
     vector<double> massfit_pars_sg;
     vector<double> massfit_parerrs_sg;
     for (int aa=0; aa<nparams_sg; aa++) {
@@ -489,6 +512,7 @@ vector<double> fitMass(
     }
 
     // Get background fit parameter values and errors
+    LOG_DEBUG(Form("[%s]: Getting background pdf parameter values and errors...", method_name.c_str()));
     vector<double> massfit_pars_bg;
     vector<double> massfit_parerrs_bg;
     for (int aa=0; aa<nparams_bg; aa++) {
@@ -498,6 +522,7 @@ vector<double> fitMass(
     }
 
     // Compute chi2 from 1D histograms
+    LOG_DEBUG(Form("[%s]: Getting chi2 values from 1d histograms...", method_name.c_str()));
     vector<double> chi2ndfs;
     RooDataHist *rdhs_1d[(const int)fitvars.size()];
     for (int i=0; i<fitvars.size(); i++) {
@@ -518,7 +543,8 @@ vector<double> fitMass(
 
     //---------------------------------------- Compute integrals and background fractions ----------------------------------------//
 
-    // Define signal regions in fit variables and add fit variables to integration and normalizaation listss
+    // Define signal regions in fit variables and add fit variables to integration and normalization lists
+    LOG_DEBUG(Form("[%s]: Defining signal regions...", method_name.c_str()));
     RooArgSet *iset = new RooArgSet();
     RooArgSet *_nset = new RooArgSet();
     for (int i=0; i<fitvars.size(); i++) {
@@ -529,29 +555,34 @@ vector<double> fitMass(
     auto nset = NormSet(*_nset);
 
     // Integrate the signal PDF
+    LOG_DEBUG(Form("[%s]: Integrating signal pdf in the signal region...", method_name.c_str()));
     unique_ptr<RooAbsReal> int_sg{sg->createIntegral(*iset, nset, Range("signal"))};
     RooProduct int_sg_pdf{"int_sg_pdf", "int_sg_pdf", {*int_sg, *sgYield}};
     double int_sg_pdf_val = (double)int_sg_pdf.getVal();
     double int_sg_pdf_err = (double)int_sg_pdf.getPropagatedError(*r, *_nset); //NOTE: Need fit result to be saved for this to work!
 
     // Integrate the background PDF
+    LOG_DEBUG(Form("[%s]: Getting integrating background pdf in the signal region...", method_name.c_str()));
     unique_ptr<RooAbsReal> int_bg{bg->createIntegral(*iset, nset, Range("signal"))};
     RooProduct int_bg_pdf{"int_bg_pdf", "int_bg_pdf", {*int_bg, *bgYield}};
     double int_bg_pdf_val = (double)int_bg_pdf.getVal();
     double int_bg_pdf_err = (double)int_bg_pdf.getPropagatedError(*r, *_nset); //NOTE: Need fit result to be saved for this to work!
 
     // Integrate the full PDF
+    LOG_DEBUG(Form("[%s]: Integrating full pdf in the signal region...", method_name.c_str()));
     unique_ptr<RooAbsReal> int_model{model->createIntegral(*iset, nset, Range("signal"))};
     RooRealVar int_model_pdf("int_model_pdf", "int_model_pdf",sgYield->getVal()+bgYield->getVal());
     double int_model_pdf_val = (double)int_model->getVal() * int_model_pdf.getVal(); //NOTE: Not sure why you need to use the actual integral here instead of the RooRealVar...
     double int_model_pdf_err = (double)int_model->getPropagatedError(*r, *_nset) * int_model_pdf.getVal(); //NOTE: Need fit result to be saved for this to work!
 
     // Sum on the dataset
+    LOG_DEBUG(Form("[%s]: Integrating the dataset in the signal region...", method_name.c_str()));
     string sgcut = saga::util::addLimitCuts("",fitvars,massfit_sgregion_lims);
     double int_ds_val = bin_ds->sumEntries(sgcut.c_str());
     double int_ds_err = TMath::Sqrt(int_ds_val);
 
     // Compute epsilon in a couple different ways: from the background or signal PDF and normalized by the dataset integral or full PDF integral
+    LOG_DEBUG(Form("[%s]: Computing background fractions and errors...", method_name.c_str()));
     double eps_bg_pdf = int_bg_pdf_val / int_ds_val;
     double eps_sg_pdf = 1.0 - int_sg_pdf_val / int_ds_val;
     double eps_pdf    = 1.0 - int_sg_pdf_val / int_model_pdf_val;
@@ -563,6 +594,8 @@ vector<double> fitMass(
 
     //---------------------------------------- Plot projections ----------------------------------------//
     for (int i=0; i<fitvars.size(); i++) {
+
+        LOG_DEBUG(Form("[%s]: Plotting 1d fit projection in %s", method_name.c_str(), f[i]->GetName()));
 
         // Create a histogram from the background PDF
         OwningPtr<RooDataHist> h_bg = bg->generateBinned(RooArgSet(*f[i]), (double)bgYield->getVal());
@@ -757,23 +790,30 @@ void applySPlot(
         string dataset_bg_name
     ) {
 
+    string method_name = "applySPlot";
+
     // Get variables from workspace
+    LOG_DEBUG(Form("[%s]: Loading yield variables from workspace...", method_name.c_str()));
     RooRealVar *sgYield = w->var(sgYield_name.c_str());
     RooRealVar *bgYield = w->var(bgYield_name.c_str());
 
     // Get pdf from workspace
+    LOG_DEBUG(Form("[%s]: Loading model from workspace...", method_name.c_str()));
     RooAbsPdf *model = w->pdf(model_name.c_str());
 
     // Get dataset from workspace
+    LOG_DEBUG(Form("[%s]: Loading dataset from workspace...", method_name.c_str()));
     RooDataSet *rooDataSetResult = (RooDataSet*)w->data(dataset_name.c_str());
 
     // Run sPlot and create weighted datasets
+    LOG_DEBUG(Form("[%s]: Creating SPlot...", method_name.c_str()));
     RooStats::SPlot sData{"sData", "sPlot Data", *rooDataSetResult, model, RooArgList(*sgYield, *bgYield)};
     auto& data = static_cast<RooDataSet&>(*rooDataSetResult);
     RooDataSet data_sg_sw{dataset_sg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",sgYield_name.c_str())};
     RooDataSet data_bg_sw{dataset_bg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",bgYield_name.c_str())};
 
     // Import sweighted datasets into workspace
+    LOG_DEBUG(Form("[%s]: Importing sWeighted datasets into workspace...", method_name.c_str()));
     w->import(data_sg_sw);
     w->import(data_bg_sw);
 
@@ -809,6 +849,8 @@ void getBinnedBGFractionsDataset(
         double                            bgfracs_default = 0.0
     ) {
 
+    string method_name = "getBinnedBGFractionsDataset";
+
     // Create the conditional bgfrac variable formula
     string bgfracvar_formula = "";
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
@@ -833,9 +875,11 @@ void getBinnedBGFractionsDataset(
     bgfracvar_formula = Form("%s else return %.8f;",bgfracvar_formula.c_str(),bgfracs_default);
 
     // Define background fraction in dataframe
+    LOG_DEBUG(Form("[%s]: Defining background fraction variable %s with formula %s", method_name.c_str(), bgfracvar.c_str(), bgfracvar_formula.c_str()));
     auto frame_bgfracs = frame.Define(bgfracvar.c_str(),bgfracvar_formula.c_str());
 
     // Create background fraction dataset from dataframe
+    LOG_DEBUG(Form("[%s]: Loading bgfracvar from workspace and creating RooDataSet...", method_name.c_str()));
     RooRealVar * bgf = w->var(bgfracvar.c_str());
     ROOT::RDF::RResultPtr<RooDataSet> rds_bgfracs = frame_bgfracs.Book<double>(
                 RooDataSetHelper(rds_out_name.c_str(),rds_out_name.c_str(),RooArgSet(*bgf)),
@@ -843,9 +887,11 @@ void getBinnedBGFractionsDataset(
             );
 
     // Merge dataset into dataset with bgfracs
+    LOG_DEBUG(Form("[%s]: Merging datasets...", method_name.c_str()));
     static_cast<RooDataSet&>(*rds_bgfracs).merge(&static_cast<RooDataSet&>(*rds));
 
     // Import dataset with background fraction columns into workspace
+    LOG_DEBUG(Form("[%s]: Importing dataset into workspace...", method_name.c_str()));
     w->import(*rds_bgfracs);
 
 } // void getBinnedBGFractionsDataset()
@@ -953,7 +999,10 @@ void setBinnedBGFractions(
         ostream                     &out                      = cout
     ) {
 
+    string method_name = "setBinnedBGFractions";
+
     // Load asymmetry fit variables from workspace
+    LOG_DEBUG(Form("[%s]: Loading asymmetry variables from workspace...", method_name.c_str()));
     RooRealVar *rrvars[asymfitvars.size()];
     for (int idx=0; idx<asymfitvars.size(); idx++) {
         rrvars[idx] = w->var(asymfitvars[idx].c_str());
@@ -961,6 +1010,8 @@ void setBinnedBGFractions(
 
     // Create binning scheme if not provided
     if (asymfitvar_bincuts.size()==0) {
+
+        LOG_DEBUG(Form("[%s]: Creating bin scheme...", method_name.c_str()));
 
         // Create binning scheme
         map<string,vector<double>> binscheme;
@@ -979,9 +1030,11 @@ void setBinnedBGFractions(
     }
 
     // Load dataset from workspace
+    LOG_DEBUG(Form("[%s]: Loading dataset from workspace...", method_name.c_str()));
     RooDataSet *ds = (RooDataSet*)w->data(dataset_name.c_str());
 
     // Apply bin cuts
+    LOG_DEBUG(Form("[%s]: Applying bin cut...", method_name.c_str()));
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(bincut.c_str());
     RNode bin_frame = frame.Filter(bincut.c_str());
 
@@ -989,6 +1042,7 @@ void setBinnedBGFractions(
     string sgcut = saga::util::addLimitCuts("",fitvars,massfit_sgregion_lims);
 
     // Apply signal and background cuts
+    LOG_DEBUG(Form("[%s]: Applying signal and background cuts...", method_name.c_str()));
     RooDataSet *sg_bin_ds = (RooDataSet*)bin_ds->reduce(sgcut.c_str());
     RNode sg_bin_frame = bin_frame.Filter(sgcut.c_str());
     RooDataSet *bg_bin_ds = (RooDataSet*)bin_ds->reduce(bgcut.c_str());
@@ -1012,6 +1066,7 @@ void setBinnedBGFractions(
         string yamlfile = yamlfile_map[binid_asymfitvars]; //NOTE: This should just return an empty string if not found which will use the default parameters
 
         // Fit the mass spectrum
+        LOG_DEBUG(Form("[%s]: Fitting mass spectrum for bin %s...", method_name.c_str(), binid_asymfitvars.c_str()));
         vector<double> massfit_result = fitMass(
                 w, // RooWorkspace                    *w,
                 dataset_name, // string                      dataset_name,
@@ -1055,10 +1110,12 @@ void setBinnedBGFractions(
     }
 
     // Create and import background fraction variable so that it is visible to both datasets
+    LOG_DEBUG(Form("[%s]: Creating and importing background fraction variable...", method_name.c_str()));
     RooRealVar *bgf = new RooRealVar(bgfracvar.c_str(),bgfracvar.c_str(),bgfracvar_lims[0],bgfracvar_lims[1]);
     w->import(*bgf);
 
     // Set data set background fractions from the binned mass fits for the signal region
+    LOG_DEBUG(Form("[%s]: Creating signal binned background fraction dataset...", method_name.c_str()));
     getBinnedBGFractionsDataset(
         w,
         sg_bin_ds,
@@ -1072,6 +1129,7 @@ void setBinnedBGFractions(
     );
 
     // Set data set background fractions from the binned mass fits for the sideband region
+    LOG_DEBUG(Form("[%s]: Creating background binned background fraction dataset...", method_name.c_str()));
     getBinnedBGFractionsDataset(
         w,
         bg_bin_ds,

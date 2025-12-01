@@ -16,34 +16,34 @@
 void execute(const YAML::Node& node) {
 
     // Process arguments
-    std::string   message_prefix  = "INFO: ";
+    std::string   message_prefix  = "[findBinLims]: ";
     bool          verbose         = true;
     std::ostream &yamlargout      = std::cout;
 
     //----------------------------------------------------------------------//
     // BEGIN ARGUMENTS
     saga::log::Logger::instance().setOutputStream(yamlargout);
-    std::string log_level = saga::util::getYamlArg<std::string>(node, "log_level", "INFO", message_prefix, verbose, yamlargout);
+    std::string log_level = saga::util::getYamlArg<std::string>(node, "log_level", "INFO", message_prefix, verbose);
     saga::log::Logger::instance().setLogLevelFromString(log_level);
-    std::string outpath = saga::util::getYamlArg<std::string>(node,"outpath","out.yaml",message_prefix,verbose,yamlargout);
-    std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose,yamlargout);
-    std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose,yamlargout);
-    int nthreads = saga::util::getYamlArg<int>(node,"nthreads",1,message_prefix,verbose,yamlargout);
-    std::string cuts = saga::util::getYamlArg<std::string>(node,"cuts","",message_prefix,verbose,yamlargout);
+    std::string outpath = saga::util::getYamlArg<std::string>(node,"outpath","out.yaml",message_prefix,verbose);
+    std::string inpath = saga::util::getYamlArg<std::string>(node,"inpath","",message_prefix,verbose);
+    std::string tree = saga::util::getYamlArg<std::string>(node,"tree","t",message_prefix,verbose);
+    int nthreads = saga::util::getYamlArg<int>(node,"nthreads",1,message_prefix,verbose);
+    std::string cuts = saga::util::getYamlArg<std::string>(node,"cuts","",message_prefix,verbose);
 
     //----------------------------------------------------------------------//
     // BEGIN BIN VARIABLES
-    std::vector<std::string> binvars = saga::util::getYamlArg<std::vector<std::string>>(node, "binvars", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::string> binvars = saga::util::getYamlArg<std::vector<std::string>>(node, "binvars", {}, message_prefix, verbose);
 
     // NBINS_LIST
-    std::vector<int> nbins_list = saga::util::getYamlArg<std::vector<int>>(node, "nbins_list", {}, message_prefix, verbose, yamlargout);
+    std::vector<int> nbins_list = saga::util::getYamlArg<std::vector<int>>(node, "nbins_list", {}, message_prefix, verbose);
     if (binvars.size()!=nbins_list.size()) {
         std::cerr << "ERROR: binvars.size() must match nbins_list.size()" << std::endl;
     }
 
     //----------------------------------------------------------------------//
     // VAR_FORMULAS
-    std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose, yamlargout);
+    std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose);
 
     //----------------------------------------------------------------------------------------------------//
     // FINDBINLIMS
