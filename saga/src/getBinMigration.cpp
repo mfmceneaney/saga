@@ -68,7 +68,7 @@ void execute(const YAML::Node& node) {
         for (int idx=0; idx<binschemes_paths.size(); idx++) {
 
             // Load YAML file and get bin cuts maps
-            if (verbose) yamlargout << message_prefix.c_str() << "Loading bin scheme from : " <<binschemes_paths[idx].c_str() << std::endl;
+            if (verbose) LOG_INFO(Form("%sLoading bin scheme from : %s", message_prefix.c_str(), binschemes_paths[idx].c_str()));
             YAML::Node bincut_config = YAML::LoadFile(binschemes_paths[idx].c_str());
             std::map<std::string,std::map<int,std::string>> new_bincuts_map = saga::bins::getBinCutsMap(bincut_config);
             bincuts_map.insert(new_bincuts_map.begin(), new_bincuts_map.end());
@@ -86,12 +86,13 @@ void execute(const YAML::Node& node) {
 
     // Show bin cuts map
     if (verbose) {
+        std::string msg = "";
         for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
-            yamlargout << message_prefix.c_str() << "bincuts_map["<<it->first<<"]: { \n";
+            msg = Form("%s%sbincuts_map[%s]: { \n", msg.c_str(), message_prefix.c_str(), it->first.c_str());
             for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                yamlargout <<"\t\t"<< it2->first<<": "<<it2->second<<", \n";
+                msg = Form("%s\t\t%d: %s, \n", msg.c_str(), it2->first, it2->second.c_str());
             }
-            yamlargout << "}" << std::endl;
+            msg += "}";
         }
     }
 
@@ -133,7 +134,7 @@ void execute(const YAML::Node& node) {
     cuts = saga::util::addLimitCuts(cuts,depolvars,depolvar_lims);
     cuts = saga::util::addLimitCuts(cuts,asymfitvars,asymfitvar_lims);
     cuts = saga::util::addLimitCuts(cuts,massfitvars,massfitvar_lims);
-    yamlargout << message_prefix.c_str() << "cuts: "<<cuts.c_str() << std::endl;
+    LOG_INFO(Form("%s cuts: %s", message_prefix.c_str(), cuts.c_str()));
 
     // Create RDataFrame
     ROOT::RDataFrame d(tree, inpath);
@@ -142,7 +143,7 @@ void execute(const YAML::Node& node) {
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
     for (int idx=0; idx<var_formulas.size(); idx++) {
         d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
-        yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
+        LOG_INFO(Form("%s Defined branch %s", message_prefix.c_str(), var_formulas[idx][0].c_str()));
     }
 
     // Apply overall cuts AFTER defining depolarization and fit variables

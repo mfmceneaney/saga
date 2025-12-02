@@ -38,7 +38,8 @@ void execute(const YAML::Node& node) {
     // NBINS_LIST
     std::vector<int> nbins_list = saga::util::getYamlArg<std::vector<int>>(node, "nbins_list", {}, message_prefix, verbose);
     if (binvars.size()!=nbins_list.size()) {
-        std::cerr << "ERROR: binvars.size() must match nbins_list.size()" << std::endl;
+        LOG_ERROR("binvars.size() must match nbins_list.size()");
+        throw std::runtime_error("binvars.size()!=nbins_list.size()");
     }
 
     //----------------------------------------------------------------------//
@@ -59,7 +60,7 @@ void execute(const YAML::Node& node) {
     auto d2 = d.Define("__dummyvar__","(float)0.0"); //NOTE: Define a dummy variable to declare the data frame in this scope.
     for (int idx=0; idx<var_formulas.size(); idx++) {
         d2 = d2.Define(var_formulas[idx][0].c_str(),var_formulas[idx][1].c_str());
-        yamlargout << message_prefix.c_str() << "Defined branch "<<var_formulas[idx][0].c_str()<<std::endl;
+        LOG_INFO(Form("%s Defined branch %s", message_prefix.c_str(), var_formulas[idx][0].c_str()));
     }
     
     // Apply overall cuts AFTER defining variables
