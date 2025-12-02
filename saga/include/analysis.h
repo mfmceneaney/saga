@@ -477,7 +477,7 @@ vector<string> getGenAsymPdf(
         if (use_extended_nll) {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {tspin->lookupName(1), &model_11}, {tspin->lookupName(0), &model_11}, {tspin->lookupName(-1), &model_11}
+                {t->lookupName(1), &model_11}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_11}
             },
             *h);
             model_and_yield_names.push_back(nsig_11.GetName());
@@ -487,7 +487,7 @@ vector<string> getGenAsymPdf(
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {tspin->lookupName(1), &_model_11}, {tspin->lookupName(0), &_model_11}, {tspin->lookupName(-1), &_model_11}
+                {t->lookupName(1), &_model_11}, {t->lookupName(0), &_model_11}, {t->lookupName(-1), &_model_11}
             },
             *h);
         }
