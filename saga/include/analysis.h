@@ -272,11 +272,11 @@ vector<string> getGenAsymPdf(
 
     // Get the total number of states and set the starting count for the extended case
     int nstates = 0;
-    if (fitformula_pu!="") nstates += 1;
-    if (fitformula_up!="") nstates += 1;
-    if (fitformula_pp!="") nstates += 1;
-    nstates *= 3;
-    if (fitformula_uu!="") nstates += 1; //NOTE: There is only one unpolarized PDF so add AFTER multiplying by three for the spin dependent PDFs.
+    if (fitformula_uu!="") nstates += 1; //NOTE: There is only one unpolarized PDF.  However,
+    if (fitformula_pu!="") nstates += 1; //NOTE: this gets combined with the ut pdf since it
+    if (fitformula_up!="") nstates += 1; //NOTE: depends on phi_s and not a categorical variable.
+    if (fitformula_pp!="") nstates += 1; //NOTE: Multiply by 2 since there are only 2 non-zero spin states.
+    nstates *= 2;
     double ninit = count / nstates;
 
     // Set variable formulas list
@@ -358,6 +358,22 @@ vector<string> getGenAsymPdf(
 
     // Dummy formula so that unused generic pdfs still compile
     string fitformula_unused = "0.0";
+
+    //----- True unpolarized dummy terms -----//
+
+    // Isolate the argset
+    RooArgSet *argset_99 = getSubRooArgSet(argset, fitformula_unused.c_str(), varformulas, argnames);
+    string subfitformula_99 = getSubFormula(fitformula_unused.c_str(), varformulas);
+
+    // Create pdf helicity==tpsin==0
+    string fitformula_99 = "1.0";
+    LOG_DEBUG(Form("[%s]: Creating generic pdf %s_99 for helicity=tspin=0 with formula: %s", method_name.c_str(), model_name.c_str(), fitformula_99.c_str()));
+    RooGenericPdf _model_99(Form("_%s_99",model_name.c_str()), fitformula_99.c_str(), *argset_99);
+
+    // Create extended pdf helicity==tspin==0
+    RooRealVar nsig_99(Form("nsig_%s_99",model_name.c_str()), "number of signal events", ninit, 0.0, count);
+    LOG_DEBUG(Form("[%s]: Creating extended pdf %s_99 with nsig: %s", method_name.c_str(), model_name.c_str(), nsig_99.GetName()));
+    RooExtendPdf model_99(Form("%s_99",model_name.c_str()), "extended signal pdf", _model_99, nsig_99);
 
     //----- Unpolarized and transverse target spin dependent terms -----//
 
@@ -513,7 +529,7 @@ vector<string> getGenAsymPdf(
         if (use_extended_nll) {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {t->lookupName(1), &model_11}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_11}
+                {t->lookupName(1), &model_11}, {t->lookupName(0), &model_99}, {t->lookupName(-1), &model_11}
             },
             *h);
             model_and_yield_names.push_back(nsig_11.GetName());
@@ -523,7 +539,7 @@ vector<string> getGenAsymPdf(
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {t->lookupName(1), &_model_11}, {t->lookupName(0), &_model_11}, {t->lookupName(-1), &_model_11}
+                {t->lookupName(1), &_model_11}, {t->lookupName(0), &_model_99}, {t->lookupName(-1), &_model_11}
             },
             *h);
         }
