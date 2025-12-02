@@ -82,7 +82,7 @@ T getYamlArg(
             msg += argname + ": " + Form("%d", arg);
         }
         // Single value numeric float or double
-        if constexpr (is_same<T, float>::value || is_same<T, double>::value) {
+        else if constexpr (is_same<T, float>::value || is_same<T, double>::value) {
             msg += argname + ": " + Form("%.8f", arg);
         }
         // Single value string
