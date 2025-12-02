@@ -470,6 +470,29 @@ vector<string> getGenAsymPdf(
     RooRealVar nsig_20(Form("nsig_%s_20",model_name.c_str()), "number of signal events", ninit, 0.0, count);
     RooExtendPdf model_20(Form("%s_20",model_name.c_str()), "extended signal pdf", _model_20, nsig_20);
 
+    // Construct unpolarized or transverse target spin dependent pdf
+    if (fitformula_uu_ut!="" && fitformula_pu=="" && fitformula_up=="" && fitformula_pp=="") {
+
+        // Just return the pdf
+        if (use_extended_nll) {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {t->lookupName(1), &model_11}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_11}
+            },
+            *h);
+            model_and_yield_names.push_back(nsig_11.GetName());
+            model_and_yield_names.push_back(nsig_11.GetName());
+            model_and_yield_names.push_back(nsig_11.GetName());
+        }
+        else {
+            model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
+            {
+                {t->lookupName(1), &_model_11}, {t->lookupName(0), &_model_11}, {t->lookupName(-1), &_model_11}
+            },
+            *h);
+        }
+    }
+
     // Construct helicity dependent pdf
     if (fitformula_pu!="" && fitformula_up=="" && fitformula_pp=="") {
 
@@ -493,7 +516,7 @@ vector<string> getGenAsymPdf(
         }
     }
 
-    // Construct target spin dependent pdf
+    // Construct longitudinal target spin dependent pdf
     if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp=="") {
 
         // Create the simultaneous pdf
@@ -516,7 +539,7 @@ vector<string> getGenAsymPdf(
         }
     }
 
-    // Construct beam helicity and target spin dependent pdf
+    // Construct beam helicity and longitudinal target spin dependent pdf
     if (fitformula_pu=="" && fitformula_up=="" && fitformula_pp!="") {
 
         // Create the simultaneous pdf
@@ -539,7 +562,7 @@ vector<string> getGenAsymPdf(
         }
     }
 
-    // Construct FULL beam helicity and target spin dependent pdf **WITHOUT** PU asymmetries
+    // Construct FULL beam helicity and longitudinal target spin dependent pdf **WITHOUT** PU asymmetries
     if (fitformula_pu=="" && fitformula_up!="" && fitformula_pp!="") {
 
         // Create the simultaneous pdf
@@ -569,7 +592,7 @@ vector<string> getGenAsymPdf(
         }
     }
 
-    // Construct FULL beam helicity and target spin dependent pdf
+    // Construct FULL beam helicity and longitudinal target spin dependent pdf
     if (fitformula_pu!="" && fitformula_up!="" && fitformula_pp!="") {
 
         // Create the simultaneous pdf
