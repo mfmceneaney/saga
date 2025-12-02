@@ -19,6 +19,9 @@
 #include <RooArgList.h>
 #include <RooWorkspace.h>
 
+// Local Includes
+#include <log.h>
+
 #pragma once
 
 /**
@@ -114,25 +117,31 @@ void createDataset(
         vector<int> massfitvar_bins
     ) {
 
+    string method_name = "createDataset";
+
     // Define the helicity variable
+    LOG_DEBUG(Form("[%s]: Defining RooCategory for helicity variable: %s", method_name.c_str(), helicity.c_str()));
     RooCategory h(helicity.c_str(), helicity.c_str());
     for (auto it = helicity_states.begin(); it != helicity_states.end(); it++) {
         h.defineType(it->first.c_str(), it->second);
     }
 
     // Define the target spin variable
+    LOG_DEBUG(Form("[%s]: Defining RooCategory for target spin variable: %s", method_name.c_str(), tspin.c_str()));
     RooCategory t(tspin.c_str(), tspin.c_str());
     for (auto it = tspin_states.begin(); it != tspin_states.end(); it++) {
         t.defineType(it->first.c_str(), it->second);
     }
 
-    // Define the target spin variable
+    // Define the helicity timestarget spin variable
+    LOG_DEBUG(Form("[%s]: Defining RooCategory for helicity times target spin variable: %s", method_name.c_str(), htspin.c_str()));
     RooCategory ht(htspin.c_str(), htspin.c_str());
     for (auto it = htspin_states.begin(); it != htspin_states.end(); it++) {
         ht.defineType(it->first.c_str(), it->second);
     }
 
     // Define the combined spin state variable
+    LOG_DEBUG(Form("[%s]: Defining RooCategory for combined spin state variable: %s", method_name.c_str(), combined_spin_state.c_str()));
     RooCategory ss(combined_spin_state.c_str(), combined_spin_state.c_str());
     for (auto it_h = helicity_states.begin(); it_h != helicity_states.end(); it_h++) {
         for (auto it_t = htspin_states.begin(); it_t != htspin_states.end(); it_t++) {
@@ -147,6 +156,7 @@ void createDataset(
 
         // Check for beam helicity variable
         if (categories_as_float[idx]==helicity) {
+            LOG_DEBUG(Form("[%s]: Converting category to float: %s", method_name.c_str(), helicity.c_str()));
 
             // Set helicity variable name and formula
             string h_as_float = Form("%s_as_float",helicity.c_str());
@@ -186,6 +196,7 @@ void createDataset(
 
         // Check for target spin variable
         if (categories_as_float[idx]==tspin) {
+            LOG_DEBUG(Form("[%s]: Converting category to float: %s", method_name.c_str(), tspin.c_str()));
 
             // Set helicity variable name and formula
             string h_as_float = Form("%s_as_float",tspin.c_str());
@@ -221,21 +232,25 @@ void createDataset(
     }
 
     // Define the full variables and limits lists
+    LOG_DEBUG(Form("[%s]: Creating list of variables...", method_name.c_str()));
     vector<string> vars;
     for (int idx=0; idx<binvars.size();     idx++) vars.push_back(binvars[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) vars.push_back(depolvars[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) vars.push_back(asymfitvars[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) vars.push_back(massfitvars[idx]);
+    LOG_DEBUG(Form("[%s]: Creating list of variable titles...", method_name.c_str()));
     vector<string> var_titles;
     for (int idx=0; idx<binvars.size();     idx++) var_titles.push_back(binvar_titles[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_titles.push_back(depolvar_titles[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_titles.push_back(asymfitvar_titles[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) var_titles.push_back(massfitvar_titles[idx]);
+    LOG_DEBUG(Form("[%s]: Creating list of variable limits...", method_name.c_str()));
     vector<vector<double>> var_lims;
     for (int idx=0; idx<binvars.size();     idx++) var_lims.push_back(binvar_lims[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_lims.push_back(depolvar_lims[idx]);
     for (int idx=0; idx<asymfitvars.size(); idx++) var_lims.push_back(asymfitvar_lims[idx]);
     for (int idx=0; idx<massfitvars.size(); idx++) var_lims.push_back(massfitvar_lims[idx]);
+    LOG_DEBUG(Form("[%s]: Creating list of variable bins...", method_name.c_str()));
     vector<int> var_bins;
     for (int idx=0; idx<binvars.size();     idx++) var_bins.push_back(binvar_bins[idx]);
     for (int idx=0; idx<depolvars.size();   idx++) var_bins.push_back(depolvar_bins[idx]);
@@ -244,6 +259,7 @@ void createDataset(
     int nvars = vars.size();
 
     // Define RooRealVar variables
+    LOG_DEBUG(Form("[%s]: Creating RooRealVar variables...", method_name.c_str()));
     RooRealVar *rrvars[nvars];
     for (int rr=0; rr<nvars; rr++) {
         rrvars[rr] = new RooRealVar(vars[rr].c_str(), var_titles[rr].c_str(), var_lims[rr][0], var_lims[rr][1]);
@@ -251,12 +267,14 @@ void createDataset(
     }
 
     // Define variable list for RooDataSetHelper
+    LOG_DEBUG(Form("[%s]: Creating RooArgSet of variables...", method_name.c_str()));
     RooArgSet *argset = new RooArgSet();
     for (int rr=0; rr<nvars; rr++) {
         argset->add(*rrvars[rr]);
     }
 
     // Create RDataFrame to RooDataSet pointer
+    LOG_DEBUG(Form("[%s]: Creating dataset: %s , %s, with %d variables...", method_name.c_str(), name.c_str(), title.c_str(), nvars));
     ROOT::RDF::RResultPtr<RooDataSet> rooDataSetResult;
     switch (nvars) {
         case 2: //NOTE: Need at least one fit variable and one bin variable.
@@ -362,14 +380,17 @@ void createDataset(
             );
             break;
         default:
-            cerr<<"ERROR: nvars="<<nvars<<" is outside the allowed range [2,18]"<<endl;
-            return;
+            string msg = Form("[%s]: Number of variables %d is outside the allowed range [2,18]", method_name.c_str(), nvars);
+            LOG_ERROR(msg);
+            throw runtime_error(msg);
     }
 
     // Manually create dataset containing helicity as a RooCategory variable
+    LOG_DEBUG(Form("[%s]: Creating RooDataSet with RooCategories...", method_name.c_str()));
     RooDataSet *ds_h = new RooDataSet("ds_h","ds_h", RooArgSet(h,t,ht,ss));
 
     // Set cuts for variable limits so that new dataset will have same length as old dataset
+    LOG_DEBUG(Form("[%s]: Creating variable limits cuts...", method_name.c_str()));
     string varlims_cuts = "";
     for (int vv=0; vv<nvars; vv++) {
         if (varlims_cuts.size()==0) {
@@ -380,6 +401,7 @@ void createDataset(
     }
 
     // Loop RDataFrame and fill helicity dataset
+    LOG_DEBUG(Form("[%s]: Filling RooDataSet with RooCategories...", method_name.c_str()));
     frame.Filter(varlims_cuts.c_str()).Foreach(
                   [&h,&t,&ht,&ss,&ds_h](float h_val, float tspin_val, int ss_val){
 
@@ -421,9 +443,11 @@ void createDataset(
                   );
 
     // Merge datasets
+    LOG_DEBUG(Form("[%s]: Merging RooDataSets...", method_name.c_str()));
     static_cast<RooDataSet&>(*rooDataSetResult).merge(&static_cast<RooDataSet&>(*ds_h));
 
     // Import variables into workspace
+    LOG_DEBUG(Form("[%s]: Importing variables into RooWorkspace...", method_name.c_str()));
     w->import(h);
     w->import(t);
     w->import(ht);
@@ -431,6 +455,7 @@ void createDataset(
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
 
     // Import data into the workspace
+    LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
     w->import(*rooDataSetResult);
 
     return;
@@ -466,13 +491,18 @@ RNode mapDataFromCSV(RNode filtered_df,
                             char delimiter=','
     ) {
 
+    string method_name = "mapDataFromCSV";
+
     // Read CSV once
+    LOG_DEBUG(Form("[%s]: Loading CSV from: %s", method_name.c_str(), csv_path.c_str()));
     ROOT::RDataFrame csv_df = ROOT::RDF::FromCSV(csv_path, readHeaders, delimiter);
 
     // Get keys from csv
+    LOG_DEBUG(Form("[%s]: Grabbing keys from column: %s", method_name.c_str(), csv_key_col.c_str()));
     auto keys = csv_df.Take<CsvKeyType>(csv_key_col);
 
     // Loop the column names and define variables from a CSV map
+    LOG_DEBUG(Form("[%s]: Looping CSV columns...", method_name.c_str()));
     auto df_with_new_column = filtered_df;
     for (int cc=0; cc<col_names.size(); cc++) {
         
@@ -600,7 +630,10 @@ RNode injectAsym(
     string phi_s_name_injected
     ) {
 
+    string method_name = "injectAsym";
+
     // Define a lambda to inject an asymmetry for each rdf entry
+    LOG_DEBUG(Form("[%s]: Defining lambda function for injected spin state variable...", method_name.c_str()));
     auto getEntrySlot = [seed,bpol,tpol](
                         ULong64_t iEntry,
                         bool mc_sg_match,
@@ -665,6 +698,7 @@ RNode injectAsym(
     };
 
     // Define random variable
+    LOG_DEBUG(Form("[%s]: Defining injected spin state variable %s", method_name.c_str(), combined_spin_state_name.c_str()));
     auto frame = df.Define(
                         combined_spin_state_name.c_str(),
                         getEntrySlot,
@@ -697,6 +731,7 @@ RNode injectAsym(
     if (phi_s_up_name!="" && phi_s_dn_name!="") {
         string _phi_s_name_injected = phi_s_name_injected;
         if (_phi_s_name_injected=="") _phi_s_name_injected = Form("%s_injected",phi_s_up_name.c_str());
+        LOG_DEBUG(Form("[%s]: Defining injected phi_s variable %s", method_name.c_str(), _phi_s_name_injected.c_str()));
         frame = frame.Define(_phi_s_name_injected.c_str(), [](float tspin, float phi_s_up, float phi_s_dn) -> float { return (float)(tspin>0 ? phi_s_up : phi_s_dn);},{tspin_name.c_str(),phi_s_up_name.c_str(),phi_s_dn_name.c_str()});
     }
 
@@ -730,6 +765,8 @@ RNode defineAngularDiffVars(
         string mc_suffix  = "_mc"
     ) {
     
+    string method_name = "defineAngularDiffVars";
+    
     // Define angular difference variable names
     vector<string> theta_vars;
     vector<string> phi_vars;
@@ -750,12 +787,14 @@ RNode defineAngularDiffVars(
     if (particle_suffixes.size()==0) {
         return frame;
     }
+    LOG_DEBUG(Form("[%s]: Defining angular difference variables %s and %s", method_name.c_str(), dtheta_vars[0].c_str(), dphi_vars[0].c_str()));
     auto newframe = frame.Define(dtheta_vars[0].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[0].c_str(),theta_mc_vars[0].c_str()})
         .Define(dphi_vars[0].c_str(),[](float phi, float phi_mc){
             return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()
             ? TMath::Abs(phi-phi_mc) : 2*TMath::Pi() - TMath::Abs(phi-phi_mc));
             },{phi_vars[0].c_str(),phi_mc_vars[0].c_str()});
     for (int idx=1; idx<particle_suffixes.size(); idx++) {
+        LOG_DEBUG(Form("[%s]: Defining angular difference variables %s and %s", method_name.c_str(), dtheta_vars[idx].c_str(), dphi_vars[idx].c_str()));
         newframe = newframe.Define(dtheta_vars[idx].c_str(),[](float theta, float theta_mc){ return TMath::Abs(theta-theta_mc); },{theta_vars[idx].c_str(),theta_mc_vars[idx].c_str()})
             .Define(dphi_vars[idx].c_str(),[](float phi, float phi_mc){
                 return (float) (TMath::Abs(phi-phi_mc)<TMath::Pi()

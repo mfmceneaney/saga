@@ -8,6 +8,12 @@
 
 #include <yaml-cpp/yaml.h>
 
+// ROOT includes
+#include <TString.h>
+
+// Local Includes
+#include <log.h>
+
 #pragma once
 
 /**
@@ -45,7 +51,6 @@ using std::vector;
 * @param defaultval Default value to use if argument is not found
 * @param message_prefix Prefix to output message
 * @param verbose Option to print out argument name and value
-* @param out Output stream to print to
 *
 * @return Argument of type T
 */
@@ -55,8 +60,7 @@ T getYamlArg(
         string       argname,
         T                 defaultval,
         string       message_prefix,
-        bool              verbose,
-        ostream     &out = cout
+        bool              verbose
     ){
     T arg = defaultval;
     if (node[argname]) {
@@ -70,80 +74,114 @@ T getYamlArg(
     if (verbose) {
 
         // First, set prefix
-        out << message_prefix.c_str();
-        if (!node[argname]) { out << "USE DEFAULT: "; }
+        string msg = message_prefix;
+        if (!node[argname]) { msg += "USE DEFAULT: "; }
 
-        // Single value numeric
-        if constexpr (is_same<T, bool>::value || is_same<T, int>::value || is_same<T, float>::value || is_same<T, double>::value) {
-            out << argname.c_str() << ": " << arg << endl;
+        // Single value numeric bool or int
+        if constexpr (is_same<T, bool>::value || is_same<T, int>::value) {
+            msg += argname + ": " + Form("%d", arg);
+        }
+        // Single value numeric float or double
+        else if constexpr (is_same<T, float>::value || is_same<T, double>::value) {
+            msg += argname + ": " + Form("%.8f", arg);
         }
         // Single value string
         else if constexpr (is_same<T, string>::value) {
-            out << argname.c_str() << ": " << arg.c_str() << endl;
+            msg += argname + ": " + arg;
         }
-        // Vector numeric
-        else if constexpr (is_same<T, vector<bool>>::value || is_same<T, vector<int>>::value || is_same<T, vector<float>>::value || is_same<T, vector<double>>::value) {
-            out << argname.c_str() << ": [ ";
+        // Vector numeric bool or int
+        else if constexpr (is_same<T, vector<bool>>::value || is_same<T, vector<int>>::value) {
+            msg += argname + ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
-                if (idx!=arg.size()-1) { out << arg[idx] <<", "; }
-                else { out << arg[idx]; }
+                if (idx!=arg.size()-1) { msg += Form("%d, ", arg[idx]); }
+                else { msg += Form("%d", arg[idx]); }
             }
-            out << " ]" << endl;
+            msg += " ]";
+        }
+        // Vector numeric float or double
+        else if constexpr (is_same<T, vector<float>>::value || is_same<T, vector<double>>::value) {
+            msg += argname + ": [ ";
+            for (int idx=0; idx<arg.size(); idx++) {
+                if (idx!=arg.size()-1) { msg += Form("%.8f, ", arg[idx]); }
+                else { msg += Form("%.8f", arg[idx]); }
+            }
+            msg += " ]";
         }
         // Vector string
         else if constexpr (is_same<T, vector<string>>::value) {
-            out << argname.c_str() << ": [ ";
+            msg += argname + ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
-                if (idx!=arg.size()-1) { out << arg[idx].c_str() <<", "; }
-                else { out << arg[idx].c_str(); }
+                if (idx!=arg.size()-1) { msg += arg[idx] + ", "; }
+                else { msg += arg[idx]; }
             }
-            out << " ]" << endl;
+            msg += " ]";
         }
-        // Vector vector numeric
-        else if constexpr (is_same<T, vector<vector<bool>>>::value || is_same<T, vector<vector<int>>>::value || is_same<T, vector<vector<float>>>::value || is_same<T, vector<vector<double>>>::value) {
-            out << argname.c_str() << ": [ ";
+        // Vector vector numeric bool or int
+        else if constexpr (is_same<T, vector<vector<bool>>>::value || is_same<T, vector<vector<int>>>::value) {
+            msg += argname + ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
-                out << "\n\t [ ";
+                msg += "\n\t [ ";
                 for (int idx2=0; idx2<arg[idx].size(); idx2++) {
-                    if (idx2!=arg[idx].size()-1) { out << arg[idx][idx2] <<", "; }
-                    else { out << arg[idx][idx2]; }
+                    if (idx2!=arg[idx].size()-1) { msg = Form("%s %d, ", msg.c_str(), arg[idx][idx2]); }
+                    else { msg += Form("%d", arg[idx][idx2]); }
                 }
-                if (idx!=arg.size()-1) { out <<"],"; }
-                else { out <<"]\n"; }
+                if (idx!=arg.size()-1) { msg += "],"; }
+                else { msg += "]\n"; }
             }
-            out << " ]" << endl;
+            msg += " ]";
+        }
+        // Vector vector numeric float or double
+        else if constexpr (is_same<T, vector<vector<float>>>::value || is_same<T, vector<vector<double>>>::value) {
+            msg += argname + ": [ ";
+            for (int idx=0; idx<arg.size(); idx++) {
+                msg += "\n\t [ ";
+                for (int idx2=0; idx2<arg[idx].size(); idx2++) {
+                    if (idx2!=arg[idx].size()-1) { msg = Form("%s %.8f, ", msg.c_str(), arg[idx][idx2]); }
+                    else { msg += Form("%.8f", arg[idx][idx2]); }
+                }
+                if (idx!=arg.size()-1) { msg += "],"; }
+                else { msg += "]\n"; }
+            }
+            msg += " ]";
         }
         // Vector vector string
         else if constexpr (is_same<T, vector<vector<string>>>::value) {
-            out << argname.c_str() << ": [ ";
+            msg += argname + ": [ ";
             for (int idx=0; idx<arg.size(); idx++) {
-                out << "\n\t [ ";
+                msg += "\n\t [ ";
                 for (int idx2=0; idx2<arg[idx].size(); idx2++) {
-                    if (idx2!=arg[idx].size()-1) { out << arg[idx][idx2].c_str() <<", "; }
-                    else { out << arg[idx][idx2].c_str(); }
+                    if (idx2!=arg[idx].size()-1) { msg += arg[idx][idx2] + ", "; }
+                    else { msg += arg[idx][idx2]; }
                 }
-                if (idx!=arg.size()-1) { out <<"],"; }
-                else { out <<"]\n"; }
+                if (idx!=arg.size()-1) { msg += "],"; }
+                else { msg += "]\n"; }
             }
-            out << " ]" << endl;
+            msg += " ]";
         }
         // Map string numeric
         else if constexpr (is_same<T, map<string,bool>>::value || is_same<T, map<string,int>>::value || is_same<T, map<string,float>>::value || is_same<T, map<string,double>>::value) {
-            out << argname.c_str() << ": { ";
+            msg += argname + ": { ";
             for (auto it = arg.begin(); it != arg.end(); ++it) {
-                out << it->first<<" : "<<it->second<<", ";
+                msg += it->first + " : " + it->second + ", ";
             }
-            out << " }" << endl;
+            msg += " }";
         }
         // Map string string
         else if constexpr (is_same<T, map<string,string>>::value) {
-            out << argname.c_str() << ": { ";
+            msg += argname + ": { ";
             for (auto it = arg.begin(); it != arg.end(); ++it) {
-                out << it->first.c_str()<<" : "<<it->second.c_str()<<", ";
+                msg = Form("%s%s : %s, ", msg.c_str(), it->first.c_str(), it->second.c_str());
             }
-            out << " }" << endl;
+            msg += " }";
         }
-        else { out << argname.c_str() << ": STRING CONVERSION NOT IMPLEMENTED FOR ARGUMENT TYPE" << endl; }
+        else {
+            LOG_WARN(Form("%s: STRING CONVERSION NOT IMPLEMENTED FOR ARGUMENT TYPE", argname.c_str()));
+            return arg;
+        }
+
+        // Log message
+        LOG_INFO(msg);
+
     } // if (verbose) {
 
     return arg;

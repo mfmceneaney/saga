@@ -23,7 +23,8 @@
 #include <RooFitResult.h>
 #include <RooWorkspace.h>
 
-// Local includes
+// Local Includes
+#include <log.h>
 #include <data.h>
 
 #pragma once
@@ -124,11 +125,12 @@ vector<double> fitResolution(
     bool loaded_yaml = false;
     if (yamlfile!="") {
         try {
+            LOG_DEBUG(Form("[%s]: Loading yaml file %s", method_name.c_str(), yamlfile.c_str()));
             node = YAML::LoadFile(yamlfile.c_str());
             loaded_yaml = true;
         } catch (exception& e) {
-            cerr<<"WARNING: "<<method_name.c_str()<<": Could not load yaml: "<<yamlfile.c_str()<<endl;
-            cerr << e.what() << endl;
+            LOG_ERROR(Form("[%s]: Could not load yaml file %s", method_name.c_str(), yamlfile.c_str()));
+            throw runtime_error(e.what());
         }
     }
 
@@ -136,39 +138,42 @@ vector<double> fitResolution(
     if (loaded_yaml) {
 
         // Set parsing parameters
-        string message_prefix = "INFO: ";
+        string message_prefix = "["+method_name+"]: ";
         bool verbose = true;
         ostream &yamlargout = out;
 
         // Parse arguments
-        pdf_name = saga::util::getYamlArg<string>(node, "pdf_name", pdf_name, message_prefix, verbose, yamlargout); //NOTE: This must be non-empty!
-        fitformula = saga::util::getYamlArg<string>(node, "fitformula", fitformula, message_prefix, verbose, yamlargout); //NOTE: This is parsed by RooGenericPdf using TFormula
-        parnames = saga::util::getYamlArg<vector<string>>(node, "parnames", parnames, message_prefix, verbose, yamlargout);
-        partitles = saga::util::getYamlArg<vector<string>>(node, "partitles", partitles, message_prefix, verbose, yamlargout);
-        parunits = saga::util::getYamlArg<vector<string>>(node, "parunits", parunits, message_prefix, verbose, yamlargout);
-        parinits = saga::util::getYamlArg<vector<double>>(node, "parinits", parinits, message_prefix, verbose, yamlargout);
-        parlims = saga::util::getYamlArg<vector<vector<double>>>(node, "parlims", parlims, message_prefix, verbose, yamlargout);
-        lg_text_size = saga::util::getYamlArg<double>(node, "lg_text_size", lg_text_size, message_prefix, verbose, yamlargout);
-        lg_margin = saga::util::getYamlArg<double>(node, "lg_margin", lg_margin, message_prefix, verbose, yamlargout);
-        lg_ncols = saga::util::getYamlArg<double>(node, "lg_ncols", lg_ncols, message_prefix, verbose, yamlargout);
-        use_sumw2error = saga::util::getYamlArg<bool>(node, "use_sumw2error", use_sumw2error, message_prefix, verbose, yamlargout);
-        use_extended_nll = saga::util::getYamlArg<bool>(node, "use_extended_nll", use_extended_nll, message_prefix, verbose, yamlargout);
-        use_binned_fit = saga::util::getYamlArg<bool>(node, "use_binned_fit", use_binned_fit, message_prefix, verbose, yamlargout);
+        pdf_name = saga::util::getYamlArg<string>(node, "pdf_name", pdf_name, message_prefix, verbose); //NOTE: This must be non-empty!
+        fitformula = saga::util::getYamlArg<string>(node, "fitformula", fitformula, message_prefix, verbose); //NOTE: This is parsed by RooGenericPdf using TFormula
+        parnames = saga::util::getYamlArg<vector<string>>(node, "parnames", parnames, message_prefix, verbose);
+        partitles = saga::util::getYamlArg<vector<string>>(node, "partitles", partitles, message_prefix, verbose);
+        parunits = saga::util::getYamlArg<vector<string>>(node, "parunits", parunits, message_prefix, verbose);
+        parinits = saga::util::getYamlArg<vector<double>>(node, "parinits", parinits, message_prefix, verbose);
+        parlims = saga::util::getYamlArg<vector<vector<double>>>(node, "parlims", parlims, message_prefix, verbose);
+        lg_text_size = saga::util::getYamlArg<double>(node, "lg_text_size", lg_text_size, message_prefix, verbose);
+        lg_margin = saga::util::getYamlArg<double>(node, "lg_margin", lg_margin, message_prefix, verbose);
+        lg_ncols = saga::util::getYamlArg<double>(node, "lg_ncols", lg_ncols, message_prefix, verbose);
+        use_sumw2error = saga::util::getYamlArg<bool>(node, "use_sumw2error", use_sumw2error, message_prefix, verbose);
+        use_extended_nll = saga::util::getYamlArg<bool>(node, "use_extended_nll", use_extended_nll, message_prefix, verbose);
+        use_binned_fit = saga::util::getYamlArg<bool>(node, "use_binned_fit", use_binned_fit, message_prefix, verbose);
     }
 
     // Switch off histogram stats
     gStyle->SetOptStat(0);
 
     // Load dataset
+    LOG_DEBUG(Form("[%s]: Loading dataset from workspace...", method_name.c_str()));
     RooDataSet *ds = (RooDataSet*)w->data(dataset_name.c_str());
 
     // Cut dataset
+    LOG_DEBUG(Form("[%s]: Applying bin cut...", method_name.c_str()));
     RooDataSet *bin_ds = (RooDataSet*)ds->reduce(Form("%s", bincut.c_str()));
 
     // Get count
     auto count = (int)bin_ds->sumEntries();
 
     // Get bin variable means and errors
+    LOG_DEBUG(Form("[%s]: Getting bin variable means and errors...", method_name.c_str()));
     vector<double> binvarmeans;
     vector<double> binvarerrs;
     RooRealVar * b[(const int)binvars.size()];
@@ -181,12 +186,14 @@ vector<double> fitResolution(
     }
 
     // Load fit variables from workspace
+    LOG_DEBUG(Form("[%s]: Loading fit variables from workspace...", method_name.c_str()));
     RooRealVar * f[(const int)resfitvars.size()];
     for (int i=0; i<resfitvars.size(); i++) {
         f[i] = w->var(resfitvars[i].c_str());
     }
 
-    // Create mass fit signal parameters
+    // Create fit parameters
+    LOG_DEBUG(Form("[%s]: Creating fit parameters...", method_name.c_str()));
     int nparams = parinits.size();
     RooRealVar *pars[nparams];
     for (int aa=0; aa<nparams; aa++) {
@@ -194,6 +201,7 @@ vector<double> fitResolution(
     }
 
     // Add parameters to argument list in order
+    LOG_DEBUG(Form("[%s]: Adding fit parameters to RooArgSet...", method_name.c_str()));
     RooArgSet *argset = new RooArgSet();
     for (int ff=0; ff<resfitvars.size(); ff++) { // Fit independent variables
         argset->add(*f[ff]);
@@ -203,10 +211,12 @@ vector<double> fitResolution(
     }
 
     // Create fit PDF
+    LOG_DEBUG(Form("[%s]: Creating pdf %s from formula %s", method_name.c_str(), pdf_name.c_str(), fitformula.c_str()));
     string model_name = Form("%s_%s",pdf_name.c_str(),binid.c_str());
     RooGenericPdf _model(Form("_%s",model_name.c_str()),Form("_%s",model_name.c_str()),fitformula.c_str(),*argset);
 
     // Create extended fit PDF
+    LOG_DEBUG(Form("[%s]: Creating extended pdf...", method_name.c_str()));
     RooRealVar nsig(Form("nsig_%s",model_name.c_str()), "number of events", count, 0.0, 2.0*count);
     RooExtendPdf model(model_name.c_str(), model_name.c_str(), _model, nsig);
 
@@ -215,9 +225,11 @@ vector<double> fitResolution(
     if (use_binned_fit) {
 
         // Create binned data
+        LOG_DEBUG(Form("[%s]: Creating binned dataset...", method_name.c_str()));
         unique_ptr<RooDataHist> dh = (unique_ptr<RooDataHist>)bin_ds->binnedClone();
 
         // Fit PDF
+        LOG_DEBUG(Form("[%s]: Fitting pdf to dataset...", method_name.c_str()));
         if (use_extended_nll) {
             r = (unique_ptr<RooFitResult>)model.fitTo(*dh, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
         } else {
@@ -227,6 +239,7 @@ vector<double> fitResolution(
     } else {
 
         // Fit PDF
+        LOG_DEBUG(Form("[%s]: Fitting pdf to dataset...", method_name.c_str()));
         if (use_extended_nll) {
             r = (unique_ptr<RooFitResult>)model.fitTo(*bin_ds, Save(), SumW2Error(use_sumw2error), PrintLevel(-1));
         } else {
@@ -248,6 +261,7 @@ vector<double> fitResolution(
     covMat.Print();
 
     // Get signal fit parameter values and errors
+    LOG_DEBUG(Form("[%s]: Getting fit parameter values and errors...", method_name.c_str()));
     vector<double> fitpars;
     vector<double> fitparerrs;
     for (int aa=0; aa<nparams; aa++) {
@@ -256,6 +270,7 @@ vector<double> fitResolution(
     }
 
     // Compute chi2 from 1D histograms
+    LOG_DEBUG(Form("[%s]: Getting chi2 values from 1d histograms...", method_name.c_str()));
     vector<double> chi2ndfs;
     RooDataHist *rdhs_1d[(const int)resfitvars.size()];
     for (int i=0; i<resfitvars.size(); i++) {
@@ -287,6 +302,8 @@ vector<double> fitResolution(
 
     //---------------------------------------- Plot projections ----------------------------------------//
     for (int i=0; i<resfitvars.size(); i++) {
+
+        LOG_DEBUG(Form("[%s]: Plotting 1d fit projection in %s", method_name.c_str(), f[i]->GetName()));
 
         // Plot dataset and PDF
         RooPlot *frame = f[i]->frame();
@@ -463,6 +480,8 @@ vector<double> fitResolution(
 * @param use_binned_fit Option to use a binned fit to the data for the signal and background mass fit
 *
 * @param out Output stream
+*
+* @throws Runtime error
 */
 void getKinBinnedResolutions(
         string                      scheme_name,
@@ -521,12 +540,18 @@ void getKinBinnedResolutions(
         ostream                    &out              = cout
     ) {
 
+    // Set method name
+    string method_name = "getKinBinnedResolutions";
+
     // Check arguments
-    if (binvars.size()<1) {cerr<<"ERROR: Number of bin variables is <1.  Exiting...\n"; return;}
+    if (binvars.size()<1) {
+        string msg = Form("[%s]: Number of bin variables is <1", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
 
     // Starting message
-    string method_name = "getKinBinnedResolutions";
-    out << "----------------------- "<<method_name.c_str()<<" ----------------------\n";
+    out << "----------------------- " << method_name.c_str() << " ----------------------\n";
     out << "bincuts = { ";
     for (auto it = bincuts.begin(); it != bincuts.end(); it++) {
         out << it->first << " : " << it->second.c_str() << " , ";
@@ -535,12 +560,14 @@ void getKinBinnedResolutions(
 
     // Open output CSV
     string csvpath = Form("%s.csv",scheme_name.c_str());
+    LOG_DEBUG(Form("[%s]: Opening csv file %s", method_name.c_str(), csvpath.c_str()));
     ofstream csvoutf; csvoutf.open(csvpath.c_str());
     ostream &csvout = csvoutf;
     string csv_separator = ",";
 
     // Set CSV column headers
     // COLS: bin_id,count,{binvarmean,binvarerr},{chi2ndf},{resfitvar,resfitvarerr}
+    LOG_DEBUG(Form("[%s]: Writing csv headers...", method_name.c_str()));
     csvout << "bin_id" << csv_separator.c_str();
     csvout << "count" << csv_separator.c_str();
     for (int bb=0; bb<binvars.size(); bb++) {
@@ -568,12 +595,15 @@ void getKinBinnedResolutions(
         string scheme_binid = Form("scheme_%s_bin_%d",scheme_name.c_str(),bin_id);
 
         // Create workspace
+        LOG_DEBUG(Form("[%s]: Creating workspace %s", method_name.c_str(), workspace_name.c_str()));
         RooWorkspace *ws    = new RooWorkspace(workspace_name.c_str(),workspace_title.c_str());
 
         // Make bin cut on frame
+        LOG_DEBUG(Form("[%s]: Filtering frame with bin cut %s", method_name.c_str(), bin_cut.c_str()));
         auto binframe = frame.Filter(bin_cut.c_str());
 
         // Create bin dataset
+        LOG_DEBUG(Form("[%s]: Creating dataset", method_name.c_str()));
         data::createDataset(
             binframe,
             ws,
@@ -617,6 +647,7 @@ void getKinBinnedResolutions(
 
         // Get resolution fit results
         string yamlfile = yamlfile_map[scheme_binid];
+        LOG_DEBUG(Form("[%s]: Fitting resolution for bin scheme %s", method_name.c_str(), scheme_binid.c_str()));
         vector<double> resfitresult = fitResolution(
                                 ws,
                                 dataset_name,
@@ -643,6 +674,7 @@ void getKinBinnedResolutions(
                             );
 
         // Initialize data
+        LOG_DEBUG(Form("[%s]: Initializing arrays...", method_name.c_str()));
         int    nbinvars = binvars.size();
         int    nparams  = parinits.size();
         double xs[nbinvars];
@@ -652,6 +684,7 @@ void getKinBinnedResolutions(
         double eys[nparams];
 
         // Get resolution fit bin data
+        LOG_DEBUG(Form("[%s]: Grabbing data...", method_name.c_str()));
         int k = 0;
         int count = (int)resfitresult[k++];
         for (int idx=0; idx<binvars.size(); idx++) {
@@ -668,6 +701,7 @@ void getKinBinnedResolutions(
 
         // Write out a row of data to csv
         // COLS: bin_id,count,{binvarmean,binvarerr},{chi2ndf},{resfitvar,resfitvarerr}
+        LOG_DEBUG(Form("[%s]: Writing csv data...", method_name.c_str()));
         csvout << bin_id << csv_separator.c_str();
         csvout << count << csv_separator.c_str();
         for (int bb=0; bb<binvars.size(); bb++) {
