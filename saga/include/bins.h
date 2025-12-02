@@ -65,13 +65,15 @@ vector<double> findBinLims(
         const int nbins
     ) {
 
+    string method_name = "findBinLims";
+
     // Initialize vectors
     vector<double> binmeans;
     vector<double> binmeans_err;
     vector<double> binlims;
 
     // Get overall limits and count and the necessary bin count with nbins
-    LOG_DEBUG(Form("Computing min, max, and count for variable %s", varname.c_str()));
+    LOG_DEBUG(Form("[%s]: Computing min, max, and count for variable %s", method_name.c_str(), varname.c_str()));
     double varmin = (double)*frame.Min(varname);
     double varmax = (double)*frame.Max(varname);
     int    count  = (int)*frame.Count();
@@ -79,29 +81,29 @@ vector<double> findBinLims(
 
     // Set initial step size and add initial bin limit
     double step = (double)(varmax-varmin)/nbins;
-    LOG_DEBUG(Form("Setting initial step size to %.8f", step));
+    LOG_DEBUG(Form("[%s]: Setting initial step size to %.8f", method_name.c_str(), step));
     binlims.push_back(varmin);
-    LOG_DEBUG(Form("Setting lowest bin limit to %.8f", varmin));
+    LOG_DEBUG(Form("[%s]: Setting lowest bin limit to %.8f", method_name.c_str(), varmin));
 
     // Loop each bin and find its upper limit
     int nsteps;
     double threshold = 0.01*targetbincount; //NOTE: This is a threshold in counts, which will be an int.
     for (int i=0; i<nbins; i++) {
 
-        LOG_DEBUG(Form("Finding upper limit for bin %d", i));
+        LOG_DEBUG(Form("[%s]: Finding upper limit for bin %d", method_name.c_str(), i));
 
         // Set the bin max cut starting at the bin min 
         double binmin = (i==0 ? (double)varmin : binlims.at(binlims.size()-1)); //NOTE: NEED TO SET OUTSIDE OR ADD.....
         double binmax = (i==nbins-1 ? (double)varmax: binmin);
         string bin_cut = Form("%s>=%.16f && %s<%.16f",varname.c_str(),binmin,varname.c_str(),binmax);
-        LOG_DEBUG(Form("Filtering with bin cut %s", bin_cut.c_str()));
+        LOG_DEBUG(Form("[%s]: Filtering with bin cut %s", method_name.c_str(), bin_cut.c_str()));
         int bincount = (int)*frame.Filter(bin_cut).Count();
         bool pass_flag = false;
 
         // Set the initial adjustment step
         step = (double)(varmax-varmin)/nbins;//IMPORTANT! NEED TO RESET IN CASE IT'S NEGATIVE BUT ALSO SO IT DOESN'T START REALLY SMALL.
         double delta = TMath::Abs(bincount-targetbincount);
-        LOG_DEBUG(Form("Initializing with step=%.8f delta=%.8f", step, delta));
+        LOG_DEBUG(Form("[%s]: Initializing with step=%.8f delta=%.8f", method_name.c_str(), step, delta));
 
         // Adjust the bin max cut until the statistics match within the threshold value
         if (i<nbins-1) {
@@ -118,7 +120,7 @@ vector<double> findBinLims(
                 bin_cut = Form("%s>=%.16f && %s<%.16f",varname.c_str(),binmin,varname.c_str(),binmax);
 
                 // Reset bin count with new bin lims
-                LOG_DEBUG(Form("Filtering with updated bin cut %s", bin_cut.c_str()));
+                LOG_DEBUG(Form("[%s]: Filtering with updated bin cut %s", method_name.c_str(), bin_cut.c_str()));
                 bincount = (int)*frame.Filter(bin_cut.c_str()).Count();
 
                 // Reset step size if passed targetbincount and switch step direction
@@ -128,13 +130,13 @@ vector<double> findBinLims(
                 // Reset delta of bin count to target
                 delta = TMath::Abs(bincount-targetbincount);
 
-                LOG_DEBUG(Form("Updated parameters: step=%.8f delta=%.8f", step, delta));
+                LOG_DEBUG(Form("[%s]: Updated parameters: step=%.8f delta=%.8f", method_name.c_str(), step, delta));
 
             } // while(delta<threshold)
         } // if (i<nbins-1)
 
         // Compute the bin statistics
-        LOG_DEBUG(Form("Initializing with step=%.8f delta=%.8f", step, delta));
+        LOG_DEBUG(Form("[%s]: Initializing with step=%.8f delta=%.8f", method_name.c_str(), step, delta));
         double binmean = (double)*frame.Filter(bin_cut).Mean(varname.c_str());
         double binstd  = (double)*frame.Filter(bin_cut).StdDev(varname.c_str());
 
@@ -196,12 +198,14 @@ void findNestedBinLims(
         string nested_key            = "nested",
         vector<string> bin_cuts = {}
     ) {
-    
+
+    string method_name = "findNestedBinLims";
+
     // Check the YAML node
     if (node && node.IsMap()) {
 
         // Check if there is more depth and return if not
-        LOG_DEBUG(Form("Checking yaml node for nested key %s", nested_key.c_str()));
+        LOG_DEBUG(Form("[%s]: Checking yaml node for nested key %s", method_name.c_str(), nested_key.c_str()));
         if (node[nested_key] && node[nested_key].IsSequence()) {
 
             // Get nested YAML node
@@ -211,7 +215,7 @@ void findNestedBinLims(
             for (int bin=0; bin<node_nested.size(); bin++) {
 
                 // Get nested bin YAML node
-                LOG_DEBUG(Form("Grabbing element %d from yaml node[%s]...", bin, nested_key.c_str()));
+                LOG_DEBUG(Form("[%s]: Grabbing element %d from yaml node[%s]...", method_name.c_str(), bin, nested_key.c_str()));
                 auto node_nested_bin = node_nested[bin];
 
                 // Loop each nested bin looking for bin variables and select ONLY the first one found
@@ -219,26 +223,26 @@ void findNestedBinLims(
 
                     // Get bin variable name
                     string it_key = it_nested->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES OR THE NBINS_KEY
-                    LOG_DEBUG(Form("Found yaml key %s in node[%s][%d]",it_key.c_str(), nested_key.c_str(), bin ));
+                    LOG_DEBUG(Form("[%s]: Found yaml key %s in node[%s][%d]", method_name.c_str(), it_key.c_str(), nested_key.c_str(), bin ));
 
                     // Filter dataframe if a bin cut is available
-                    if (bin_cuts.size()!=0) LOG_DEBUG(Form("Filtering frame with bin_cuts[%d] = %s", bin, bin_cuts[bin].c_str()));
+                    if (bin_cuts.size()!=0) LOG_DEBUG(Form("[%s]: Filtering frame with bin_cuts[%d] = %s", method_name.c_str(), bin, bin_cuts[bin].c_str()));
                     auto df_filtered = (bin_cuts.size()==0) ? frame : frame.Filter(bin_cuts[bin].c_str());
 
                     // Check for bin limits and number of bins and find limits if not provided
                     vector<double> bin_lims;
                     if (it_nested->second[lims_key]) {
-                        LOG_DEBUG(Form("Found bin limits key %s", lims_key.c_str()));
+                        LOG_DEBUG(Form("[%s]: Found bin limits key %s", method_name.c_str(), lims_key.c_str()));
                         bin_lims = it_nested->second[lims_key].as<vector<double>>();
                     } else if (it_nested->second[nbins_key]) {
-                        LOG_DEBUG(Form("Found nbins key %s", nbins_key.c_str()));
+                        LOG_DEBUG(Form("[%s]: Found nbins key %s", method_name.c_str(), nbins_key.c_str()));
                         const int nbins = it_nested->second[nbins_key].as<int>();
                         bin_lims = findBinLims(df_filtered, it_key, nbins);
                         it_nested->second[lims_key] = bin_lims;
                     }
 
                     // Set bin cuts to carry to next depth of bin scheme
-                    LOG_DEBUG("Adding new bin limits cuts...");
+                    LOG_DEBUG(Form("[%s]: Adding new bin limits cuts...", method_name.c_str()));
                     vector<string> new_bin_cuts;
                     for (int idx=0; idx<bin_lims.size()-1; idx++) {
                         string bincut = saga::util::addLimitCuts("",{it_key},{{bin_lims[idx], bin_lims[idx+1]}});
@@ -246,7 +250,7 @@ void findNestedBinLims(
                     }
 
                     // Recursion call
-                    LOG_DEBUG("Recursive call to findNestedBinLims...");
+                    LOG_DEBUG(Form("[%s]: Recursive call to findNestedBinLims...", method_name.c_str()));
                     findNestedBinLims(
                         df_filtered,
                         it_nested->second,
@@ -319,13 +323,15 @@ void setNestedBinCuts(
         string              nested_key = "nested"
     ) {
 
+    string method_name = "setNestedBinCuts";
+
     // Check the YAML node
     if (node && node.IsMap()) {
 
         // Check for bin limits
         vector<double> lims;
         if (node[lims_key] && node[lims_key].IsSequence()) {
-            LOG_DEBUG(Form("Found bin limits key %s", lims_key.c_str()));
+            LOG_DEBUG(Form("[%s]: Found bin limits key %s", method_name.c_str(), lims_key.c_str()));
             lims = node[lims_key].as<vector<double>>();
         }
 
@@ -334,7 +340,7 @@ void setNestedBinCuts(
         if (nbins<0) nbins=0;
 
         // Loop bins and get bin cuts
-        LOG_DEBUG("Adding bin limits cuts...");
+        LOG_DEBUG(Form("[%s]: Adding bin limits cuts...", method_name.c_str()));
         vector<string> varcuts;
         for (int bin=0; bin<nbins; bin++) {
             string cut = saga::util::addLimitCuts("",{node_name.c_str()},{{lims[bin],lims[bin+1]}});
@@ -342,7 +348,7 @@ void setNestedBinCuts(
         }
 
         // Loop previous cuts
-        LOG_DEBUG("Looping previous bin cuts...");
+        LOG_DEBUG(Form("[%s]: Looping previous bin cuts...", method_name.c_str()));
         vector<string> newcuts;
         for (int idx=0; idx<old_cuts.size(); idx++) {
             
@@ -361,14 +367,14 @@ void setNestedBinCuts(
         if (node[nested_key] && node[nested_key].IsSequence()) {
 
             // Get nested YAML node
-            LOG_DEBUG(Form("Found nested yaml node with key %s", nested_key.c_str()));
+            LOG_DEBUG(Form("[%s]: Found nested yaml node with key %s", method_name.c_str(), nested_key.c_str()));
             auto node_nested = node[nested_key];
 
             // Loop nested bins
             for (int bin=0; bin<node_nested.size(); bin++) { //NOTE: These are not bin limits just maps to bin limits for each bin, so loop normally.
 
                 // Get nested YAML node
-                LOG_DEBUG(Form("Found bin node with index %d", bin));
+                LOG_DEBUG(Form("[%s]: Found bin node with index %d", method_name.c_str(), bin));
                 auto node_nested_bin = node_nested[bin];
 
                 // Loop nested bin variables (only expect one!)
@@ -376,14 +382,14 @@ void setNestedBinCuts(
 
                     // Get bin variable
                     string it_key = it_nested->first.as<string>();
-                    LOG_DEBUG(Form("Found bin variable %s", it_key.c_str()));
+                    LOG_DEBUG(Form("[%s]: Found bin variable %s", method_name.c_str(), it_key.c_str()));
 
                     // Create a new vector for uniqueness along different recursion branches
                     vector<string> new_old_cuts;
                     if (bin<old_cuts.size()) new_old_cuts = {old_cuts[bin]}; 
 
                     // Recursion call
-                    LOG_DEBUG("Recursive call to setNestedBinCuts...");
+                    LOG_DEBUG(Form("[%s]: Recursive call to setNestedBinCuts...", method_name.c_str()));
                     setNestedBinCuts(
                         cuts,
                         it_nested->second,
@@ -398,7 +404,7 @@ void setNestedBinCuts(
                 }
             }
         } else {
-            LOG_DEBUG("Looping old bin cuts...");
+            LOG_DEBUG(("[%s]: Looping old bin cuts...", method_name.c_str()));
             for (int bin=0; bin<old_cuts.size(); bin++) {
                 cuts.push_back(old_cuts[bin]);
             }
@@ -427,6 +433,8 @@ map<int,string> getBinCuts(
         int                                       start_bin_id
     ) {
 
+    string method_name = "getBinCuts";
+
     vector<string> cuts;
 
     // Loop bin variables
@@ -436,10 +444,10 @@ map<int,string> getBinCuts(
         string binvar = it->first;
         vector<double> lims = it->second;
 
-        LOG_DEBUG(Form("Getting bin cuts for variable %s", binvar.c_str()));
+        LOG_DEBUG(Form("[%s]: Getting bin cuts for variable %s", method_name.c_str(), binvar.c_str()));
 
         // Loop bin limits and get bin cuts
-        LOG_DEBUG("Looping bin limits for cuts...");
+        LOG_DEBUG(Form("[%s]: Looping bin limits for cuts...", method_name.c_str()));
         vector<string> varcuts;
         for (int bin=0; bin<lims.size()-1; bin++) {
             double bin_min = lims[bin];
@@ -449,7 +457,7 @@ map<int,string> getBinCuts(
         }
 
         // Loop previous cuts
-        LOG_DEBUG("Looping previous cuts...");
+        LOG_DEBUG(Form("[%s]: Looping previous cuts...", method_name.c_str()));
         vector<string> newcuts;
         for (int idx=0; idx<cuts.size(); idx++) {
             
@@ -466,7 +474,7 @@ map<int,string> getBinCuts(
     }
 
     // Convert vector to map starting at given start index
-    LOG_DEBUG("Converting bin cuts to map...");
+    LOG_DEBUG(Form("[%s]: Converting bin cuts to map...", method_name.c_str()));
     map<int,string> bincuts;
     for (int idx=0; idx<cuts.size(); idx++) {
         bincuts[start_bin_id+idx] = cuts[idx];
@@ -492,6 +500,8 @@ map<int,string> getBinCuts(
 */
 map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_bin_id = 0) {
 
+    string method_name = "getBinCutsMap";
+
     // Set minimum allowed bin id
     int min_bin_id = start_bin_id;
 
@@ -503,13 +513,13 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
 
         // Get bin scheme name
         string binscheme_name = it_binschemes->first.as<string>();
-        LOG_DEBUG(Form("Getting bin cuts for bin scheme %s", binscheme_name.c_str()));
+        LOG_DEBUG(Form("[%s]: Getting bin cuts for bin scheme %s", method_name.c_str(), binscheme_name.c_str()));
 
         // Get bin scheme node
         auto node_binscheme = node_binschemes[binscheme_name];
 
         // Read bin scheme
-        LOG_DEBUG(Form("Checking if yaml node[%s] is a map...", binscheme_name.c_str()));
+        LOG_DEBUG(Form("[%s]: Checking if yaml node[%s] is a map...", method_name.c_str(), binscheme_name.c_str()));
         if (node_binscheme && node_binscheme.IsMap()) {
 
             // Recursively read nested bin scheme OR loop bin scheme yaml and create grid
@@ -518,11 +528,11 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
 
             // Check if you have a nested bin scheme
             if (node_binscheme["nested"]) {
-                LOG_DEBUG("Found nested bin scheme...");
+                LOG_DEBUG(Form("[%s]: Found nested bin scheme...", method_name.c_str()));
 
                 try {
                     // Set nested bin cuts
-                    LOG_DEBUG("Setting nested bin cuts");
+                    LOG_DEBUG(Form("[%s]: Setting nested bin cuts", method_name.c_str()));
                     vector<string> cuts;
                     vector<string> old_cuts;
                     setNestedBinCuts(cuts,node_binscheme,old_cuts,"");
@@ -532,26 +542,26 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
                         bincuts[start_bin_id+idx] = cuts[idx];
                     }
                 } catch (exception& e) {
-                    LOG_ERROR(Form("Could not read nested bin limits for binscheme: %s", binscheme_name.c_str()));
+                    LOG_ERROR(Form("[%s]: Could not read nested bin limits for binscheme: %s", method_name.c_str(), binscheme_name.c_str()));
                     throw runtime_error(e.what());
                 }
             }
             
             // Otherwise loop the yaml for a grid scheme
             else {
-                LOG_DEBUG("Found grid bin scheme...");
+                LOG_DEBUG(Form("[%s]: Found grid bin scheme...", method_name.c_str()));
                 for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
 
                     // Get bin variable name
                     string binvar = it->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
-                    LOG_DEBUG(Form("Found grid bin variable %s", binvar.c_str()));
+                    LOG_DEBUG(Form("[%s]: Found grid bin variable %s", method_name.c_str(), binvar.c_str()));
 
                     // Compute bin limits or read directly from yaml 
                     int nbins = 0;
                     vector<double> binlims;
                     auto node_binvar = node_binscheme[binvar];
                     if (node_binvar.IsMap() && node_binvar["nbins"] && node_binvar["lims"]) {
-                        LOG_DEBUG("Found nbins and lims keys...");
+                        LOG_DEBUG(Form("[%s]: Found nbins and lims keys...", method_name.c_str()));
                         try {
                             int nbins = node_binvar["nbins"].as<int>();
                             vector<double> lims = node_binvar["lims"].as<vector<double>>();
@@ -559,15 +569,15 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
                                 binlims = getBinLims(nbins,lims[0],lims[1]);
                             }
                         } catch (exception& e) {
-                            LOG_ERROR(Form("Could not compute bin limits for binvar: %s", binvar.c_str()));
+                            LOG_ERROR(Form("[%s]: Could not compute bin limits for binvar: %s", method_name.c_str(), binvar.c_str()));
                             throw runtime_error(e.what());
                         }
                     } else {
-                        LOG_DEBUG("Attempting to load bin limits...");
+                        LOG_DEBUG(Form("[%s]: Attempting to load bin limits...", method_name.c_str()));
                         try {
                             binlims = node_binvar.as<vector<double>>();
                         } catch (exception& e) {
-                            LOG_ERROR(Form("Could not read bin limits for binvar: %s", binvar.c_str()));
+                            LOG_ERROR(Form("[%s]: Could not read bin limits for binvar: %s", method_name.c_str(), binvar.c_str()));
                             throw runtime_error(e.what());
                         }
                     }
@@ -580,7 +590,7 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
 
             // Get bin cuts map and reset bin id minimum
             if (binscheme.size()>0) {
-                LOG_DEBUG("Getting bin cuts...");
+                LOG_DEBUG(Form("[%s]: Getting bin cuts...", method_name.c_str()));
                 bincuts = getBinCuts(binscheme,min_bin_id);
             }
             bincuts_map[binscheme_name] = bincuts;
@@ -601,6 +611,8 @@ map<string,map<int,string>> getBinCutsMap(YAML::Node node_binschemes, int start_
 */
 map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
+    string method_name = "getBinSchemesVars";
+
     // Initialize bin cuts map
     map<string,vector<string>> binschemes_vars;
 
@@ -609,7 +621,7 @@ map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
         // Get bin scheme name
         string binscheme_name = it_binschemes->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN SCHEMES
-        LOG_DEBUG(Form("Found binscheme %s", binscheme_name.c_str()));
+        LOG_DEBUG(Form("[%s]: Found binscheme %s", method_name.c_str(), binscheme_name.c_str()));
 
         // Get bin scheme node
         auto node_binscheme = node_binschemes[binscheme_name];
@@ -617,14 +629,14 @@ map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
         // Read bin scheme
         if (node_binscheme["nested"] && node_binscheme["nested"].IsSequence()) {
 
-            LOG_DEBUG("Found nested bin scheme...");
+            LOG_DEBUG(Form("[%s]: Found nested bin scheme...", method_name.c_str()));
 
             // Follow nested yaml structure and create nested bin scheme
             YAML::Node node_nested = node_binscheme["nested"];
             vector<string> binvars;
             
             while (node_nested && node_nested.IsSequence()) {
-                LOG_DEBUG("Found nested sequence...");
+                LOG_DEBUG(Form("[%s]: Found nested sequence...", method_name.c_str()));
 
                 // Loop keys to find the bin variable (only expect one entry!)
                 for (auto it = node_nested[0].begin(); it != node_nested[0].end(); ++it) {
@@ -632,7 +644,7 @@ map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
                     // Get bin variable name and add to list
                     string binvar = it->first.as<string>();
                     binvars.push_back(binvar);
-                    LOG_DEBUG(Form("Found bin variable %s", binvar.c_str()));
+                    LOG_DEBUG(Form("[%s]: Found bin variable %s", method_name.c_str(), binvar.c_str()));
 
                     // Reset the node
                     node_nested = node_nested[0][binvar.c_str()]["nested"];
@@ -645,7 +657,7 @@ map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
 
         } else if (node_binscheme && node_binscheme.IsMap()) {
 
-            LOG_DEBUG("Found grid bin scheme...");
+            LOG_DEBUG(Form("[%s]: Found grid bin scheme...", method_name.c_str()));
 
             // Loop bin scheme yaml and create grid bin scheme
             vector<string> binvars;
@@ -654,7 +666,7 @@ map<string,vector<string>> getBinSchemesVars(YAML::Node node_binschemes) {
                 // Get bin variable name and add to list
                 string binvar = it->first.as<string>();//NOTE: THESE SHOULD BE NAMES OF BIN VARIABLES
                 binvars.push_back(binvar);
-                LOG_DEBUG(Form("Found bin variable %s", binvar.c_str()));
+                LOG_DEBUG(Form("[%s]: Found bin variable %s", method_name.c_str(), binvar.c_str()));
 
             } // for (auto it = node_binscheme.begin(); it != node_binscheme.end(); ++it) {
 
@@ -685,6 +697,8 @@ map<string,map<int,string>> getBinCutsMapBatch(
     int ibatch
     ) {
 
+    string method_name = "getBinCutsMapBatch";
+
     // Initialize output map
     map<string,map<int,string>> bincuts_map_batch;
 
@@ -693,7 +707,7 @@ map<string,map<int,string>> getBinCutsMapBatch(
 
         // Get bin scheme name and cuts
         string binscheme_name = it->first;
-        LOG_DEBUG(Form("Found binscheme %s", binscheme_name.c_str()));
+        LOG_DEBUG(Form("[%s]: Found binscheme %s", method_name.c_str(), binscheme_name.c_str()));
         map<int,string> bincuts = it->second;
 
         // Initialize output map
@@ -703,14 +717,14 @@ map<string,map<int,string>> getBinCutsMapBatch(
         int n_bin_ids = bincuts.size();
         int idx = 0;
         int batch_size = n_bin_ids/nbatches;
-        LOG_DEBUG(Form("Looping bin cuts with batch size %d", batch_size));
+        LOG_DEBUG(Form("[%s]: Looping bin cuts with batch size %d", method_name.c_str(), batch_size));
         for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
 
             // Get bin id and cut
             int binid = it->first;
             string bincut = it->second;
 
-            LOG_DEBUG(Form("Found index %d with bin cut %s", binid, bincut.c_str()));
+            LOG_DEBUG(Form("[%s]: Found index %d with bin cut %s", method_name.c_str(), binid, bincut.c_str()));
 
             // Check if bin id is in batch
             if ((                   idx>=batch_size*ibatch && idx<batch_size*(ibatch+1)) ||
@@ -748,6 +762,8 @@ void getBinMigration(
     string                                                   mc_suffix = "_mc"
     ) {
 
+    string method_name = "getBinMigration";
+
     // Form MC Truth bin cut map
     map<int,string> bincuts_gen;
     for (auto it = bincuts.begin(); it != bincuts.end(); ++it) {
@@ -763,14 +779,14 @@ void getBinMigration(
 
     // Open output CSV
     string csvpath = Form("%s_bin_migration.csv",scheme_name.c_str());
-    LOG_DEBUG(Form("Opening csv file %s", csvpath.c_str()));
+    LOG_DEBUG(Form("[%s]: Opening csv file %s", method_name.c_str(), csvpath.c_str()));
     ofstream csvoutf; csvoutf.open(csvpath.c_str());
     ostream &csvout = csvoutf;
     string csv_separator = ",";
 
     // Set CSV column headers
     // COLS: binid_gen,binid_rec,migration_fraction=N_(REC && GEN)/N_GEN
-    LOG_DEBUG("Writing csv headers...");
+    LOG_DEBUG(Form("[%s]: Writing csv headers...", method_name.c_str()));
     csvout << "binid_gen" << csv_separator.c_str();
     csvout << "binid_rec" << csv_separator.c_str();
     csvout << "mig" << endl;
@@ -783,7 +799,7 @@ void getBinMigration(
         string bincut_gen = it_gen->second;
 
         // Get generated count
-        LOG_DEBUG(Form("Filtering frame with generated bin cut %s", bincut_gen.c_str()));
+        LOG_DEBUG(Form("[%s]: Filtering frame with generated bin cut %s", method_name.c_str(), bincut_gen.c_str()));
         auto frame_filtered = frame.Filter(bincut_gen.c_str());
         double count_gen = (double)*frame_filtered.Count();
 
@@ -795,7 +811,7 @@ void getBinMigration(
             string bincut_rec = it_rec->second;
 
             // Get reconstructed count
-            LOG_DEBUG(Form("Filtering frame with reconstructed bin cut %s", bincut_rec.c_str()));
+            LOG_DEBUG(Form("[%s]: Filtering frame with reconstructed bin cut %s", method_name.c_str(), bincut_rec.c_str()));
             double count_rec = (double)*frame_filtered.Filter(bincut_rec.c_str()).Count();
 
             // Compute bin migration fraction
@@ -803,7 +819,7 @@ void getBinMigration(
 
             // Set CSV column data
             // COLS: bin_id_gen,bin_id_rec,migration_fraction=N_(REC && GEN)/N_GEN
-            LOG_DEBUG("Writing csv data...");
+            LOG_DEBUG(Form("[%s]: Writing csv data...", method_name.c_str()));
             csvout << binid_gen << csv_separator.c_str();
             csvout << binid_rec << csv_separator.c_str();
             csvout << mig << endl;
@@ -832,16 +848,18 @@ void getBinKinematics(
     vector<string>                                      kinvars
     ) {
 
+    string method_name = "getBinKinematics";
+
     // Open output CSV
     string csvpath = Form("%s_kinematics.csv",scheme_name.c_str());
-    LOG_DEBUG(Form("Opening csv file %s", csvpath.c_str()));
+    LOG_DEBUG(Form("[%s]: Opening csv file %s", method_name.c_str(), csvpath.c_str()));
     ofstream csvoutf; csvoutf.open(csvpath.c_str());
     ostream &csvout = csvoutf;
     string csv_separator = ",";
 
     // Set CSV column headers
     // COLS: bin,{kinvar,kinvar_err}
-    LOG_DEBUG("Writing csv headers...");
+    LOG_DEBUG(Form("[%s]: Writing csv headers...", method_name.c_str()));
     csvout << "bin" << csv_separator.c_str();
     csvout << "count"; if (kinvars.size()>0) { csvout << csv_separator.c_str(); }
     for (int idx=0; idx<kinvars.size(); idx++) {
@@ -859,7 +877,7 @@ void getBinKinematics(
         string bincut = it->second;
 
         // Apply bin cut
-        LOG_DEBUG(Form("Filtering with bin cut %s", bincut.c_str()));
+        LOG_DEBUG(Form("[%s]: Filtering with bin cut %s", method_name.c_str(), bincut.c_str()));
         auto frame_filtered = frame.Filter(bincut.c_str());
 
         // Get bin count
@@ -867,7 +885,7 @@ void getBinKinematics(
 
         // Set CSV column data
         // COLS: bin,{kinvar,kinvar_err}
-        LOG_DEBUG("Writing csv data...");
+        LOG_DEBUG(Form("[%s]: Writing csv data...", method_name.c_str()));
         csvout << bin << csv_separator.c_str();
         csvout << count; if (kinvars.size()>0) { csvout << csv_separator.c_str(); }
         for (int idx=0; idx<kinvars.size(); idx++) {
@@ -905,13 +923,15 @@ void saveTH1ToCSV(
     string csv_name
     ) {
 
+    string method_name = "saveTH1ToCSV";
+
     // Check histogram dimensions
-    LOG_DEBUG("Getting histogram bins...");
+    LOG_DEBUG(Form("[%s]: Getting histogram bins...", method_name.c_str()));
     int nbinsx = h1.GetNbinsX();
     int nbinsy = h1.GetNbinsY();
 
     // Open output CSV
-    LOG_DEBUG(Form("Opening csv file %s", csv_name.c_str()));
+    LOG_DEBUG(Form("[%s]: Opening csv file %s", method_name.c_str(), csv_name.c_str()));
     ofstream csvoutf; csvoutf.open(csv_name.c_str());
     ostream &csvout = csvoutf;
     string csv_separator = ",";
@@ -919,11 +939,11 @@ void saveTH1ToCSV(
     // Write CSV data
     if (nbinsx>0 && nbinsy<=1) { //TH1 case
         // Write column headers
-        LOG_DEBUG("Writing csv headers for TH1...");
+        LOG_DEBUG(Form("[%s]: Writing csv headers for TH1...", method_name.c_str()));
         csvout << "bin" << csv_separator.c_str() << "llimx" << csv_separator.c_str() << "count" << endl;
         
         // Loop x bins
-        LOG_DEBUG("Writing csv data for TH1...");
+        LOG_DEBUG(Form("[%s]: Writing csv data for TH1...", method_name.c_str()));
         for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
             
             // Get bin lower limit and count
@@ -938,12 +958,12 @@ void saveTH1ToCSV(
     } else if (nbinsx>0 && nbinsy>1) { //TH2 case
 
         // Write column headers
-        LOG_DEBUG("Writing csv headers for TH2...");
+        LOG_DEBUG(Form("[%s]: Writing csv headers for TH2...", method_name.c_str()));
         csvout << "binx" << csv_separator.c_str() << "biny" << csv_separator.c_str();
         csvout << "llimx" << csv_separator.c_str() << "llimy" << csv_separator.c_str() << "count" << endl;
         
         // Loop x bin
-        LOG_DEBUG("Writing csv data for TH2...");
+        LOG_DEBUG(Form("[%s]: Writing csv data for TH2...", method_name.c_str()));
         for (int idx=1; idx<=nbinsx+1; idx++) { //NOTE: ROOT HISTOGRAM INDICES BEGIN AT 1 AND YOU NEED TO WRITE ALL THE (N+1) BIN LIMITS
             
             // Get bin lower limit
@@ -965,8 +985,9 @@ void saveTH1ToCSV(
             }
         }
     } else {
-        LOG_ERROR("Uknown histogram type! Must be TH1 or TH2.");
-        throw runtime_error("Uknown histogram type! Must be TH1 or TH2.");
+        string msg = Form("[%s]: Uknown histogram type! Must be TH1 or TH2.", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
     }
     
     // Close output CSV
@@ -997,9 +1018,11 @@ void getBinKinematicsTH1Ds(
         bool                                                          save_csvs = false
     ) {
 
+    string method_name = "getBinKinematicsTH1Ds";
+
     // Open output ROOT file
     string path = Form("%s_kinematics.root",scheme_name.c_str());
-    LOG_DEBUG(Form("Opening TH1Ds ROOT file %s", path.c_str()));
+    LOG_DEBUG(Form("[%s]: Opening TH1Ds ROOT file %s", method_name.c_str(), path.c_str()));
     TFile *f = new TFile(path.c_str(),"RECREATE");
 
     // Loop bin cut maps, get kinematics histograms, and write to ROOT
@@ -1010,18 +1033,18 @@ void getBinKinematicsTH1Ds(
         string bincut = it->second;
 
         // Apply bin cut
-        LOG_DEBUG(Form("Filtering frame with bin cut %s", bincut.c_str()));
+        LOG_DEBUG(Form("[%s]: Filtering frame with bin cut %s", method_name.c_str(), bincut.c_str()));
         auto frame_filtered = frame.Filter(bincut.c_str());
 
         // Create 1D histograms for each kinematic variable
         for (int idx=0; idx<kinvars.size(); idx++) {
             string hist_name = Form("h1_bin%d_%s", bin, kinvars[idx].c_str());
-            LOG_DEBUG(Form("Creating TH1D %s", hist_name.c_str()));
+            LOG_DEBUG(Form("[%s]: Creating TH1D %s", method_name.c_str(), hist_name.c_str()));
             TH1D h1 = (TH1D) *frame_filtered.Histo1D({hist_name.c_str(),kinvars[idx].c_str(),kinvar_bins[idx],kinvar_lims[idx][0],kinvar_lims[idx][1]},kinvars[idx].c_str());
             f->WriteObject(&h1, hist_name.c_str());
             if (save_pdfs) {
                 string canvas_name = Form("c1_%s_bin%d_%s", scheme_name.c_str(), bin, kinvars[idx].c_str());
-                LOG_DEBUG(Form("Creating TH1D pdf %s.pdf", canvas_name.c_str()));
+                LOG_DEBUG(Form("[%s]: Creating TH1D pdf %s.pdf", method_name.c_str(), canvas_name.c_str()));
                 TCanvas *c1 = new TCanvas(canvas_name.c_str());
                 c1->cd();
                 h1.Draw("COLZ");
@@ -1063,9 +1086,11 @@ void getBinKinematicsTH2Ds(
         bool                                                          save_csvs = false
     ) {
 
+    string method_name = "getBinKinematicsTH2Ds";
+
     // Open output ROOT file
     string path = Form("%s_kinematics.root",scheme_name.c_str());
-    LOG_DEBUG(Form("Opening TH2Ds ROOT file %s", path.c_str()));
+    LOG_DEBUG(Form("[%s]: Opening TH2Ds ROOT file %s", method_name.c_str(), path.c_str()));
     TFile *f = new TFile(path.c_str(),"RECREATE");
 
     // Loop bin cut maps, get kinematics histograms, and write to ROOT
@@ -1076,19 +1101,19 @@ void getBinKinematicsTH2Ds(
         string bincut = it->second;
 
         // Apply bin cut
-        LOG_DEBUG(Form("Filtering frame with bin cut %s", bincut.c_str()));
+        LOG_DEBUG(Form("[%s]: Filtering frame with bin cut %s", method_name.c_str(), bincut.c_str()));
         auto frame_filtered = frame.Filter(bincut.c_str());
 
         // Create 2D histograms for each kinematic variable
         for (int idx=0; idx<kinvars.size(); idx++) {
             string hist_name = Form("h2_bin%d_%s_%s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
-            LOG_DEBUG(Form("Creating TH2D %s", hist_name.c_str()));
+            LOG_DEBUG(Form("[%s]: Creating TH2D %s", method_name.c_str(), hist_name.c_str()));
             string hist_title = Form("Bin %d : %s vs. %s", bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
             TH2D h2 = (TH2D) *frame_filtered.Histo2D({hist_name.c_str(),hist_title.c_str(),kinvar_bins[idx][0],kinvar_lims[idx][0][0],kinvar_lims[idx][0][1],kinvar_bins[idx][1],kinvar_lims[idx][1][0],kinvar_lims[idx][1][1]},kinvars[idx][0].c_str(),kinvars[idx][1].c_str());
             f->WriteObject(&h2, hist_name.c_str());
             if (save_pdfs) {
                 string canvas_name = Form("c2_%s_bin%d_%s_%s", scheme_name.c_str(), bin, kinvars[idx][0].c_str(), kinvars[idx][1].c_str());
-                LOG_DEBUG(Form("Creating TH1D pdf %s.pdf", canvas_name.c_str()));
+                LOG_DEBUG(Form("[%s]: Creating TH1D pdf %s.pdf", method_name.c_str(), canvas_name.c_str()));
                 TCanvas *c1 = new TCanvas(canvas_name.c_str());
                 c1->cd();
                 h2.Draw("COLZ");

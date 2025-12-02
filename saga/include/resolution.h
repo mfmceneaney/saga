@@ -545,12 +545,13 @@ void getKinBinnedResolutions(
 
     // Check arguments
     if (binvars.size()<1) {
-        LOG_ERROR(Form("[%s]: Number of bin variables is <1", method_name.c_str()));
-        throw runtime_error("Number of bin variables is <1");
+        string msg = Form("[%s]: Number of bin variables is <1", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
     }
 
     // Starting message
-    out << "----------------------- "<<method_name.c_str()<<" ----------------------\n";
+    out << "----------------------- " << method_name.c_str() << " ----------------------\n";
     out << "bincuts = { ";
     for (auto it = bincuts.begin(); it != bincuts.end(); it++) {
         out << it->first << " : " << it->second.c_str() << " , ";

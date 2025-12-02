@@ -136,15 +136,17 @@ vector<string> getGenMassPdf(
     bool use_extended_nll
 ) {
 
+    string method_name = "getGenMassPdf";
+
     // Create the summed PDF
     RooAddPdf * model;
     string model_name = Form("%s_%s",pdf_name.c_str(),binid.c_str());
-    LOG_DEBUG(Form("Creating signal model %s", model_name.c_str()));
+    LOG_DEBUG(Form("[%s]: Creating signal model %s", method_name.c_str(), model_name.c_str()));
 
     //----- Signal PDF -----//
 
     // Create signal PDF
-    LOG_DEBUG(Form("Creating signal model from formula %s", fitformula_sg.c_str()));
+    LOG_DEBUG(Form("[%s]: Creating signal model from formula %s", method_name.c_str(), fitformula_sg.c_str()));
     RooGenericPdf sg(Form("%s_sg",model_name.c_str()), fitformula_sg.c_str(), *argset_sg);
 
     // Create extended signal PDF
@@ -153,7 +155,7 @@ vector<string> getGenMassPdf(
     //----- Background PDF -----//
 
     // Create signal PDF
-    LOG_DEBUG(Form("Creating background model from formula %s", fitformula_bg.c_str()));
+    LOG_DEBUG(Form("[%s]: Creating background model from formula %s", method_name.c_str(), fitformula_bg.c_str()));
     RooGenericPdf bg(Form("%s_bg",model_name.c_str()), fitformula_bg.c_str(), *argset_bg);
 
     // Create extended signal PDF
@@ -162,21 +164,21 @@ vector<string> getGenMassPdf(
     //----- Summed PDF -----//
 
     // Create the signal fraction parameter
-    LOG_DEBUG(Form("Creating signal fraction parameter sgfrac_%s", binid.c_str()));
+    LOG_DEBUG(Form("[%s]: Creating signal fraction parameter sgfrac_%s", method_name.c_str(), binid.c_str()));
     RooRealVar sgfrac(Form("sgfrac_%s",binid.c_str()), "signal fraction", initsgfrac, 0.0, 1.0);
 
     // Create the summed PDF
     if (use_extended_nll) {
-        LOG_DEBUG("Creating extended RooAddPdf...");
+        LOG_DEBUG(Form("[%s]: Creating extended RooAddPdf...", method_name.c_str()));
         model = new RooAddPdf(model_name.c_str(), model_name.c_str(), RooArgList(sg,bg), RooArgList(sgYield,bgYield)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
     }
     else {
-        LOG_DEBUG("Creating RooAddPdf...");
+        LOG_DEBUG(Form("[%s]: Creating RooAddPdf...", method_name.c_str()));
         model = new RooAddPdf(model_name.c_str(), model_name.c_str(), RooArgList(sg,bg), RooArgList(sgfrac)); //NOTE: N-1 Coefficients!  Unless you want extended ML Fit
     }
 
     // Import yield variables and model to workspace
-    LOG_DEBUG("Importing variables and model into workspace...");
+    LOG_DEBUG(Form("[%s]: Importing variables and model into workspace...", method_name.c_str()));
     w->import(sgYield);
     w->import(bgYield);
     w->import(*model);
