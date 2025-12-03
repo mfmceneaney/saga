@@ -68,7 +68,7 @@ docker build -t saga:latest -f docker/Dockerfile .
 ```
 Or, pull a prebuilt image
 ```bash
-docker pull docker://ghcr.io/mfmceneaney/saga-docker:latest
+docker pull ghcr.io/mfmceneaney/saga-docker:latest
 ```
 
 Then, run the container and bind a host folder (e.g. /data) into /data
