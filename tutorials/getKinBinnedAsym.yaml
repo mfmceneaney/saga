@@ -5,6 +5,7 @@ nthreads: 1
 cuts: "mass_ppim<1.24 && Q2>1 && W>2 && y<0.8 && xF_ppim>0.0 && z_ppim<1.0 && detector_p==6 && detector_pim==6"
 inject_asym: true
 inject_seed: 2
+trandom_type: "TRandomMixMax17" #NOTE: Allowed types: "TRandom3", "TRandom", "TRandomRanluxpp", "TRandomMixMax17", "TRandomMixMax256", "TRandomMT64", "TRandom1", "TRandomRanlux48", "TRandom2"
 mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
 sgasyms: [0.0, 0.1, 0.0]
 bgasyms: [0.0, 0.0, 0.0]
