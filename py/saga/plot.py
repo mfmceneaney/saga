@@ -20,7 +20,7 @@ def set_default_plt_settings():
     """
 
     # Use LaTeX for text rendering
-    plt.rcParams['text.usetex'] = True
+    plt.rcParams["text.usetex"] = True
 
     # Set font sizes
     plt.rc("font", size=25)  # controls default text size
@@ -128,7 +128,12 @@ def plot_injected_asyms(
 
 
 def plot_watermark(
-    ax1, watermark="CLAS12 Preliminary", size=50, rotation=25.0, color="gray", alpha=0.25,
+    ax1,
+    watermark="CLAS12 Preliminary",
+    size=50,
+    rotation=25.0,
+    color="gray",
+    alpha=0.25,
 ):
     """
     Parameters
@@ -336,7 +341,13 @@ def plot_hists(
 
 
 def get_bin_kinematics_title(
-    bin_id, df, cols=None, col_titles=None, col_unit_titles=None, err_ext="_err", sep=" , "
+    bin_id,
+    df,
+    cols=None,
+    col_titles=None,
+    col_unit_titles=None,
+    err_ext="_err",
+    sep=" , ",
 ):
     """
     Parameters
@@ -377,7 +388,8 @@ def get_bin_kinematics_title(
 
     return sep.join(
         [
-            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[col+err_ext]:.2f}$" + col_unit_titles.get(col, "")
+            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[col+err_ext]:.2f}$"
+            + col_unit_titles.get(col, "")
             for idx, col in enumerate(cols)
         ]
     )
