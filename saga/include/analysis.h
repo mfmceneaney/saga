@@ -529,17 +529,16 @@ vector<string> getGenAsymPdf(
         if (use_extended_nll) {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {t->lookupName(1), &model_11}, {t->lookupName(0), &model_99}, {t->lookupName(-1), &model_11}
+                {t->lookupName(1), &model_11}, {t->lookupName(-1), &model_11}
             },
             *h);
-            model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_11.GetName());
         }
         else {
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {t->lookupName(1), &_model_11}, {t->lookupName(0), &_model_99}, {t->lookupName(-1), &_model_11}
+                {t->lookupName(1), &_model_11}, {t->lookupName(-1), &_model_11}
             },
             *h);
         }
@@ -553,18 +552,17 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating beam helicity dependent simultaneous extended pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {h->lookupName(1), &model_21}, {h->lookupName(0), &model_11}, {h->lookupName(-1), &model_01}
+                {h->lookupName(1), &model_21}, {h->lookupName(-1), &model_01}
             },
             *h);
             model_and_yield_names.push_back(nsig_21.GetName());
-            model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_01.GetName());
         }
         else {
             LOG_DEBUG(Form("[%s]: Creating beam helicity dependent simultaneous pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {h->lookupName(1), &_model_21}, {h->lookupName(0), &_model_11}, {h->lookupName(-1), &_model_01}
+                {h->lookupName(1), &_model_21}, {h->lookupName(-1), &_model_01}
             },
             *h);
         }
@@ -578,18 +576,17 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating target spin dependent simultaneous extended pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {t->lookupName(1), &model_12}, {t->lookupName(0), &model_11}, {t->lookupName(-1), &model_10}
+                {t->lookupName(1), &model_12}, {t->lookupName(-1), &model_10}
             },
             *t);
             model_and_yield_names.push_back(nsig_12.GetName());
-            model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_10.GetName());
         }
         else {
             LOG_DEBUG(Form("[%s]: Creating target spin dependent simultaneous pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {t->lookupName(1), &_model_12}, {t->lookupName(0), &_model_11}, {t->lookupName(-1), &_model_10}
+                {t->lookupName(1), &_model_12}, {t->lookupName(-1), &_model_10}
             },
             *t);
         }
@@ -603,18 +600,17 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating beam helicity times target spin dependent simultaneous extended pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {ht->lookupName(1), &model_22_00}, {ht->lookupName(0), &model_11}, {ht->lookupName(-1), &model_20_02}
+                {ht->lookupName(1), &model_22_00}, {ht->lookupName(-1), &model_20_02}
             },
             *ht);
             model_and_yield_names.push_back(nsig_22_00.GetName());
-            model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_20_02.GetName());
         }
         else {
             LOG_DEBUG(Form("[%s]: Creating beam helicity times target spin dependent simultaneous pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {ht->lookupName(1), &_model_22_00}, {ht->lookupName(0), &_model_11}, {ht->lookupName(-1), &_model_20_02}
+                {ht->lookupName(1), &_model_22_00}, {ht->lookupName(-1), &_model_20_02}
             },
             *ht);
         }
@@ -628,13 +624,11 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating full beam helicity and target spin dependent simultaneous extended pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {ss->lookupName(11), &model_11}, // Polarization states: UU
                 {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
                 {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: PP
                 {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: PP
             },
             *ss);
-            model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_12.GetName()); model_and_yield_names.push_back(nsig_10.GetName());
             model_and_yield_names.push_back(nsig_22.GetName()); model_and_yield_names.push_back(nsig_00.GetName());
             model_and_yield_names.push_back(nsig_02.GetName()); model_and_yield_names.push_back(nsig_20.GetName());            
@@ -643,7 +637,6 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating beam helicity and target spin dependent simultaneous pdf", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {ss->lookupName(11), &_model_11}, // Polarization states: UU
                 {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
                 {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: PP
                 {ss->lookupName(2),  &_model_02}, {ss->lookupName(20), &_model_20}  // Polarization states: PP
@@ -660,14 +653,12 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating beam helicity and target spin dependent simultaneous extended pdf with unpolarized terms", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {ss->lookupName(11), &model_11}, // Polarization states: UU
                 {ss->lookupName(21), &model_21}, {ss->lookupName(1),  &model_01}, // Polarization states: PU
                 {ss->lookupName(12), &model_12}, {ss->lookupName(10), &model_10}, // Polarization states: UP
                 {ss->lookupName(22), &model_22}, {ss->lookupName(0),  &model_00}, // Polarization states: PP
                 {ss->lookupName(2),  &model_02}, {ss->lookupName(20), &model_20}  // Polarization states: PP
             },
             *ss);
-            model_and_yield_names.push_back(nsig_11.GetName());
             model_and_yield_names.push_back(nsig_21.GetName()); model_and_yield_names.push_back(nsig_01.GetName());
             model_and_yield_names.push_back(nsig_12.GetName()); model_and_yield_names.push_back(nsig_10.GetName());
             model_and_yield_names.push_back(nsig_22.GetName()); model_and_yield_names.push_back(nsig_00.GetName());
@@ -677,7 +668,6 @@ vector<string> getGenAsymPdf(
             LOG_DEBUG(Form("[%s]: Creating beam helicity and target spin dependent simultaneous pdf with unpolarized terms", method_name.c_str()));
             model = new RooSimultaneous(model_name.c_str(), "simultaneous pdf",
             {
-                {ss->lookupName(11), &_model_11}, // Polarization states: UU
                 {ss->lookupName(21), &_model_21}, {ss->lookupName(1),  &_model_01}, // Polarization states: PU
                 {ss->lookupName(12), &_model_12}, {ss->lookupName(10), &_model_10}, // Polarization states: UP
                 {ss->lookupName(22), &_model_22}, {ss->lookupName(0),  &_model_00}, // Polarization states: PP
