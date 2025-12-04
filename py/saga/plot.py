@@ -20,7 +20,7 @@ def set_default_plt_settings():
     """
 
     # Use LaTeX for text rendering
-    plt.rcParams['text.usetex'] = True
+    plt.rcParams["text.usetex"] = True
 
     # Set font sizes
     plt.rc("font", size=25)  # controls default text size
@@ -127,7 +127,14 @@ def plot_injected_asyms(
             )
 
 
-def plot_watermark(ax1, watermark="CLAS12 Preliminary"):
+def plot_watermark(
+    ax1,
+    watermark="CLAS12 Preliminary",
+    size=50,
+    rotation=25.0,
+    color="gray",
+    alpha=0.25,
+):
     """
     Parameters
     ----------
@@ -144,10 +151,10 @@ def plot_watermark(ax1, watermark="CLAS12 Preliminary"):
         0.5,
         0.5,
         watermark,
-        size=50,
-        rotation=25.0,
-        color="gray",
-        alpha=0.25,
+        size=size,
+        rotation=rotation,
+        color=color,
+        alpha=alpha,
         horizontalalignment="center",
         verticalalignment="center",
         transform=ax1.transAxes,
@@ -334,7 +341,13 @@ def plot_hists(
 
 
 def get_bin_kinematics_title(
-    bin_id, df, cols=None, col_titles=None, col_unit_titles=None, err_ext="_err", sep=" , "
+    bin_id,
+    df,
+    cols=None,
+    col_titles=None,
+    col_unit_titles=None,
+    err_ext="_err",
+    sep=" , ",
 ):
     """
     Parameters
@@ -375,7 +388,8 @@ def get_bin_kinematics_title(
 
     return sep.join(
         [
-            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[col+err_ext]:.2f}$" + col_unit_titles.get(col, "")
+            f"$<{col_titles[col]}> = {df.iloc[bin_id].loc[col]:.2f}\\pm{df.iloc[bin_id].loc[col+err_ext]:.2f}$"
+            + col_unit_titles.get(col, "")
             for idx, col in enumerate(cols)
         ]
     )
@@ -688,6 +702,7 @@ def plot_systematics(
     ytitle="$\\Delta \\mathcal{A}$",
     outpath="systematics.pdf",
     watermark="CLAS12 Preliminary",
+    watermark_kwargs=None,
     use_default_plt_settings=True,
     legend_loc="upper left",
     axlinewidth=1.0,
@@ -723,6 +738,8 @@ def plot_systematics(
         Name of output pdf
     watermark : str, optional
         Optional watermark to put on top of plot
+    watermark_kwargs : dict, optional
+        Optional key word arguments for :meth:`plot_watermark`
     use_default_plt_settings : bool, optional
         Option to use default font and tick parameter style settings
     legend_loc : str, optional
@@ -775,7 +792,9 @@ def plot_systematics(
 
     # Add water mark
     if watermark is not None and watermark != "":
-        plot_watermark(ax1, watermark=watermark)
+        if watermark_kwargs is None:
+            watermark_kwargs = {}
+        plot_watermark(ax1, watermark=watermark, **watermark_kwargs)
 
     # Plot legend
     if legend_loc is not None and legend_loc != "":
@@ -835,6 +854,7 @@ def plot_results(
     fill_color="gray",
     outpath="out.pdf",
     watermark="CLAS12 Preliminary",
+    watermark_kwargs=None,
     show_injected_asymmetries=False,
     legend_loc="upper left",
     ecolor="black",
@@ -932,6 +952,8 @@ def plot_results(
         Name of output pdf
     watermark : str, optional
         Optional watermark to put on top of plot
+    watermark_kwargs : dict, optional
+        Optional key word arguments for :meth:`plot_watermark`
     show_injected_asymmetries : bool, optional
         Option to show injected signal and background asymmetries
     legend_loc : str, optional
@@ -1180,7 +1202,9 @@ def plot_results(
 
     # Add water mark
     if watermark is not None and watermark != "":
-        plot_watermark(ax1, watermark=watermark)
+        if watermark_kwargs is None:
+            watermark_kwargs = {}
+        plot_watermark(ax1, watermark=watermark, **watermark_kwargs)
 
     # Plot legend
     if legend_loc is not None and legend_loc != "":
