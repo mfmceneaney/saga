@@ -655,8 +655,6 @@ RNode injectAsym(
         TRandom * rng;
         UInt_t seed_iEntry = seed + static_cast<UInt_t>(iEntry);
 
-        LOG_DEBUG(Form("Using random seed %d", seed_iEntry));
-
         // Select the generator
         if (trandom_type=="TRandom3") { rng = new TRandom3(seed_iEntry); }
         else if (trandom_type=="TRandomRanluxpp") { rng = new TRandomRanluxpp(seed_iEntry); }
