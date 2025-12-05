@@ -40,6 +40,7 @@ void execute(const YAML::Node& node) {
     // BEGIN ASYMMETRY INJECTION ARGUMENTS
     bool inject_asym = saga::util::getYamlArg<bool>(node, "inject_asym", false, message_prefix, verbose);
     int inject_seed = saga::util::getYamlArg<int>(node, "inject_seed", 2, message_prefix, verbose);
+    std::string trandom_type = saga::util::getYamlArg<std::string>(node, "trandom_type", "TRandomMixMax17", message_prefix, verbose);
     std::string mc_cuts = saga::util::getYamlArg<std::string>(node,"mc_cuts","Q2>1",message_prefix,verbose); //NOTE: This may not be empty!
     std::vector<double> sgasyms = saga::util::getYamlArg<std::vector<double>>(node, "sgasyms", {}, message_prefix, verbose);
     std::vector<double> bgasyms = saga::util::getYamlArg<std::vector<double>>(node, "bgasyms", {}, message_prefix, verbose);
@@ -475,7 +476,8 @@ void execute(const YAML::Node& node) {
                         tspin_name,
                         phi_s_original_name,
                         phi_s_original_name_dn,
-                        phi_s_injected_name
+                        phi_s_injected_name,
+                        trandom_type
                     );
     //TODO: Add output message about defined branches
 

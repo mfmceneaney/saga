@@ -2,13 +2,16 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <thread>
+#include <functional>
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
 #include <ROOT/RCsvDS.hxx>
+#include <TRandom1.h>
+#include <TRandom2.h>
 #include <TRandom3.h>
-#include <thread>
-#include <functional>
+#include <TRandomGen.h>
 
 // RooFit Includes
 #include <RooCategory.h>
@@ -601,8 +604,11 @@ RNode mapDataFromCSV(RNode filtered_df,
 * @param phi_s_up_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=+1\f$ events
 * @param phi_s_dn_name Name of column containing the injected \f$\phi_{S}\f$ variable for \f$S_{\perp}=-1\f$ events
 * @param phi_s_name_injected Name of column to contain the injected \f$\phi_{S}\f$ variable
+* @param trandom_type Type name of ROOT TRandom number generator
 *
 * @return `ROOT::RDataFrame` with helicity and target spin values injected
+*
+* @throws Runtime Error
 */
 RNode injectAsym(
     RNode df,
@@ -627,14 +633,15 @@ RNode injectAsym(
     string tspin_name,
     string phi_s_up_name,
     string phi_s_dn_name,
-    string phi_s_name_injected
+    string phi_s_name_injected,
+    string trandom_type
     ) {
 
     string method_name = "injectAsym";
 
     // Define a lambda to inject an asymmetry for each rdf entry
     LOG_DEBUG(Form("[%s]: Defining lambda function for injected spin state variable...", method_name.c_str()));
-    auto getEntrySlot = [seed,bpol,tpol](
+    auto getEntrySlot = [seed,bpol,tpol,trandom_type](
                         ULong64_t iEntry,
                         bool mc_sg_match,
                         float asyms_sg_uu_pos, float asyms_sg_uu_neg,
@@ -645,7 +652,24 @@ RNode injectAsym(
                         float asyms_bg_up, float asyms_bg_pp) -> int {
 
         // Combine global seed and row index for determinism
-        TRandom3 rng(seed + static_cast<UInt_t>(iEntry));
+        TRandom * rng;
+        UInt_t seed_iEntry = seed + static_cast<UInt_t>(iEntry);
+
+        // Select the generator
+        if (trandom_type=="TRandom3") { rng = new TRandom3(seed_iEntry); }
+        else if (trandom_type=="TRandomRanluxpp") { rng = new TRandomRanluxpp(seed_iEntry); }
+        else if (trandom_type=="TRandomMixMax") { rng = new TRandomMixMax(seed_iEntry); }
+        else if (trandom_type=="TRandomMixMax17") { rng = new TRandomMixMax17(seed_iEntry); }
+        else if (trandom_type=="TRandomMixMax256") { rng = new TRandomMixMax256(seed_iEntry); }
+        else if (trandom_type=="TRandomMT64") { rng = new TRandomMT64(seed_iEntry); }
+        else if (trandom_type=="TRandom1") { rng = new TRandom1(seed_iEntry); }
+        else if (trandom_type=="TRandomRanlux48") { rng = new TRandomRanlux48(seed_iEntry); }
+        else if (trandom_type=="TRandom2") { rng = new TRandom2(seed_iEntry); }
+        else {
+            string msg = Form("trandom_type %s is not recognized.  Please consult the ROOT documentation for allowed types", trandom_type.c_str());
+            LOG_ERROR(msg);
+            throw runtime_error(msg);
+        }
 
         // Initialize beam helicity, target spin, random variable and cross-section asymmetry value
         int bhelicity    = 0;
@@ -661,9 +685,9 @@ RNode injectAsym(
         while (random_var>=xs_val) {
 
             // Generate random variables
-            b_rand_var = rng.Uniform();
-            t_rand_var = rng.Uniform();
-            random_var = rng.Uniform();
+            b_rand_var = rng->Uniform();
+            t_rand_var = rng->Uniform();
+            random_var = rng->Uniform();
 
             // Assign helicity with probabilities given by polarization
             if (b_rand_var>bpol && bpol>0.0 && tpol==0.0) break; //NOTE: Case you inject only beam helicity and beam helicity==0.

@@ -1,3 +1,4 @@
+log_level: "INFO"
 outpath: "out.yaml"
 inpath: "file.root"
 tree: "t"
