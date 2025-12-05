@@ -1,3 +1,4 @@
+log_level: "INFO"
 baseoutpath: "out_" #NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>.csv`.
 inpath: "/path/to/*.root"
 tree: "t"
