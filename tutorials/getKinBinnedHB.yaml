@@ -1,0 +1,158 @@
+log_level: "INFO"
+baseoutpath: "out_" #NOTE: This will be prepended to the default output path like so: `<baseoutpath><binscheme_name>.csv`.
+inpath: "file.root"
+tree: "t"
+nthreads: 1
+cuts: "mass_ppim<1.24 && Q2>1 && W>2 && y<0.8 && xF_ppim>0.0 && z_ppim<1.0 && detector_p==6 && detector_pim==6"
+inject_asym: true
+inject_seed: 2
+trandom_type: "TRandomMixMax17" #NOTE: Allowed types: "TRandom3", "TRandom", "TRandomRanluxpp", "TRandomMixMax17", "TRandomMixMax256", "TRandomMT64", "TRandom1", "TRandomRanlux48", "TRandom2"
+mc_cuts: "sqrt(px_e*px_e+py_e*py_e+pz_e*pz_e)>2.0 && vz_e>-25.0 && vz_e<20.0" #NOTE: This cut is preapplied on data skim but not in MC
+sgasyms: [0.0, 0.1, 0.0]
+bgasyms: [0.0, 0.0, 0.0]
+particle_suffixes: ["_p","_pim"]
+mc_sg_match_name: "mc_sg_match"
+mc_sg_match_formula: "(bool)(ppid_p_mc==3122 && pidx_p_mc==pidx_pim_mc && abs(dtheta_p)<6*TMath::Pi()/180.0 && abs(dtheta_p)<6*TMath::Pi()/180.0)" #NOTE: dtheta and dphi variables are automatically defined for the given particle suffixes.
+phi_s_original_name: "phi_s_up" #NOTE: Make sure you specify this variable name here AND in the asymmetry fit variables if you are injecting a transverse target spin dependent asymmetry.
+phi_s_original_name_dn: "phi_s_dn" #NOTE: You also need the phi of the negative spin vector
+phi_s_injected_name: "phi_s_injected" #NOTE: The asymmetry fit variable with name `phi_s_original_name` will be renamed to this after injection if `phi_s_original_name`!=""
+fsgasyms_xs_uu_name: "fsgasyms_xs_uu" #NOTE: Define beam helicity dependent asymmetry terms
+fsgasyms_xs_uu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_pu_name: "fsgasyms_xs_pu" #NOTE: Define beam helicity dependent asymmetry terms
+fsgasyms_xs_pu_formula: "(float)(0.747*costhetaT*(depol0*sgasyms[0]*TMath::Cos(phi_h_ppim)+depol1*sgasyms[1]+depol1*sgasyms[2]*TMath::Cos(2.0*phi_h_ppim)))" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_up_name: "fsgasyms_xs_up" #NOTE: Define target spin dependent asymmetry terms
+fsgasyms_xs_up_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_pp_name: "fsgasyms_xs_pp" #NOTE: Define beam helicity and target spin dependent asymmetry terms
+fsgasyms_xs_pp_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fbgasyms_xs_pu_name: "fbgasyms_xs_pu" #NOTE: Define beam helicity dependent asymmetry terms
+fbgasyms_xs_pu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+fbgasyms_xs_up_name: "fbgasyms_xs_up" #NOTE: Define target spin dependent asymmetry terms
+fbgasyms_xs_up_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+fbgasyms_xs_pp_name: "fbgasyms_xs_pp" #NOTE: Define beam helicity and target spin dependent asymmetry terms
+fbgasyms_xs_pp_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+combined_spin_state: "ss"
+rdf_key_cols: ["run"] #NOTE: These are the variable name used as keys in the RDataFrame for matching CSV column values to events in the ROOT files from `inpath`.
+csv_paths: [] #NOTE: You can load additional data, e.g., run depedent target polarizations, from CSV.  These will only be loaded if you specify the CSV paths here.  The length of `run_names` and `col_names` must exactly match the length of this argument if any csv paths are specified.
+csv_key_cols: ["Run"] #NOTE: These are the variable name used as keys in the CSV for matching CSV column values to events in the ROOT files from `inpath`.
+col_names: [["PbPt"]] #NOTE: You must specify the data to take from the CSV
+col_aliases: #NOTE: You can optionally specify aliases for the column names in the CSV to avoid potential naming conflicts with existing columns in the `ROOT::RDataFrame`.
+  PbPt: "PbPt"
+use_categories_as_float: false #NOTE: You can use a single PDF instead of a simultaneous PDF which will automatically use the helicity and/or target spin as floats.
+helicity_name: "heli"
+helicity_formula: "-helicity"
+helicity_states:
+  plus: 1
+  zero: 0
+  minus: -1
+tspin_name: "tspin"
+tspin_formula: "(float)(-helicity*PbPt!=0.0 ? (helicity*PbPt!=0.0 ? 1.0 : -1.0) : 0.0)"
+tspin_states:
+  plus: 1
+  zero: 0
+  minus: -1
+htspin_name: "htspin"
+htspin_states:
+  plus: 1
+  zero: 0
+  minus: -1
+var_formulas: #NOTE: Variable definitions will be applied in order in case of dependencies, and they should follow the form [variable_name,formula].
+  - ["depol0","(float)(y*(1.0-0.5*y)/(1.0-y+0.5*y*y))"]
+  - ["depol1","(float)(y*TMath::Sqrt(1.0-y)/(1.0-y+0.5*y*y))"]
+  - ["depol0_mc","(float)(y_mc*(1.0-0.5*y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]
+  - ["depol1_mc","(float)(y_mc*TMath::Sqrt(1.0-y_mc)/(1.0-y_mc+0.5*y_mc*y_mc))"]
+binschemes: #NOTE: Structure for bin schemes is { binscheme_name: { binvar_name: [binlimits] } }
+  run:
+    run: [1, 100]
+  x:
+    x: [0.0000, 0.1515, 0.2033, 0.2564, 0.3339, 1.0]
+  xF_ppim:
+    xF_ppim: [0.0000, 0.0504, 0.1082, 0.1784, 0.2775, 1.0]
+  z_ppim:
+    z_ppim: [0.0000, 0.5928, 0.6856, 0.7698, 0.8597, 1.0]
+binschemes_paths: [""] #NOTE: You can alternately load a bin scheme from another YAML file if you do not put a map under `binschemes` above.
+nbatches: 1 #NOTE: You can batch all bin schemes if they are large to allow for parellelization
+ibatch: 0 #NOTE: Specify the bin scheme batch index here
+binvars: ["run","x","xF_ppim","z_ppim"]
+binvar_titles: ["run","x","x_{F p#pi^{-}}","z_{p#pi^{-}}"]
+binvar_lims: [[1,100],[0,1],[0,1],[0,1]]
+binvar_bins: [16,16,16,16]
+depolvars: ["depol0"] #NOTE: ONLY ONE DEPOLARIZATION VARIABLE ALLOWED
+depolvar_titles: ["depol0"]
+depolvar_lims: [[0,1]]
+depolvar_bins: [16]
+asymfitvars: ["costhetaT"] #NOTE: ONLY ONE ASYMMETRY FIT VARIABLE ALLOWED
+asymfitvar_titles: ["cos(#theta_{T #hat{x} p#pi^{-}})"]
+asymfitvar_lims: [[-1,1]]
+asymfitvar_bins: [16]
+massfitvars: ["mass_ppim"]
+massfitvar_titles: ["M_{p#pi^{-}} (GeV)"]
+massfitvar_lims: [[1.08,1.24]]
+massfitvar_bins: [100]
+bpol: 1.0 #NOTE: Beam helicity values will only be injected if the beam polarization is > 0.
+tpol: 0.0 #NOTE: Target spin values will only be injected if the target polarization is > 0.
+alpha: 0.747 #NOTE: Lambda decay asymmetry parameter from the PDG
+massfit_yamlfile_map: #NOTE: You can specify a map of bin scheme (string) unique ids to yaml file paths specifying the remaining massfit arguments {`scheme_<scheme_name>_bin_<bin_idx>(__<asymfitvar_bin_idx>)` -> <YAML_PATH> }.
+massfit_pdf_name: "" #NOTE: A mass fit and background correction will only be used if this is not empty.
+massfit_formula_sg: "gaus(x[0],x[1],x[2])" #NOTE: This is parsed by RooGenericPdf using TFormula
+massfit_formula_bg: "cb2(x[0],x[1],x[2])" #NOTE: This is parsed by RooGenericPdf using TFormula
+massfit_sgYield_name: "sgYield"
+massfit_bgYield_name: "bgYield"
+massfit_initsgfrac: 0.1
+massfit_parnames_sg: ["sigma","mu"]
+massfit_partitles_sg: ["#sigma","#mu"]
+massfit_parunits_sg: ["(GeV)", "(GeV)"]
+massfit_parinits_sg: [0.008, 1.1157]
+massfit_parlims_sg: [ [-10.0, 10.0], [-10.0, 10.0] ]
+massfit_parnames_bg: ["a1","a2"]
+massfit_partitles_bg: ["a1","a2"]
+massfit_parunits_bg: ["(GeV)", "(GeV)"]
+massfit_parinits_bg: [0.0, 0.0]
+massfit_parlims_bg: [ [-10.0, 10.0], [-10.0, 10.0] ]
+massfit_sgregion_lims: [ [1.11, 1.13] ]
+massfit_lg_text_size: 0.04
+massfit_lg_margin: 0.1
+massfit_lg_ncols: 1
+massfit_plot_bg_pars: false
+massfit_use_sumw2error: false
+massfit_use_extended_nll: true
+massfit_use_binned_fit: false
+use_splot: false
+massfit_sgcut: "mass_ppim>1.11 && mass_ppim<1.13"
+massfit_bgcut: "(mass_ppim>1.08 && mass_ppim<1.11) || (mass_ppim>1.15 && mass_ppim<1.18)"
+use_sb_subtraction: true
+use_binned_sb_bgfracs: false #NOTE: THIS METHOD IS NOT YET IMPLEMENTED WITH THE HB METHOD
+bgfracvar: "bgfracvar"
+bgfracvar_lims: [0.0,1.0]
+bgfrac_idx: 0 #NOTE: The index here refers to the formulation of the background fraction from `saga::signal::setBinnedBGFracs()`.
+asymfitvar_binschemes: #NOTE: Structure for asymmetry fit variable bin schemes is { binscheme_name: { binvar_name: [binlimits] } }  #NOTE: binscheme_names MUST match those in the binschemes argument!
+  run:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+  x:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+  xF_ppim:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+  z_ppim:
+    costhetaT:
+      nbins: 4
+      lims: [-1.0,1.0]
+    phi_h_ppim:
+      nbins: 4
+      lims: [0.0,6.28]
+logpath: "out.txt"
+dump_vars: [] #NOTE: Specify which branches you want to save here
+dump_dataset: false #NOTE: Specify whether you want to save the filtered dataset and exit. Filename will be: `baseoutpath`+'dataset.root'.
