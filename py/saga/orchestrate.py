@@ -12,7 +12,7 @@ from .aggregate import get_config_list, get_config_str
 
 
 def create_jobs(
-    configs, base_dir="./", submit_path="submit.sh", yaml_path="args.yaml", aliases=None
+    configs, base_dir="./", submit_path="submit.sh", yaml_path="args.yaml", aliases=None, replacements=None,
 ):
     """
     Parameters
@@ -28,6 +28,8 @@ def create_jobs(
         the executable run in the SLURM job submission script
     aliases : dict, optional
         Map of configuration option names to maps of option values to string aliases
+    replacements : dict, optional
+        Map of yaml keys to default values, overriding those in :obj:`yaml_path` and :obj:`configs`
 
     Description
     -----------
@@ -62,6 +64,9 @@ def create_jobs(
             doc = yaml.safe_load(yaml_i)
         for key in data_list_i:
             doc[key] = data_list_i[key]
+        if isinstance(replacements, dict):
+            for key in replacements:
+                doc[key] = replacements[key]
         with open(yaml_path_i, "w", encoding="utf-8") as yaml_i:
             yaml.safe_dump(doc, yaml_i, default_flow_style=False)
 
