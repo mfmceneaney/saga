@@ -1541,6 +1541,7 @@ vector<double> fitAsym(
 * @param massfit_partitles_bg List of background PDF parameter titles
 * @param massfit_parunits_bg List of background PDF parameter unit titles
 * @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
+* @param massfit_fitwindow_lims List of fit window minimum and maximum bounds for each fit variable
 * @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
 
 * @param use_splot Option to use sPlot method and perform fit with sWeighted dataset
@@ -1633,6 +1634,7 @@ void getKinBinnedAsym(
         vector<string>          massfit_partitles_bg,
         vector<string>          massfit_parunits_bg,
         vector<vector<double>>  massfit_parlims_bg,
+        vector<vector<double>>  massfit_fitwindow_lims,
         vector<vector<double>>  massfit_sgregion_lims,
 
         // Parameters passed to analysis::applySPlots()
@@ -1862,6 +1864,7 @@ void getKinBinnedAsym(
                     massfit_partitles_bg, // vector<string>         massfit_partitles_bg,
                     massfit_parunits_bg, // vector<string>         massfit_parunits_bg,
                     massfit_parlims_bg, // vector<vector<double>> massfit_parlims_bg,
+                    massfit_fitwindow_lims, // vector<vector<double>> massfit_fitwindow_lims,
                     massfit_sgregion_lims, // vector<vector<double>> massfit_sgregion_lims,
                     massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
                     massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
@@ -1922,6 +1925,7 @@ void getKinBinnedAsym(
                 massfit_partitles_bg, // vector<string>         massfit_partitles_bg,
                 massfit_parunits_bg, // vector<string>         massfit_parunits_bg,
                 massfit_parlims_bg, // vector<vector<double>> massfit_parlims_bg,
+                massfit_fitwindow_lims, // vector<vector<double>> massfit_fitwindow_lims,
                 massfit_sgregion_lims, // vector<vector<double>> massfit_sgregion_lims,
 
                 binframe, // RNode                            frame, // arguments for this method
