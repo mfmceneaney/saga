@@ -17,19 +17,19 @@ phi_s_original_name: "phi_s_up" #NOTE: Make sure you specify this variable name 
 phi_s_original_name_dn: "phi_s_dn" #NOTE: You also need the phi of the negative spin vector
 phi_s_injected_name: "phi_s_injected" #NOTE: The asymmetry fit variable with name `phi_s_original_name` will be renamed to this after injection if `phi_s_original_name`!=""
 fsgasyms_xs_uu_name: "fsgasyms_xs_uu" #NOTE: Define beam helicity dependent asymmetry terms
-fsgasyms_xs_uu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_uu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 fsgasyms_xs_pu_name: "fsgasyms_xs_pu" #NOTE: Define beam helicity dependent asymmetry terms
-fsgasyms_xs_pu_formula: "(float)(0.747*costhetaT*(depol0*sgasyms[0]*TMath::Cos(phi_h_ppim)+depol1*sgasyms[1]+depol1*sgasyms[2]*TMath::Cos(2.0*phi_h_ppim)))" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_pu_formula: "(float)(0.747*asymfitvars[0]*(depol0*sgasyms[0]*TMath::Cos(asymfitvars[1])+depol1*sgasyms[1]+depol1*sgasyms[2]*TMath::Cos(2.0*asymfitvars[1])))" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 fsgasyms_xs_up_name: "fsgasyms_xs_up" #NOTE: Define target spin dependent asymmetry terms
-fsgasyms_xs_up_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_up_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 fsgasyms_xs_pp_name: "fsgasyms_xs_pp" #NOTE: Define beam helicity and target spin dependent asymmetry terms
-fsgasyms_xs_pp_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]".
+fsgasyms_xs_pp_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Signal asymmetries should be referenced by "sgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 fbgasyms_xs_pu_name: "fbgasyms_xs_pu" #NOTE: Define beam helicity dependent asymmetry terms
-fbgasyms_xs_pu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+fbgasyms_xs_pu_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 fbgasyms_xs_up_name: "fbgasyms_xs_up" #NOTE: Define target spin dependent asymmetry terms
-fbgasyms_xs_up_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+fbgasyms_xs_up_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 fbgasyms_xs_pp_name: "fbgasyms_xs_pp" #NOTE: Define beam helicity and target spin dependent asymmetry terms
-fbgasyms_xs_pp_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]".
+fbgasyms_xs_pp_formula: "(float)0.0" #NOTE: Fit and depolarization variables will be converted to their MC counterparts automatically.  Background asymmetries should be referenced by "bgasyms[index]" and asymmetry fit variables by "asymfitvars[index]".
 combined_spin_state: "ss"
 rdf_key_cols: ["run"] #NOTE: These are the variable name used as keys in the RDataFrame for matching CSV column values to events in the ROOT files from `inpath`.
 csv_paths: [] #NOTE: You can load additional data, e.g., run depedent target polarizations, from CSV.  These will only be loaded if you specify the CSV paths here.  The length of `run_names` and `col_names` must exactly match the length of this argument if any csv paths are specified.
