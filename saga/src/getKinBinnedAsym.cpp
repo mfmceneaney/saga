@@ -209,6 +209,7 @@ void execute(const YAML::Node& node) {
     std::vector<std::string> massfit_parunits_bg = saga::util::getYamlArg<std::vector<std::string>>(node, "massfit_parunits_bg", {}, message_prefix, verbose);
     std::vector<double> massfit_parinits_bg = saga::util::getYamlArg<std::vector<double>>(node, "massfit_parinits_bg", {}, message_prefix, verbose);
     std::vector<std::vector<double>> massfit_parlims_bg = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_parlims_bg", {}, message_prefix, verbose);
+    std::vector<std::vector<double>> massfit_fitwindow_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_fitwindow_lims", {}, message_prefix, verbose);
     std::vector<std::vector<double>> massfit_sgregion_lims = saga::util::getYamlArg<std::vector<std::vector<double>>>(node, "massfit_sgregion_lims", {}, message_prefix, verbose);
     double massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", 0.04, message_prefix, verbose);
     double massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", 0.1, message_prefix, verbose);
@@ -615,6 +616,7 @@ void execute(const YAML::Node& node) {
             massfit_partitles_bg, // std::vector<std::string>         massfit_partitles_bg,
             massfit_parunits_bg, // std::vector<std::string>         massfit_parunits_bg,
             massfit_parlims_bg, // std::vector<std::vector<double>> massfit_parlims_bg,
+            massfit_fitwindow_lims, // std::vector<std::vector<double>> massfit_fitwindow_lims,
             massfit_sgregion_lims, // std::vector<std::vector<double>> massfit_sgregion_lims,
 
             // // Parameters passed to analysis::applySPlots()

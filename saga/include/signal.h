@@ -269,6 +269,7 @@ vector<string> getGenMassPdf(
 * @param massfit_partitles_bg List of background PDF parameter titles
 * @param massfit_parunits_bg List of background PDF parameter unit titles
 * @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
+* @param massfit_fitwindow_lims List of fit window minimum and maximum bounds for each fit variable
 * @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
 * @param massfit_plot_bg_pars Option to plot background pdf parameters on TLegend
 * @param massfit_lg_text_size Size of TLegend text
@@ -305,6 +306,7 @@ vector<double> fitMass(
         vector<string>         massfit_partitles_bg,
         vector<string>         massfit_parunits_bg,
         vector<vector<double>> massfit_parlims_bg,
+        vector<vector<double>> massfit_fitwindow_lims,
         vector<vector<double>> massfit_sgregion_lims,
         double                           massfit_lg_text_size     = 0.04,
         double                           massfit_lg_margin        = 0.1,
@@ -357,6 +359,7 @@ vector<double> fitMass(
         massfit_parunits_bg = saga::util::getYamlArg<vector<string>>(node, "massfit_parunits_bg", massfit_parunits_bg, message_prefix, verbose);
         massfit_parinits_bg = saga::util::getYamlArg<vector<double>>(node, "massfit_parinits_bg", massfit_parinits_bg, message_prefix, verbose);
         massfit_parlims_bg = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_parlims_bg", massfit_parlims_bg, message_prefix, verbose);
+        massfit_fitwindow_lims = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_fitwindow_lims", massfit_fitwindow_lims, message_prefix, verbose);
         massfit_sgregion_lims = saga::util::getYamlArg<vector<vector<double>>>(node, "massfit_sgregion_lims", massfit_sgregion_lims, message_prefix, verbose);
         massfit_lg_text_size = saga::util::getYamlArg<double>(node, "massfit_lg_text_size", massfit_lg_text_size, message_prefix, verbose);
         massfit_lg_margin = saga::util::getYamlArg<double>(node, "massfit_lg_margin", massfit_lg_margin, message_prefix, verbose);
@@ -376,6 +379,7 @@ vector<double> fitMass(
     for (int i=0; i<fitvars.size(); i++) {
         f[i] = w->var(fitvars[i].c_str());
         f[i]->setRange("fullRange", f[i]->getMin(), f[i]->getMax());//NOTE: DEFINE FULL RANGE FOR COMPUTING CHI2 VARIABLE.
+        f[i]->setRange("fitRange", massfit_fitwindow_lims[i][0], massfit_fitwindow_lims[i][1]);
     }
 
     // Load dataset from workspace
@@ -481,13 +485,13 @@ vector<double> fitMass(
 
         // Fit PDF
         LOG_DEBUG(Form("[%s]: Fitting pdf to dataset...", method_name.c_str()));
-        r = (unique_ptr<RooFitResult>)model->fitTo(*dh, Save(), SumW2Error(massfit_use_sumw2error), PrintLevel(-1));
+        r = (unique_ptr<RooFitResult>)model->fitTo(*dh, Save(), SumW2Error(massfit_use_sumw2error), Range("fitRange"), PrintLevel(-1));
 
     } else {
 
         // Fit PDF
         LOG_DEBUG(Form("[%s]: Fitting pdf to dataset...", method_name.c_str()));
-        r = (unique_ptr<RooFitResult>)model->fitTo(*bin_ds, Save(), SumW2Error(massfit_use_sumw2error), PrintLevel(-1));
+        r = (unique_ptr<RooFitResult>)model->fitTo(*bin_ds, Save(), SumW2Error(massfit_use_sumw2error), Range("fitRange"), PrintLevel(-1));
     }
     
     // Print fit result
@@ -936,6 +940,7 @@ void getBinnedBGFractionsDataset(
 * @param massfit_partitles_bg List of background PDF parameter titles
 * @param massfit_parunits_bg List of background PDF parameter unit titles
 * @param massfit_parlims_bg List of background PDF parameter minimum and maximum bounds
+* @param massfit_fitwindow_lims List of fit window minimum and maximum bounds for each fit variable
 * @param massfit_sgregion_lims List of signal region minimum and maximum bounds for each fit variable
 * @param frame ROOT RDataframe in which to define the background fraction variable
 * @param bgcut Background invariant mass region cut
@@ -980,6 +985,7 @@ void setBinnedBGFractions(
         vector<string>          massfit_partitles_bg,
         vector<string>          massfit_parunits_bg,
         vector<vector<double>>  massfit_parlims_bg,
+        vector<vector<double>>  massfit_fitwindow_lims,
         vector<vector<double>>  massfit_sgregion_lims,
         RNode                             frame, // arguments for this method
         string                       bgcut, 
@@ -1093,6 +1099,7 @@ void setBinnedBGFractions(
                 massfit_partitles_bg, // vector<string>         massfit_partitles_bg,
                 massfit_parunits_bg, // vector<string>         massfit_parunits_bg,
                 massfit_parlims_bg, // vector<vector<double>> massfit_parlims_bg,
+                massfit_fitwindow_lims, // vector<vector<double>> massfit_fitwindow_lims,
                 massfit_sgregion_lims, // vector<vector<double>> massfit_sgregion_lims,
                 massfit_lg_text_size, // double                           massfit_lg_text_size     = 0.04,
                 massfit_lg_margin, // double                           massfit_lg_margin        = 0.1,
