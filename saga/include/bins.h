@@ -404,7 +404,7 @@ void setNestedBinCuts(
                 }
             }
         } else {
-            LOG_DEBUG(("[%s]: Looping old bin cuts...", method_name.c_str()));
+            LOG_DEBUG(Form("[%s]: Looping old bin cuts...", method_name.c_str()));
             for (int bin=0; bin<old_cuts.size(); bin++) {
                 cuts.push_back(old_cuts[bin]);
             }

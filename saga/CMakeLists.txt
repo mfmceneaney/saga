@@ -63,7 +63,7 @@ target_link_libraries(getKinBinnedResolutions PUBLIC ROOT::RIO ROOT::Net ROOT::R
 
 #----------------------------------------------------------------------#
 # INSTALL EXECUTABLES AND LIBRARY
-install(TARGETS saga getKinBinnedAsym findBinLims getBinMigration
+install(TARGETS saga getKinBinnedAsym getKinBinnedHB findBinLims getBinMigration
         getBinKinematics getBinKinematicsTH1Ds getBinKinematicsTH2Ds getKinBinnedResolutions
         RUNTIME DESTINATION .)
 
