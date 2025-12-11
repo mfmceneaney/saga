@@ -1397,7 +1397,7 @@ def plot_results_array(
 
                 # Check for masked entry
                 if graph_array[i][j] is None:
-                    ax[i, j].set_visible(false)
+                    ax[i, j].set_visible(False)
                     continue
 
                 # Format graph titles and axes depending on location in grid array
