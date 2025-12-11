@@ -1397,16 +1397,17 @@ def plot_results_array(
 
                 # Check for masked entry
                 if graph_array[i][j] is None:
+                    ax[i, j].set_visible(false)
                     continue
 
                 # Format graph titles and axes depending on location in grid array
-                if j != 0 and use_grid_ylabels:
+                if j != 0 and use_grid_ylabels and graph_array[i][j-1] is not None:
                     plot_results_kwargs_array[i][j]["ylabel"] = ""
-                if i != 0 and use_grid_titles:
+                if i != 0 and use_grid_titles and graph_array[i-1][j] is not None:
                     plot_results_kwargs_array[i][j]["title"] = ""
-                if i != shape[0] - 1 and use_grid_xlabels:
+                if i != shape[0] - 1 and use_grid_xlabels and graph_array[i+1][j] is not None:
                     plot_results_kwargs_array[i][j]["xlabel"] = ""
-                if j != shape[1] - 1 and use_grid_hist_ylabels:
+                if j != shape[1] - 1 and use_grid_hist_ylabels and graph_array[i][j+1] is not None:
                     plot_results_kwargs_array[i][j]["hist_ylabel"] = ""
 
                 # Plot results
