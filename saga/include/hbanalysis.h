@@ -510,6 +510,7 @@ vector<double> fitHB(
 *
 *   - `<massfitpar_bg>_err`: Final parameter error
 *
+* @param baseoutpath Base name prefix for output files
 * @param scheme_name Name bin scheme and basename of output csv file
 * @param frame ROOT RDataframe from which to create RooFit datasets
 * @param workspace_name Name of workspace in which to work
@@ -590,6 +591,7 @@ vector<double> fitHB(
 * @throws runtime_error if invalid arguments are provided
 */
 void getKinBinnedHB(
+        string                      baseoutpath,
         string                      scheme_name,
         RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
         string                      workspace_name,
@@ -725,7 +727,7 @@ void getKinBinnedHB(
 
     // Open output CSV
     LOG_DEBUG(Form("[%s]: Opening output CSV file...", method_name.c_str()));
-    string csvpath = Form("%s.csv",scheme_name.c_str());
+    string csvpath = Form("%s%s.csv",baseoutpath.c_str(),scheme_name.c_str());
     ofstream csvoutf; csvoutf.open(csvpath.c_str());
     ostream &csvout = csvoutf;
     string csv_separator = ",";
