@@ -866,6 +866,7 @@ void getKinBinnedHB(
 
             // Set yaml path for mass fit parameters
             string yamlfile = massfit_yamlfile_map[scheme_binid];
+            LOG_DEBUG(Form("[%s]: Found massfit_yamlfile_map[%s] = %s", method_name.c_str(), scheme_binid.c_str(), yamlfile.c_str()));
 
             // Fit the mass spectrum
             LOG_DEBUG(Form("[%s]: Fitting mass spectrum...", method_name.c_str()));
