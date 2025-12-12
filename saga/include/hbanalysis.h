@@ -866,6 +866,13 @@ void getKinBinnedHB(
         vector<double> massfit_result;
         if (single_massfit) {  //NOTE: A mass fit in each bin is needed for basic sideband subtraction and splots.
 
+            string msg = "massfit_yamlfile_map: { ";
+            for (auto it = massfit_yamlfile_map.begin(); it != massfit_yamlfile_map.end(); ++it) {
+                msg = Form("%s\t%s : %s,\n", msg.c_str(), it->first.c_str(), it->second.c_str());
+            }
+            msg += " }";
+            LOG_DEBUG(Form("[%s]: massfit_yamlfile_map = %s", method_name.c_str(), msg.c_str()));
+
             // Set yaml path for mass fit parameters
             string yamlfile = massfit_yamlfile_map[scheme_binid];
             LOG_DEBUG(Form("[%s]: Found massfit_yamlfile_map[%s] = %s", method_name.c_str(), scheme_binid.c_str(), yamlfile.c_str()));
