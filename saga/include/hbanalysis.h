@@ -1110,7 +1110,7 @@ void getKinBinnedHB(
         }
 
         // Initialize data
-        LOG_DEBUG(Form("[%s]: Extracting results...", method_name.c_str()));
+        LOG_DEBUG(Form("[%s]: Creating arrays...", method_name.c_str()));
         int nbinvars = binvars.size();
         int nparams  = nparams;
         double xs[nbinvars];
@@ -1127,25 +1127,31 @@ void getKinBinnedHB(
         double rawasymerrs[(const int)rawasymvars.size()];
 
         // Get asymmetry fit bin data
+        LOG_DEBUG(Form("[%s]: Extracting count results...", method_name.c_str()));
         int k = 0;
         count = (int)asymfit_result[k++];
+        LOG_DEBUG(Form("[%s]: Extracting binvar results...", method_name.c_str()));
         for (int idx=0; idx<binvars.size(); idx++) {
             xs[idx]     = asymfit_result[k++];
             exs[idx]    = asymfit_result[k++];
         }
+        LOG_DEBUG(Form("[%s]: Extracting depolvar results...", method_name.c_str()));
         for (int idx=0; idx<depolvars.size(); idx++) {
             depols[idx] = asymfit_result[k++];
             edepols[idx] = asymfit_result[k++];
         }
+        LOG_DEBUG(Form("[%s]: Extracting rawasym results...", method_name.c_str()));
         for (int idx=0; idx<rawasymvars.size(); idx++) {
             rawasyms[idx] = asymfit_result[k++];
             rawasymerrs[idx] = asymfit_result[k++];
         }
+        LOG_DEBUG(Form("[%s]: Extracting param results...", method_name.c_str()));
         for (int idx=0; idx<nparams; idx++) {
             ys[idx] = asymfit_result[k++];
             eys[idx] = asymfit_result[k++];
         }
         if (use_binned_sb_bgfracs) {
+            LOG_DEBUG(Form("[%s]: Extracting binned_sb_bgfracs results...", method_name.c_str()));
             for (int idx=0; idx<nparams; idx++) {
                 ys_sb[idx] = asymfit_result[k++];
                 eys_sb[idx] = asymfit_result[k++];
@@ -1174,6 +1180,8 @@ void getKinBinnedHB(
         vector<double> massfit_pars_bg;
         vector<double> massfit_parerrs_bg;
         if (massfit_result.size()>0) {
+
+            LOG_DEBUG(Form("[%s]: Extracting mass fit results...", method_name.c_str()));
 
             // Start counter
             int m = 1; //NOTE: Ignore count which should first entry
