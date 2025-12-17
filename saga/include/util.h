@@ -170,7 +170,7 @@ T getYamlArg(
         else if constexpr (is_same<T, map<string,string>>::value) {
             msg += argname + ": { ";
             for (auto it = arg.begin(); it != arg.end(); ++it) {
-                msg = Form("%s%s : %s, ", msg.c_str(), it->first.c_str(), it->second.c_str());
+                msg = Form("%s\t%s : %s,\n", msg.c_str(), it->first.c_str(), it->second.c_str());
             }
             msg += " }";
         }

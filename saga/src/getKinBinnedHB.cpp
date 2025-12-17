@@ -543,9 +543,9 @@ void execute(const YAML::Node& node) {
         }
 
         // Produce graphs of asymmetry fit parameters corrected for depolarization and background binned in given kinematic variable
-        std::string scheme_name = Form("%s%s",baseoutpath.c_str(),binscheme_name.c_str());
         saga::hbanalysis::getKinBinnedHB(
-            scheme_name, // std::string                      scheme_name,
+            baseoutpath, // std::string                      baseoutpath,
+            binscheme_name, // std::string                      scheme_name,
             frame, // RNode                            frame, //NOTE: FRAME SHOULD ALREADY BE FILTERED
             "w", // std::string                      workspace_name,
             "workspace", // std::string                      workspace_title,
