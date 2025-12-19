@@ -220,7 +220,7 @@ Use the `getKinBinnedAsym` executable to run a set of generically binned ML asym
 #### The Helicity Balance Method
 For $\Lambda$ hyperons the Helicity Balance (HB) method may also be used to extract the $\Lambda$ polarization instead of a Maximum Likelihood fit.  This method allows one to compute the asymmetry parameter, i.e., the $\Lambda$ polarization, with:
 
-$D^{\Lambda}_{LL'} = \frac{1}{\alpha_{\Lambda} \overline{\lambda^2}}\frac{\sum^{N_{\Lambda}}_{i=1}\lambda_{i}\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,,$
+$D^{\Lambda}_{LL'} = \frac{1}{\alpha_{\Lambda} \overline{\lambda^2}}\frac{\sum_{i=1}^{N_{\Lambda}}\lambda_{i}\cos{\theta_{LL'}^i}}{\sum_{i=1}^{N_{\Lambda}}D(y_i) \cos^2{\theta_{LL'}^i}} \,,$
 
 Here, $\lambda_{i}$ indicates the beam helicity for a given event $i$,
 and $\overline{\lambda^{2}}$ is the luminosity averaged beam polarization.
@@ -246,7 +246,7 @@ $P(S \neq 0) = \overline{S^2}$.
 Otherwise, positive and negative helicity and spin values are generated with equal probability.
 The probability $w$ of accepting the proposed $(\lambda,S)$ pair is:
 
-$w = \frac{1}{N} ( 1 + A_{UU} + S_{||} A_{UL} + A_{UT}(\phi^{\mathrm{True}}_{S}) + \lambda [A_{LU} + S_{||} A_{LL} + A_{LT}(\phi^{\mathrm{True}}_{S})] ),$
+$w = \frac{1}{N} ( 1 + A_{UU} + S_{\parallel} A_{UL} + A_{UT}(\phi^{\mathrm{True}}_{S}) + \lambda [A_{LU} + S_{\parallel} A_{LL} + A_{LT}(\phi^{\mathrm{True}}_{S})] ),$
 
 where $N$ is the number of possible combinations of $(\lambda,S)$, given whether either has already been set to $0$.
 For example, if $(\lambda,S)=(0,\pm1)$ or $(\lambda,S)=(\pm1,0)$ then $N=2$,
