@@ -247,7 +247,7 @@ $P(S \neq 0) = \overline{S^2}$.
 Otherwise, positive and negative helicity and spin values are generated with equal probability.
 The probability $w$ of accepting the proposed $(\lambda_{\ell},S)$ pair is:
 
-$w = \frac{1}{N} \bigg{\{} 1 + A_{UU} + \, S_{||} \, A_{UL} + A_{UT}(\phi^{True}_{S}) + \,\lambda_{\ell} \, \big{[}A_{LU} + S_{||} \, A_{LL} + A_{LT}(\phi^{True}_{S})\big{]} \bigg{\}}\,,$
+$w = \frac{1}{N} ( 1 + A_{UU} + S_{||} A_{UL} + A_{UT}(\phi^{True}_{S}) + \lambda_{\ell} [A_{LU} + S_{||} A_{LL} + A_{LT}(\phi^{True}_{S})] ),$
 
 where $N$ is the number of possible combinations of $(\lambda_{\ell},S)$, given whether either has already been set to $0$.
 For example, if $(\lambda_{\ell},S)=(0,\pm1)$ or $(\lambda_{\ell},S)=(\pm1,0)$ then $N=2$,
@@ -255,7 +255,7 @@ but if $(\lambda_{\ell},S)=(\pm1,\pm1)$ then $N=4$.
 Note that since we rely on the fact that the $A_{UT}$ terms are odd under a transverse target spin flip,
 this formulation is equivalent to the following:
 
-$w = \frac{1}{N} \bigg{\{} 1 + A_{UU} + \, S \, A_{UP} + \,\lambda_{\ell} \, \big{[}A_{PU} + S \, A_{PP} \big{]} \bigg{\}}\,,$
+$w = \frac{1}{N} ( 1 + A_{UU} + S A_{UP} + \lambda_{\ell} [A_{PU} + S A_{PP} ] ),$
 
 and $A_{PU}$, $A_{UP}$, and $A_{PP}$ are the asymmetry terms
 dependent on beam helicity, target spin, or both.
