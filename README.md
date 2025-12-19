@@ -7,7 +7,7 @@
 
 Run a generic SIDIS asymmetry analysis with CLAS12 data.
 
-Use [saga](https://github.com/mfmceneaney/saga.git) or your own software to produce the input ROOT trees with event by event kinematics selecting all unique $e^{-}+X$ combinations.
+Use [clas12-analysis](https://github.com/mfmceneaney/clas12-analysis.git) or your own software to produce the input ROOT trees with event by event kinematics selecting all unique $e^{-}+X$ combinations.
 
 ## Install from source
 
@@ -204,29 +204,28 @@ since the acceptance may reasonably be assumed to not depend on the beam helicit
 
 For an unbinned ML fit the acceptance naturally reduces to a relative luminosity factor between the positive and negative helicity subsets of the data ([H. Wollny, Thesis, University of Freiburg, 2010.](https://wwwcompass.cern.ch/compass/publications/theses/2010_phd_wollny.pdf), [G. Smith, Thesis, University of Glasgow, 2008.](https://theses.gla.ac.uk/5042/1/2013SmithPhD.pdf)).  This may usually be assumed to be $\simeq 1.0$.  Here the PDF takes the form:
 
-$PDF(\lambda,S_{||},\phi_{S},\vec{x},\vec{a},\vec{d}) = 1 + A_{UU} + \lambda \cdot \overline{\lambda^2} \cdot A_{LU} + S_{||} \cdot \overline{S_{||}^2} \cdot D_{T} \cdot A_{UL}$
-$+ \lambda \cdot S_{||} \cdot \overline{\lambda^2} \cdot \overline{S_{||}^2} \cdot D_{T} \cdot A_{LL} + \overline{S_{\perp}^2} \cdot D_{T} \cdot A_{UT}(\phi_{S})$
-$+ \lambda \cdot \overline{\lambda^2} \cdot \overline{S_{\perp}^2} \cdot D_{T} \cdot A_{LT}(\phi_{S})$.
+$PDF(\lambda,S,\vec{x},\vec{a},\vec{d}) = 1 + A_{UU} + \lambda \, \overline{\lambda^2} \, A_{PU} + S \, \overline{S^2} \, D_{T} \, A_{UP}$
+$+ \lambda \, S \, \overline{\lambda^2} \, \overline{S^2} \, D_{T} \, A_{PP}$.
 
-$\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit variables, asymmetry parameters, and depolarization variables (treated as independent variables). $S_{||}$ is the longitudinal target spin vector parallel to the beam direction, and $S_{\perp}$ is the transverse target spin vector.  $\phi_{S}$ is the azimuthal angle of the target spin in the $\gamma^*N$ Center of Mass frame.  $\overline{\lambda^2}$ is the luminosity averaged beam polarization, and $\overline{S_{||}^2}$ and $\overline{S_{\perp}^2}$ are the luminosity averaged longitudinal and transverse target polarizations.  $D_{T}$ represents the target dilution factor.  In executables and functions provided by this project, the given asymmetry formula is converted internally to a PDF of this form and a simultaneous fit is done over the different spin states.  For a dataset of length $N$, the likelihood parameter used for parameter optimization is:
+$\vec{x}$, $\vec{a}$, $\vec{d}$ are the fit variables, asymmetry parameters, and depolarization variables (treated as independent variables).  $A_{UU}$ denotes the unpolarized modulations as well as any transverse target spin asymmetries which may be even under a target spin flip.  $A_{PU}$, $A_{UP}$, and $A_{PP}$ denote the asymmetries dependent on beam helicity, target spin, or both.  Transverse target spin asymmetries will depend on $\phi_{S}$, the azimuthal angle of the target spin in the $\gamma^*N$ Center of Mass frame, and will be odd under a sign flip of the target spin vector $S$.  $\overline{\lambda^2}$ is the luminosity averaged beam polarization, and $\overline{S^2}$ is likewise the luminosity averaged target polarizations.  $D_{T}$ represents the target dilution factor.  In executables and functions provided by this project, the given asymmetry formula is converted internally to a PDF of this form and a simultaneous fit is done over the different spin states, **unless** the categories are specifically requested to be treated as floats (independent variables), in which case the fit includes only a single PDF.  For a dataset of length $N$, the likelihood parameter used for parameter optimization is:
 
-$\mathcal{L}(\vec{a}) = \prod_{i=1}^{N} PDF(\lambda_{i},S_{i},\phi_{S,i},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
+$\mathcal{L}(\vec{a}) = \prod_{i=1}^{N} PDF(\lambda_{i},S_{i},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
 An _extended_ ML Fit simply introduces the normalization factor $\mathcal{N}(\vec{a})$ as an optimization parameter assuming a Poissonian distribution so that the extended likelihood becomes:
 
-$\mathcal{L}(\vec{a}) = \frac{\mathcal{N}(\vec{a})^Ne^{-\mathcal{N}(\vec{a})}}{N!}\prod_{i=1}^{N} PDF(\lambda_{i},S_{i},\phi_{S,i},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
+$\mathcal{L}(\vec{a}) = \frac{\mathcal{N}(\vec{a})^Ne^{-\mathcal{N}(\vec{a})}}{N!}\prod_{i=1}^{N} PDF(\lambda_{i},S_{i},\vec{x}_i,\vec{a}_i,\vec{d}_i)$.
 
 Use the `getKinBinnedAsym` executable to run a set of generically binned ML asymmetry fits and save the results to a CSV file.
 
 #### The Helicity Balance Method
 For $\Lambda$ hyperons the Helicity Balance (HB) method may also be used to extract the $\Lambda$ polarization instead of a Maximum Likelihood fit.  This method allows one to compute the asymmetry parameter, i.e., the $\Lambda$ polarization, with:
 
-$D^{\Lambda}_{LL'} = \frac{1}{\alpha_{\Lambda} \overline{\lambda_{\ell}^2}}\frac{\sum^{N_{\Lambda}}_{i=1}\lambda_{\ell,i}\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,,$
+$D^{\Lambda}_{LL'} = \frac{1}{\alpha_{\Lambda} \overline{\lambda^2}}\frac{\sum^{N_{\Lambda}}_{i=1}\lambda_{i}\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,,$
 
-Here, $\lambda_{\ell,i}$ indicates the beam helicity for a given event $i$,
-and $\overline{\lambda^{2}_{\ell}}$ is the luminosity averaged beam polarization.
+Here, $\lambda_{i}$ indicates the beam helicity for a given event $i$,
+and $\overline{\lambda^{2}}$ is the luminosity averaged beam polarization.
 
-The method relies on the assumption that the luminosity averaged helicity $\overline{\lambda_{\ell}}=0$
+The method relies on the assumption that the luminosity averaged helicity $\overline{\lambda}=0$
 to allow the acceptance method to cancel out.
 See [Gunar Schnell's thesis](https://cds.cern.ch/record/732977) from New Mexico State University, 1999 for a full derivation.
 $N_{\Lambda}$ is the number of $\Lambda$ events in the bin,
@@ -245,17 +244,17 @@ $P(\lambda \neq 0) = \overline{\lambda^2}$, and
 $P(S \neq 0) = \overline{S^2}$.
 
 Otherwise, positive and negative helicity and spin values are generated with equal probability.
-The probability $w$ of accepting the proposed $(\lambda_{\ell},S)$ pair is:
+The probability $w$ of accepting the proposed $(\lambda,S)$ pair is:
 
-$w = \frac{1}{N} ( 1 + A_{UU} + S_{||} A_{UL} + A_{UT}(\phi^{True}_{S}) + \lambda_{\ell} [A_{LU} + S_{||} A_{LL} + A_{LT}(\phi^{True}_{S})] ),$
+$w = \frac{1}{N} ( 1 + A_{UU} + S_{||} A_{UL} + A_{UT}(\phi^{True}_{S}) + \lambda [A_{LU} + S_{||} A_{LL} + A_{LT}(\phi^{True}_{S})] ),$
 
-where $N$ is the number of possible combinations of $(\lambda_{\ell},S)$, given whether either has already been set to $0$.
-For example, if $(\lambda_{\ell},S)=(0,\pm1)$ or $(\lambda_{\ell},S)=(\pm1,0)$ then $N=2$,
-but if $(\lambda_{\ell},S)=(\pm1,\pm1)$ then $N=4$.
+where $N$ is the number of possible combinations of $(\lambda,S)$, given whether either has already been set to $0$.
+For example, if $(\lambda,S)=(0,\pm1)$ or $(\lambda,S)=(\pm1,0)$ then $N=2$,
+but if $(\lambda,S)=(\pm1,\pm1)$ then $N=4$.
 Note that since we rely on the fact that the $A_{UT}$ terms are odd under a transverse target spin flip,
 this formulation is equivalent to the following:
 
-$w = \frac{1}{N} ( 1 + A_{UU} + S A_{UP} + \lambda_{\ell} [A_{PU} + S A_{PP} ] ),$
+$w = \frac{1}{N} ( 1 + A_{UU} + S A_{UP} + \lambda [A_{PU} + S A_{PP} ] ),$
 
 and $A_{PU}$, $A_{UP}$, and $A_{PP}$ are the asymmetry terms
 dependent on beam helicity, target spin, or both.

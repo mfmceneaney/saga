@@ -560,9 +560,12 @@ RNode mapDataFromCSV(RNode filtered_df,
 * asymmetry formulas separated into unpolarized modulations and modulations even under transverse target spin flips,
 * i.e., modulations even under a flip of \f$\phi_{S}\f$,
 * as well as asymmetry terms dependent on beam helicity, target spin, or both.
+*
 * In almost **all** scenarios, the unpolarized and even \f$\phi_{S}\f$ dependent modulations will **not** be needed.
 * However, in the case of a term with an even dependence on \f$\phi_{S}\f$,
-* the \f$\phi_{S}\f$ can be injected into the dataset if a variable name is supplied.
+* the \f$\phi_{S}\f$ dependence can be injected into the dataset if a variable name is supplied
+* for \f$\phi_{S}\f$ in both spin states via the arguments `phi_s_up_name` and `phi_s_dn_name`.
+*
 * The injection algorithm proceeds as follows.
 * For each event, a random number \f$r\in[0,1)\f$, beam helicity \f$\lambda_{\ell}\in(-1,0,1)\f$, and target spin \f$S\in(-1,0,1)\f$ are all randomly generated.
 * A non-zero \f$\lambda_{\ell}\f$ and \f$S\f$ are generated with probabilities taken from the beam and target polarizations respectively:

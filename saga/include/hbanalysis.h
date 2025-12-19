@@ -141,7 +141,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 *
 *   - Target spin \f$S\f$
 *
-*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*   - Beam helicity times target spin \f$\lambda_{\ell} \, S\f$
 *
 * - For the (only) Helicity Balance parameter:
 *
@@ -424,7 +424,7 @@ vector<double> fitHB(
 } // vector<double> fitHB()
 
 /**
-* @brief Loop kinematic bins and fit an asymmetry, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
+* @brief Loop kinematic bins and extract an asymmetry with the Helicity Balance method, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
 *
 * Loop bins cuts and fit an asymmetry with the `saga::hbanalysis::fitHB()` method.  Optionally, apply an invariant mass fit and background correction using the
 * sideband subtraction method or the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
@@ -455,7 +455,7 @@ vector<double> fitHB(
 *
 *   - Target spin \f$S\f$
 *
-*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*   - Beam helicity times target spin \f$\lambda_{\ell} \, S\f$
 *
 * - For each asymmetry fit parameter `asymfitpar` (only one allowed for the HB method)
 *
