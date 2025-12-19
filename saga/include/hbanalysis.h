@@ -89,10 +89,9 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * and fit the asymmetry with the Helicity Balance (HB) method.  The asymmetry parameter will be computed with:
 * @f[
 * D^{\Lambda}_{LL'} = \frac{1}{\alpha_{\Lambda} \overline{\lambda_{\ell}^2}}\frac{\sum^{N_{\Lambda}}_{i=1}\lambda_{\ell,i}
-\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,,
+\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,.
 * @f]
-* where `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
-* Here, \f$\lambda_{\ell,i}\f$ indicates the beam helicity for a given event \f$i\f$i,
+* Here, \f$\lambda_{\ell,i}\f$ indicates the beam helicity for a given event \f$i\f$,
 * and \f$\overline{\lambda^{2}_{\ell}}\f$ is the luminosity averaged beam polarization.
 * The method relies on the assumption that the luminosity averaged helicity \f$\overline{\lambda_{\ell}}=0\f$
 * to allow the acceptance method to cancel out.
