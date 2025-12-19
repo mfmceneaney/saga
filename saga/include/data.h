@@ -557,9 +557,15 @@ RNode mapDataFromCSV(RNode filtered_df,
 *
 * Inject an asymmetry into an existing `ROOT::RDataFrame` given a random seed,
 * beam and target polarizations, and the relevant signal and background 
-* asymmetry formulas separated into unpolarized and (only) transverse target spin, i.e., \f$\phi_{S}\f$, dependent asymmetry terms,
+* asymmetry formulas separated into unpolarized modulations and modulations even under transverse target spin flips,
+* i.e., modulations even under a flip of \f$\phi_{S}\f$,
 * as well as asymmetry terms dependent on beam helicity, target spin, or both.
-* In the case of an asymmetry term depending on transverse target spin, the \f$\phi_{S}\f$ variable can be injected into the dataset if a variable name is supplied.
+*
+* In almost **all** scenarios, the unpolarized and even \f$\phi_{S}\f$ dependent modulations will **not** be needed.
+* However, in the case of a term with an even dependence on \f$\phi_{S}\f$,
+* the \f$\phi_{S}\f$ dependence can be injected into the dataset if a variable name is supplied
+* for \f$\phi_{S}\f$ in both spin states via the arguments `phi_s_up_name` and `phi_s_dn_name`.
+*
 * The injection algorithm proceeds as follows.
 * For each event, a random number \f$r\in[0,1)\f$, beam helicity \f$\lambda_{\ell}\in(-1,0,1)\f$, and target spin \f$S\in(-1,0,1)\f$ are all randomly generated.
 * A non-zero \f$\lambda_{\ell}\f$ and \f$S\f$ are generated with probabilities taken from the beam and target polarizations respectively:
@@ -568,12 +574,18 @@ RNode mapDataFromCSV(RNode filtered_df,
 * Otherwise, positive and negative helicity and spin values are generated with equal probability.
 * The probability \f$w\f$ of accepting the proposed \f$(\lambda_{\ell},S)\f$ pair is:
 * \f[
-*   w = \frac{1}{N} (1 + A_{UU} + A_{UT}(\phi_{S}) + \lambda_{\ell} \cdot A_{PU}(\phi_{S}) + \lambda_{\ell} \cdot A_{UP} + \lambda_{\ell} \cdot S_{||} \cdot A_{PP}),
+*   w &= \frac{1}{N} \bigg{\{} 1 + A_{UU} + \, S_{||} \, A_{UL} + A_{UT}(\phi^{True}_{S}) \\
+    & \quad + \,\lambda_{\ell} \, \big{[}A_{LU} + S_{||} \, A_{LL} + A_{LT}(\phi^{True}_{S})\big{]} \bigg{\}}\,,
 * \f]
 * where \f$N\f$ is the number of possible combinations of \f$(\lambda_{\ell},S)\f$, given whether either has already been set to \f$0\f$.
 * For example, if \f$(\lambda_{\ell},S)=(0,\pm1)\f$ or \f$(\lambda_{\ell},S)=(\pm1,0)\f$ then \f$N=2\f$,
 * but if \f$(\lambda_{\ell},S)=(\pm1,\pm1)\f$ then \f$N=4\f$.
-* \f$A_{UU}\f$, \f$A_{UT}\f$ are the unpolarized and (only) transverse target spin dependent asymmetry terms
+* Note that since we rely on the fact that the \f$A_{UT}\f$ terms are odd under a transverse target spin flip,
+* this formulation is equivalent to the following
+* \f[
+*   w &= \frac{1}{N} \bigg{\{} 1 + A_{UU} + \, S \, A_{UP} \\
+    & \quad + \,\lambda_{\ell} \, \big{[}A_{PU} + S \, A_{PP} \big{]} \bigg{\}}\,,
+* \f]
 * and \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ are the asymmetry terms
 * dependent on beam helicity, target spin, or both.
 * The asymmetry terms will be taken from either the signal or background asymmetries
@@ -586,16 +598,16 @@ RNode mapDataFromCSV(RNode filtered_df,
 * @param bpol Average beam polarization
 * @param tpol Average target polarization
 * @param mc_sg_match_name Name of boolean column indicating signal events
-* @param asyms_sg_uu_pos_name Name of column containing the true signal unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=+1\f$
-* @param asyms_sg_uu_neg_name Name of column containing the true signal unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=-1\f$
-* @param asyms_sg_pu_pos_name Name of column containing the true signal asymmetries dependent on beam helicity, for \f$S_{\perp}=+1\f$
-* @param asyms_sg_pu_neg_name Name of column containing the true signal asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$
+* @param asyms_sg_uu_pos_name Name of column containing the true signal unpolarized modulations and modulations with an even dependence on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=+1\f$
+* @param asyms_sg_uu_neg_name Name of column containing the true signal unpolarized modulations and modulations with an even dependence on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=-1\f$
+* @param asyms_sg_pu_pos_name Name of column containing the true signal asymmetries dependent on beam helicity, for \f$S_{\perp}=+1\f$ in the case of a modulation even under transverse target spin flips
+* @param asyms_sg_pu_neg_name Name of column containing the true signal asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$ in the case of a modulation even under transverse target spin flips
 * @param asyms_sg_up_name Name of column containing the true signal asymmetries dependent on target spin
 * @param asyms_sg_pp_name Name of column containing the true signal asymmetries dependent on beam helicity and target spin
-* @param asyms_bg_uu_pos_name Name of column containing the true background unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=+1\f$
-* @param asyms_bg_uu_neg_name Name of column containing the true background unpolarized asymmetries and asymmetries only dependent on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=-1\f$
-* @param asyms_bg_pu_pos_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=+1\f$
-* @param asyms_bg_pu_neg_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$
+* @param asyms_bg_uu_pos_name Name of column containing the true background unpolarized modulations and modulations with an even dependence on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=+1\f$
+* @param asyms_bg_uu_neg_name Name of column containing the true background unpolarized modulations and modulations with an even dependence on transverse target spin, i.e., \f$\phi_{S}\f$, for \f$S_{\perp}=-1\f$
+* @param asyms_bg_pu_pos_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=+1\f$ in the case of a modulation even under transverse target spin flips
+* @param asyms_bg_pu_neg_name Name of column containing the true background asymmetries dependent on beam helicity, for \f$S_{\perp}=-1\f$ in the case of a modulation even under transverse target spin flips
 * @param asyms_bg_up_name Name of column containing the true background asymmetries dependent on target spin
 * @param asyms_bg_pp_name Name of column containing the true background asymmetries dependent on beam helicity and target spin
 * @param combined_spin_state_name Name of column containing combined beam helicity and target spin state encoded as \f$ss = (\lambda_{\ell}+1)\cdot10 + (S+1)\f$

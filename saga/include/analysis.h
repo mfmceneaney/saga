@@ -192,25 +192,32 @@ string getSubFormula(
 *
 * @f[
 * \begin{aligned}
-* PDF(\lambda_{\ell}, S_{||}, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
-* & 1 + A_{UU,UT}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot A_{LU,LT}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + S_{||} \cdot \overline{S^2} \cdot A_{UL}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot S_{||} \cdot \overline{S^2} \cdot A_{LL}(\vec{x}, \vec{a}, \vec{d}), \\
+* PDF(\lambda_{\ell}, S, &x_0, x_1, ..., a_0, a_1, ..., d_0, d_1, ...) = \\
+* & 1 + A_{UU}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + \lambda_{\ell} \, \overline{\lambda_{\ell}^2} \, A_{PU}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + S \, \overline{S^2} \, A_{UP}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   + \lambda_{\ell} \, S \, \overline{\lambda_{\ell}^2} \, \overline{S^2} \, A_{PP}(\vec{x}, \vec{a}, \vec{d}), \\
 * \end{aligned}
 * @f]
-* where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
-* The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
+* where \f$A_{UU}\f$ denotes the unpolarized modulations as well as any transverse target spin asymmetries
+* which may be even under a target spin flip.
+* \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ denote the asymmetries dependent on beam helicity, target spin, or both.
+* The appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
+* The `x_<int>` denote the independent fit variables,
+* the `a_<int>` denote the asymmetry amplitudes,
+* and the `d_<int>` denote the depolarization factors.
+* \f$\vec{x}\f$, \f$\vec{a}\f$, and \f$\vec{d}\f$ are shorthand for the sets of these variables.
 *
 * If `categories_as_float` contains the beam helicity or target spin variable names,
 * the PDF will use these as independent variables.  Otherwise, a simultaneous PDF will be
 * formed over the various helicity and spin states.
 *
-* Note that in the case of an \f$A_{UT}\f$ or \f$A_{LT}\f$ asymmetry, the relevant formula should be included in the argument for the \f$A_{UU}\f$ or \f$A_{LU}\f$ formula
-* respectively since \f$A_{UT}\f$ and \f$A_{LT}\f$ should only have kinematic dependence on \f$\phi_{S}\f$ rather than categorical dependence on \f$S_{\perp}\f$.
+* Note that in the case of a structure function \f$F_{UT}\f$ or \f$F_{LT}\f$ modulation that is **not** odd under a sign flip of \f$\phi_{S}\f$, i.e., it does **not** produce an asymmetry,
+* the relevant formula should be included in the argument for the \f$A_{UU}\f$ or \f$A_{PU}\f$ formula
+* respectively since in this scenario \f$F_{UT}\f$ and \f$F_{LT}\f$ should only have kinematic dependence on \f$\phi_{S}\f$ rather than categorical dependence on \f$S\f$.
 *
 * The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
-* `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
+* `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `d_0`\f$\rightarrow\f$`x[N_x+N_a]`, etc.
 * 
 * Note that in the case that all three fit formula terms are used, the formulas and corresponding
 * argument sets for the PDFs that depend only on either beam helicity or target spin will be reduced
@@ -230,16 +237,16 @@ string getSubFormula(
 * @param categories_as_float List of category variables to include use as asymmetry fit variables and automatically add to PDF formula
 * @param h Beam helicity \f$\lambda_{\ell}\in(-1,0,1)\f$
 * @param t Target spin \f$S\in(-1,0,1)\f$
-* @param ht Beam helicity times target spin \f$\lambda_{\ell} \cdot S\in(-1,0,1)\f$
+* @param ht Beam helicity times target spin \f$(\lambda_{\ell} \, S)\in(-1,0,1)\f$
 * @param ss Combined beam helicity and target spin state \f$ss = (\lambda_{\ell}+1)\cdot10 + (S+1)\f$
 * @param argset Argument set for PDF
 * @param argnames Argument names for PDF
 * @param fit_method_name Fit method name, used to name PDF
 * @param binid Unique bin id, used to name PDF
-* @param fitformula_uu Fit formula for the asymmetry terms \f$A_{UU,UT}\f$
-* @param fitformula_pu Fit formula for the beam helicity dependent asymmetry terms \f$A_{LU,LT}\f$
-* @param fitformula_up Fit formula for the target spin dependent asymmetry terms \f$A_{UL}\f$
-* @param fitformula_pp Fit formula for the beam helicity and target spin dependent asymmetry terms \f$A_{LL}\f$
+* @param fitformula_uu Fit formula for the asymmetry terms \f$A_{UU}\f$
+* @param fitformula_pu Fit formula for the beam helicity dependent asymmetry terms \f$A_{PU}\f$
+* @param fitformula_up Fit formula for the target spin dependent asymmetry terms \f$A_{UP}\f$
+* @param fitformula_pp Fit formula for the beam helicity and target spin dependent asymmetry terms \f$A_{PP}\f$
 * @param bpol Luminosity averaged beam polarization \f$\overline{\lambda_{\ell}^2}\f$
 * @param tpol Luminosity averaged target polarization \f$\overline{S^2}\f$
 * @param count Bin count
@@ -273,7 +280,7 @@ vector<string> getGenAsymPdf(
     // Get the total number of states and set the starting count for the extended case
     int nstates = 0;
     if (fitformula_uu!="") nstates += 1; //NOTE: There is only one unpolarized PDF.  However,
-    if (fitformula_pu!="") nstates += 1; //NOTE: this gets combined with the ut pdf since it
+    if (fitformula_pu!="") nstates += 1; //NOTE: this gets combined with the phi_s even ut pdf since it
     if (fitformula_up!="") nstates += 1; //NOTE: depends on phi_s and not a categorical variable.
     if (fitformula_pp!="") nstates += 1; //NOTE: Multiply by 2 since there are only 2 non-zero spin states.
     nstates *= 2;
@@ -688,23 +695,29 @@ vector<string> getGenAsymPdf(
 *
 * Compute the bin count, bin variable mean values and variances, depolarization variable values and errors,
 * and fit the asymmetry with a binned or unbinned dataset using a maximum likelihood fit method with an optional extended likelihood term.
-* Note that for the maximum likelihood fit, the given asymmetry formulas \f$ A_{(UU,PU,UP,PP)}(x_0, x_1, ..., a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) \f$
+* Note that for the maximum likelihood fit, the given asymmetry formulas \f$ A_{(UU,PU,UP,PP)}(x_0, x_1, ..., a_0, a_1, ..., d_0, d_1, ...) \f$
 * will be used internally by `getGenAsymPdf()` to construct a simultaneous PDF of the form:
 * @f[
 * \begin{aligned}
-* PDF(\lambda_{\ell}, S_{||}, x_0, x_1, ..., &a_0, a_1, a_2, ..., d_0, d_1, d_2, ...) = \\
-* & 1 + A_{UU=(UU,UT)}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot A_{PU=(LU,LT)}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + S_{||} \cdot \overline{S^2} \cdot A_{UP=UL}(\vec{x}, \vec{a}, \vec{d}) \\
-* &   + \lambda_{\ell} \cdot \overline{\lambda_{\ell}^2} \cdot S_{||} \cdot \overline{S^2} \cdot A_{PP=LL}(\vec{x}, \vec{a}, \vec{d}), \\
+* PDF(\lambda_{\ell}, S, &x_0, x_1,..., a_0, a_1,..., d_0, d_1,...) = \\
+* & 1 + A_{UU}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   \quad + \lambda_{\ell} \, \overline{\lambda_{\ell}^2} \, A_{PU}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   \quad + S \, \overline{S^2} \, A_{UP}(\vec{x}, \vec{a}, \vec{d}) \\
+* &   \quad + \lambda_{\ell} \, S \, \overline{\lambda_{\ell}^2} \, \overline{S^2} \, A_{PP}(\vec{x}, \vec{a}, \vec{d}), \\
 * \end{aligned}
 * @f]
-* where the appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
+* where \f$A_{UU}\f$ denotes the unpolarized modulations as well as any transverse target spin asymmetries
+* which may be even under a target spin flip.
+* \f$A_{PU}\f$, \f$A_{UP}\f$, and \f$A_{PP}\f$ denote the asymmetries dependent on beam helicity, target spin, or both.
+* The appropriate terms will be dropped if there is no dependence on beam helicity or target spin.
 * A simultaneous fit will be applied over the data subsets distinguished by the beam helicity, target spin, and product of beam helicity and target spin.
-* The `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
+* The `x_<int>` denote the independent fit variables,
+* the `a_<int>` denote the asymmetry amplitudes,
+* and the `d_<int>` denote the depolarization factors.
+* \f$\vec{x}\f$, \f$\vec{a}\f$, and \f$\vec{d}\f$ are shorthand for the sets of these variables.
 *
 * The variable names in the fit formulas should follow the <a href="https://root.cern.ch/doc/master/classTFormula.html">TFormula</a> notation, e.g.,
-* `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `a_1`\f$\rightarrow\f$`x[N_x+1]`, etc.
+* `x_0`\f$\rightarrow\f$`x[0]`, `x_1`\f$\rightarrow\f$`x[1]`, `a_0`\f$\rightarrow\f$`x[N_x]`, `d_0`\f$\rightarrow\f$`x[N_x+N_a]`, etc.
 *
 * In the case that a sideband dataset is supplied via `sb_dataset_name`, the initial dataset (`dataset_name`) is taken to be the signal region dataset.
 * Then, a background PDF \f$A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d})\f$ is created identically to the signal PDF \f$A_{SG}(\vec{x}, \vec{a}_{SG}, \vec{d})\f$.
@@ -715,7 +728,7 @@ vector<string> getGenAsymPdf(
 * PDF(\vec{x}, \vec{a}, \vec{d}) = 
 * 1 + \bigg{\{}
 * \begin{array}
-* e \varepsilon(\vec{x}) \cdot A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d}) + (1 - \varepsilon(\vec{x})) \cdot A_{SG}(\vec{x}, \vec{a}_{SG}, \vec{d}), & \text{ } \vec{x} \in SG \\
+* e \varepsilon(\vec{x}) \, A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d}) + (1 - \varepsilon(\vec{x})) \, A_{SG}(\vec{x}, \vec{a}_{SG}, \vec{d}), & \text{ } \vec{x} \in SG \\
 * A_{BG}(\vec{x}, \vec{a}_{BG}, \vec{d}), & \text{ } \vec{x} \in SB \\
 * \end{array}.
 @f]
@@ -743,7 +756,7 @@ vector<string> getGenAsymPdf(
 *
 *   - Target spin \f$S\f$
 *
-*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*   - Beam helicity times target spin \f$\lambda_{\ell} \, S\f$
 *
 * - For each asymmetry fit parameter:
 *
@@ -773,7 +786,7 @@ vector<string> getGenAsymPdf(
 * @param binvars List of kinematic binning variables
 * @param depolvars List of depolarization variables
 * @param fitvars List of asymmetry fit variables
-* @param fitformula_uu The asymmetry formula in ROOT TFormula format for unpolarized and transverse target spin (\f$\phi_{S}\f$) dependent terms
+* @param fitformula_uu The asymmetry formula in ROOT TFormula format for unpolarized terms
 * @param fitformula_pu The asymmetry formula in ROOT TFormula format for beam helicity dependent terms
 * @param fitformula_up The asymmetry formula in ROOT TFormula format for target spin dependent terms
 * @param fitformula_pp The asymmetry formula in ROOT TFormula format for beam helicity and target spin dependent terms
@@ -1425,7 +1438,7 @@ vector<double> fitAsym(
 *
 *   - Target spin \f$S\f$
 *
-*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*   - Beam helicity times target spin \f$\lambda_{\ell} \, S\f$
 *
 * - For each asymmetry fit parameter `asymfitpar`
 *
@@ -1514,7 +1527,7 @@ vector<double> fitAsym(
 
 * @param bpol Luminosity averaged beam polarization \f$\overline{\lambda_{\ell}^2}\f$
 * @param tpol Luminosity averaged target polarization \f$\overline{S^2}\f$
-* @param asymfit_formula_uu The asymmetry formula in ROOT TFormula format for the unpolarized and transverse target spin (\f$\phi_{S}\f$) dependent asymmetries
+* @param asymfit_formula_uu The asymmetry formula in ROOT TFormula format for the unpolarized modulations
 * @param asymfit_formula_pu The asymmetry formula in ROOT TFormula format for the beam helicity dependent asymmetries
 * @param asymfit_formula_up The asymmetry formula in ROOT TFormula format for the target spin dependent asymmetries
 * @param asymfit_formula_pp The asymmetry formula in ROOT TFormula format for the beam helicity and target spin dependent asymmetries

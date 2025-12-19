@@ -92,8 +92,8 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @f[
 * \begin{aligned}
 * PDF(x_0, x_1, ..., &a_{SG,0}, a_{SG,1}, ..., a_{BG,0}, a_{BG,1}, ...) = \\
-* & u\cdot f_{SG}(\vec{x}, \vec{a}_{SG}) \\
-* & + (1-u)\cdot f_{BG}(\vec{x}, \vec{a}_{BG}), \\
+* & u \, f_{SG}(\vec{x}, \vec{a}_{SG}) \\
+* & + (1-u) \, f_{BG}(\vec{x}, \vec{a}_{BG}), \\
 * \end{aligned}
 * @f]
 * where \f$u\f$ is the ratio of signal events to total events in the dataset and
@@ -207,8 +207,8 @@ vector<string> getGenMassPdf(
 * @f[
 * \begin{aligned}
 * PDF(x_0, x_1, ..., &a_{SG,0}, a_{SG,1}, ..., a_{BG,0}, a_{BG,1}, ...) = \\
-* & u\cdot f_{SG}(\vec{x}, \vec{a}_{SG}) \\
-* & + (1-u)\cdot f_{BG}(\vec{x}, \vec{a}_{BG}), \\
+* & u \, f_{SG}(\vec{x}, \vec{a}_{SG}) \\
+* & + (1-u) \, f_{BG}(\vec{x}, \vec{a}_{BG}), \\
 * \end{aligned}
 * @f]
 * where \f$u\f$ is the ratio of signal events to total events in the dataset.

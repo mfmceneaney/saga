@@ -13,7 +13,7 @@ bgasyms: [0.0, 0.0, 0.0]
 particle_suffixes: ["_p","_pim"]
 mc_sg_match_name: "mc_sg_match"
 mc_sg_match_formula: "(bool)(ppid_p_mc==3122 && pidx_p_mc==pidx_pim_mc && abs(dtheta_p)<6*TMath::Pi()/180.0 && abs(dtheta_p)<6*TMath::Pi()/180.0)" #NOTE: dtheta and dphi variables are automatically defined for the given particle suffixes.
-phi_s_original_name: "phi_s_up" #NOTE: Make sure you specify this variable name here AND in the asymmetry fit variables if you are injecting a transverse target spin dependent asymmetry.
+phi_s_original_name: "" #NOTE: Make sure you specify this variable name here AND in the asymmetry fit variables **only** if you are injecting a transverse target spin dependent modulation that is **even** under a target spin flip.
 phi_s_original_name_dn: "phi_s_dn" #NOTE: You also need the phi of the negative spin vector
 phi_s_injected_name: "phi_s_injected" #NOTE: The asymmetry fit variable with name `phi_s_original_name` will be renamed to this after injection if `phi_s_original_name`!=""
 fsgasyms_xs_uu_name: "fsgasyms_xs_uu" #NOTE: Define beam helicity dependent asymmetry terms
@@ -90,7 +90,7 @@ massfitvar_lims: [[1.08,1.24]]
 massfitvar_bins: [100]
 bpol: 1.0 #NOTE: Beam helicity values will only be injected if the beam polarization is > 0.
 tpol: 0.0 #NOTE: Target spin values will only be injected if the target polarization is > 0.
-asymfit_formula_uu: "" #NOTE: Unpolarized AND transverse target spin dependent asymmetries.  Empty formulas are not used. This asymmetry is converted internally to a RooSimultaneous PDF: 1 + A(\vec{x}; \vec{a}; \vec{d}).  Arguments are: x0,x1,x2,...,a0,a1,a2,...,d0,d1,d2,...
+asymfit_formula_uu: "" #NOTE: Unpolarized AND ONLY phi_s even transverse target spin dependent modulations.  Empty formulas are not used. This asymmetry is converted internally to a RooSimultaneous PDF: 1 + A(\vec{x}; \vec{a}; \vec{d}).  Arguments are: x0,x1,x2,...,a0,a1,a2,...,d0,d1,d2,...
 asymfit_formula_pu: "0.747*x[0]*(x[5]*x[2]*cos(x[1])+x[6]*x[3]+x[6]*x[4]*cos(2.0*x[1]))" #NOTE: Beam helicity dependent asymmetries. Empty formulas are not used. This asymmetry is converted internally to a RooSimultaneous PDF: 1 + helicity[RooCategory] * bpol * A(\vec{x}; \vec{a}; \vec{d}).  Arguments are: x0,x1,x2,...,a0,a1,a2,...,d0,d1,d2,...
 asymfit_formula_up: "" #NOTE: Target spin dependent asymmetries.  Empty formulas are not used. This asymmetry is converted internally to a RooSimultaneous PDF: 1 + tspin[RooCategory] * tpol * A(\vec{x}; \vec{a}; \vec{d}).  Arguments are: x0,x1,x2,...,a0,a1,a2,...,d0,d1,d2,...
 asymfit_formula_pp: "" #NOTE: Beam helicity and target spin dependent asymmetries.  Empty formulas are not used. This asymmetry is converted internally to a RooSimultaneous PDF: 1 + combined_spin_state[RooCategory] * bpol * tpol * A(\vec{x}; \vec{a}; \vec{d}).  Arguments are: x0,x1,x2,...,a0,a1,a2,...,d0,d1,d2,...

@@ -89,10 +89,9 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * and fit the asymmetry with the Helicity Balance (HB) method.  The asymmetry parameter will be computed with:
 * @f[
 * D^{\Lambda}_{LL'} = \frac{1}{\alpha_{\Lambda} \overline{\lambda_{\ell}^2}}\frac{\sum^{N_{\Lambda}}_{i=1}\lambda_{\ell,i}
-\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,,
+\cos{\theta_{LL'}^i}}{\sum^{N_{\Lambda}}_{i=1}D(y_i) \cos^2{\theta_{LL'}^i}} \,.
 * @f]
-* where `a_<int>` denote the asymmetry amplitudes and the `d_<int>` denote the depolarization factors.
-* Here, \f$\lambda_{\ell,i}\f$ indicates the beam helicity for a given event \f$i\f$i,
+* Here, \f$\lambda_{\ell,i}\f$ indicates the beam helicity for a given event \f$i\f$,
 * and \f$\overline{\lambda^{2}_{\ell}}\f$ is the luminosity averaged beam polarization.
 * The method relies on the assumption that the luminosity averaged helicity \f$\overline{\lambda_{\ell}}=0\f$
 * to allow the acceptance method to cancel out.
@@ -142,7 +141,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 *
 *   - Target spin \f$S\f$
 *
-*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*   - Beam helicity times target spin \f$\lambda_{\ell} \, S\f$
 *
 * - For the (only) Helicity Balance parameter:
 *
@@ -425,7 +424,7 @@ vector<double> fitHB(
 } // vector<double> fitHB()
 
 /**
-* @brief Loop kinematic bins and fit an asymmetry, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
+* @brief Loop kinematic bins and extract an asymmetry with the Helicity Balance method, correcting for background with sideband subtraction or <a href="http://arxiv.org/abs/physics/0402083">sPlots</a>.
 *
 * Loop bins cuts and fit an asymmetry with the `saga::hbanalysis::fitHB()` method.  Optionally, apply an invariant mass fit and background correction using the
 * sideband subtraction method or the sPlot method from <a href="http://arxiv.org/abs/physics/0402083">arXiv:physics/0402083</a>.
@@ -456,7 +455,7 @@ vector<double> fitHB(
 *
 *   - Target spin \f$S\f$
 *
-*   - Beam helicity times target spin \f$\lambda_{\ell}\cdot S\f$
+*   - Beam helicity times target spin \f$\lambda_{\ell} \, S\f$
 *
 * - For each asymmetry fit parameter `asymfitpar` (only one allowed for the HB method)
 *
