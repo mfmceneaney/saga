@@ -246,7 +246,7 @@ $P(S \neq 0) = \overline{S^2}$.
 Otherwise, positive and negative helicity and spin values are generated with equal probability.
 The probability $w$ of accepting the proposed $(\lambda,S)$ pair is:
 
-$w = \frac{1}{N} ( 1 + A_{UU} + S_{||} A_{UL} + A_{UT}(\phi^{True}_{S}) + \lambda [A_{LU} + S_{||} A_{LL} + A_{LT}(\phi^{True}_{S})] ),$
+$w = \frac{1}{N} ( 1 + A_{UU} + S_{||} A_{UL} + A_{UT}(\phi^{\mathrm{True}}_{S}) + \lambda [A_{LU} + S_{||} A_{LL} + A_{LT}(\phi^{\mathrm{True}}_{S})] ),$
 
 where $N$ is the number of possible combinations of $(\lambda,S)$, given whether either has already been set to $0$.
 For example, if $(\lambda,S)=(0,\pm1)$ or $(\lambda,S)=(\pm1,0)$ then $N=2$,
