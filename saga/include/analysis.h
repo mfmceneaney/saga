@@ -2160,8 +2160,8 @@ void getKinBinnedAsym(
             }
         }
 
-
         // Get mass fit bin data
+        LOG_DEBUG(Form("[%s]: Extracting mass fit results...", method_name.c_str()));
         double int_sg_pdf_val;
         double int_sg_pdf_err;
         double int_bg_pdf_val;
@@ -2184,7 +2184,7 @@ void getKinBinnedAsym(
         if (massfit_result.size()>0) {
 
             // Start counter
-            int m = 1; //NOTE: Ignore count which should first entry
+            int m = 1; //NOTE: Ignore count which should be first entry
 
             // Add signal region integration values
             int_sg_pdf_val    = massfit_result[m++];
@@ -2229,7 +2229,7 @@ void getKinBinnedAsym(
         double epsilon, epsilon_err;
         if (use_sb_subtraction) {
             LOG_DEBUG(Form("[%s]: Applying sideband subtraction...", method_name.c_str()));
-            int k2 = 1 + binvars.size() + depolvars.size();
+            int k2 = 1 + 2 * (binvars.size() + depolvars.size() + rawasymvars.size());
             epsilon = eps_bg_pdf;
             epsilon_err = eps_bg_pdf_err;
             for (int idx=0; idx<nparams; idx++) {
