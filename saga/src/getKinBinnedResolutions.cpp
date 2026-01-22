@@ -43,6 +43,13 @@ void execute(const YAML::Node& node) {
     std::string combined_spin_state = saga::util::getYamlArg<std::string>(node, "combined_spin_state", "ss", message_prefix, verbose); //NOTE: This may not be empty!
 
     //----------------------------------------------------------------------//
+    // BEGIN BOOTSTRAPPING ARGUMENTS
+    int bootstrap_seed = saga::util::getYamlArg<int>(node, "bootstrap_seed", 2, message_prefix, verbose);
+    std::string bootstrap_trandom_type = saga::util::getYamlArg<std::string>(node, "bootstrap_trandom_type", "TRandomMixMax17",message_prefix,verbose);
+    std::string bootstrap_weight_name = saga::util::getYamlArg<std::string>(node,"bootstrap_weight","",message_prefix,verbose); //NOTE: If empty no bootstrapping will be applied
+    int bootstrap_n = saga::util::getYamlArg<int>(node, "bootstrap_n", 0, message_prefix, verbose); //NOTE: Bootstrap sample size (if non-zero classical resampling is used, if zero Poissonian is used instead)
+
+    //----------------------------------------------------------------------//
     // VAR_FORMULAS
     std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose);
 
@@ -207,6 +214,24 @@ void execute(const YAML::Node& node) {
                                 .Define(tspin_name.c_str(), tspin_formula.c_str())
                                 .Define(combined_spin_state.c_str(), combined_spin_state_formula.c_str());
 
+    // Resample dataset for bootstrapping
+    if (bootstrap_weight_name!="" && bootstrap_n>0) {
+        d2_filtered= saga::data::bootstrapClassical(
+            d2_filtered,
+            bootstrap_seed,
+            bootstrap_n,
+            bootstrap_weight_name,
+            bootstrap_trandom_type
+        );
+    } else if (bootstrap_weight_name!="" && bootstrap_n<=0) {
+        d2_filtered= saga::data::bootstrapPoisson(
+            d2_filtered,
+            bootstrap_seed,
+            bootstrap_weight_name,
+            bootstrap_trandom_type
+        );
+    }
+
     // Create output log
     std::ofstream outf; outf.open(logpath.c_str());
     std::ostream &out = outf; //std::cout;
@@ -245,6 +270,7 @@ void execute(const YAML::Node& node) {
             // // parameters passed to data::createDataset()
             "dataset", // std::string                      dataset_name,
             "dataset", // std::string                      dataset_title,
+            bootstrap_weight_name, // std::string                      weight_name,
             categories_as_float, // std::vector<std::string>         categories_as_float,
             helicity_name, // std::string                      helicity,
             helicity_states, // std::map<std::string,int>        helicity_states,

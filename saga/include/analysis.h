@@ -1499,6 +1499,7 @@ vector<double> fitAsym(
 * @param workspace_title Title of workspace in which to work
 * @param dataset_name Dataset name
 * @param dataset_title Dataset title
+* @param weight_name Name of weight variable, ignored if empty
 * @param categories_as_float List of category variables to include as asymmetry fit variables in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
@@ -1591,6 +1592,7 @@ void getKinBinnedAsym(
         // parameters passed to data::createDataset()
         string                      dataset_name,
         string                      dataset_title,
+        string                      weight_name,
         vector<string>         categories_as_float,
         string                      helicity,
         map<string,int>        helicity_states,
@@ -1820,6 +1822,7 @@ void getKinBinnedAsym(
             ws,
             dataset_name,
             dataset_title,
+            weight_name,
             categories_as_float,
             helicity,
             helicity_states,
@@ -1901,6 +1904,7 @@ void getKinBinnedAsym(
             saga::signal::applySPlot(
                 ws,
                 dataset_name,
+                weight_name,
                 Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
                 Form("%s_%s",massfit_bgYield_name.c_str(),scheme_binid.c_str()),
                 Form("%s_%s",massfit_pdf_name.c_str(),scheme_binid.c_str()),
@@ -1976,6 +1980,7 @@ void getKinBinnedAsym(
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
+                weight_name,
                 categories_as_float,
                 helicity,
                 helicity_states,
@@ -2050,6 +2055,7 @@ void getKinBinnedAsym(
                 ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
+                weight_name,
                 categories_as_float,
                 helicity,
                 helicity_states,

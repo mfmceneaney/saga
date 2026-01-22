@@ -67,6 +67,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @param w RooWorkspace in which to work
 * @param name Dataset name
 * @param title Dataset title
+* @param weight_name Name of weight variable, ignored if empty
 * @param categories_as_float List of category variables to include as floats named `<category>_as_float` in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
@@ -97,6 +98,7 @@ void createDataset(
         RooWorkspace *w,
         string name,
         string title,
+        string weight_name,
         vector<string> categories_as_float,
         string helicity,
         map<string,int> helicity_states,
@@ -124,6 +126,15 @@ void createDataset(
     ) {
 
     string method_name = "createDataset";
+
+    // Define weight variable
+    LOG_DEBUG(Form("[%s]: Defining RooRealVar for event weight: %s", method_name.c_str(), weight_name.c_str()));
+    RooRealVar *weightvar = new RooRealVar(
+        weight_name.c_str(),
+        "Event weight",
+        1.0,        // initial value (irrelevant for datasets)
+        -1e6, 1e6   // range (important!)
+    );
 
     // Define the helicity variable
     LOG_DEBUG(Form("[%s]: Defining RooCategory for helicity variable: %s", method_name.c_str(), helicity.c_str()));
@@ -278,6 +289,7 @@ void createDataset(
     for (int rr=0; rr<nvars; rr++) {
         argset->add(*rrvars[rr]);
     }
+    argset->add(*weightvar);
 
     // Create RDataFrame to RooDataSet pointer
     LOG_DEBUG(Form("[%s]: Creating dataset: %s , %s, with %d variables...", method_name.c_str(), name.c_str(), title.c_str(), nvars));
@@ -459,13 +471,23 @@ void createDataset(
     w->import(ht);
     w->import(ss);
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
+    if (weight_name!="") w->import(*weightvar);
 
     // Import data into the workspace
-    LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
-    w->import(*rooDataSetResult);
+    if (weight_name=="") {
+        LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
+        w->import(*rooDataSetResult);
+    } else {
+        LOG_DEBUG(Form("[%s]: Setting weight variable...", method_name.c_str()));
+        auto& data = static_cast<RooDataSet&>(*rooDataSetResult);
+        RooDataSet * rooDataSetResult_weighted = new RooDataSet(name.c_str(), title.c_str(), &data, *data.get(), nullptr, weight_name.c_str());
+        LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
+        w->import(*rooDataSetResult_weighted);
+    }
 
     return;
-}
+
+}// createDataset()
 
 /**
 * @brief Map values from a CSV file into an existing RDataFrame.
