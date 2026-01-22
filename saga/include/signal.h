@@ -646,14 +646,14 @@ vector<double> fitMass(
 
         // Create and add legend entries for signal PDF parameter values and errors
         for (int i=0; i<nparams_sg; i++) {
-            string par_str = Form("%s = %.3g #pm %.3g %s", a_sg[i]->GetTitle(), a_sg[i]->getVal(), a_sg[i]->getError(), massfit_parunits_sg[i].c_str());
+            string par_str = Form("%s = %.3g #pm %.3g %s", a_sg[i]->GetTitle(), massfit_pars_sg[i], massfit_parerrs_sg[i], massfit_parunits_sg[i].c_str());
             legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",int_ds_val));
         }
 
         // Optionally create and add legend entries for background PDF parameter values and errors
         if (massfit_plot_bg_pars) {
             for (int i=0; i<nparams_bg; i++) {
-                string par_str = Form("%s = %.3g #pm %.3g %s", a_bg[i]->GetTitle(), a_bg[i]->getVal(), a_bg[i]->getError(), massfit_parunits_bg[i].c_str());
+                string par_str = Form("%s = %.3g #pm %.3g %s", a_bg[i]->GetTitle(), massfit_pars_bg[i], massfit_parerrs_bg[i], massfit_parunits_bg[i].c_str());
                 legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",int_ds_val));
             }
         }
