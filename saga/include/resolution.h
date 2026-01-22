@@ -612,6 +612,7 @@ void getKinBinnedResolutions(
             ws,
             dataset_name,
             dataset_title,
+            weight_name,
             categories_as_float,
             helicity,
             helicity_states,
