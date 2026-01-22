@@ -4,6 +4,8 @@
 #include <map>
 #include <thread>
 #include <functional>
+#include <unordered_set>
+#include <vector>
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
@@ -51,6 +53,7 @@ using std::runtime_error;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using std::unordered_multiset;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
 /**
@@ -553,6 +556,50 @@ RNode mapDataFromCSV(RNode filtered_df,
 }
 
 /**
+* @brief Initialize a `TRandom` generator
+*
+* Initialize a `TRandom` generator from the available algorithms
+* provided by ROOT.
+*
+* @param seed Seed for random number generator
+* @param trandom_type Type name of ROOT TRandom number generator
+*
+* @return `TRandom` generator of given type initialized with the given seed
+*
+* @throws Runtime Error
+*/
+TRandom * initializeTRandom(
+    UInt_t seed,
+    string trandom_type
+    ) {
+
+    string method_name = "initializeTRandom";
+
+    // Initialize the generator
+    LOG_DEBUG(Form("[%s]: Initializing random number generator with type %s", method_name.c_str(), trandom_type.c_str()));
+    TRandom * rng;
+
+    // Select the generator
+    if (trandom_type=="TRandom3") { rng = new TRandom3(seed); }
+    else if (trandom_type=="TRandomRanluxpp") { rng = new TRandomRanluxpp(seed); }
+    else if (trandom_type=="TRandomMixMax") { rng = new TRandomMixMax(seed); }
+    else if (trandom_type=="TRandomMixMax17") { rng = new TRandomMixMax17(seed); }
+    else if (trandom_type=="TRandomMixMax256") { rng = new TRandomMixMax256(seed); }
+    else if (trandom_type=="TRandomMT64") { rng = new TRandomMT64(seed); }
+    else if (trandom_type=="TRandom1") { rng = new TRandom1(seed); }
+    else if (trandom_type=="TRandomRanlux48") { rng = new TRandomRanlux48(seed); }
+    else if (trandom_type=="TRandom2") { rng = new TRandom2(seed); }
+    else {
+        string msg = Form("[%s]: trandom_type %s is not recognized.  Please consult the ROOT documentation for allowed types", method_name.c_str(), trandom_type.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+
+    return rng;
+
+}// initializeTRandom()
+
+/**
 * @brief Inject an asymmetry into an existing RDataFrame.
 *
 * Inject an asymmetry into an existing `ROOT::RDataFrame` given a random seed,
@@ -664,24 +711,8 @@ RNode injectAsym(
                         float asyms_bg_up, float asyms_bg_pp) -> int {
 
         // Combine global seed and row index for determinism
-        TRandom * rng;
         UInt_t seed_iEntry = seed + static_cast<UInt_t>(iEntry);
-
-        // Select the generator
-        if (trandom_type=="TRandom3") { rng = new TRandom3(seed_iEntry); }
-        else if (trandom_type=="TRandomRanluxpp") { rng = new TRandomRanluxpp(seed_iEntry); }
-        else if (trandom_type=="TRandomMixMax") { rng = new TRandomMixMax(seed_iEntry); }
-        else if (trandom_type=="TRandomMixMax17") { rng = new TRandomMixMax17(seed_iEntry); }
-        else if (trandom_type=="TRandomMixMax256") { rng = new TRandomMixMax256(seed_iEntry); }
-        else if (trandom_type=="TRandomMT64") { rng = new TRandomMT64(seed_iEntry); }
-        else if (trandom_type=="TRandom1") { rng = new TRandom1(seed_iEntry); }
-        else if (trandom_type=="TRandomRanlux48") { rng = new TRandomRanlux48(seed_iEntry); }
-        else if (trandom_type=="TRandom2") { rng = new TRandom2(seed_iEntry); }
-        else {
-            string msg = Form("trandom_type %s is not recognized.  Please consult the ROOT documentation for allowed types", trandom_type.c_str());
-            LOG_ERROR(msg);
-            throw runtime_error(msg);
-        }
+        TRandom * rng = initializeTRandom(seed_iEntry,trandom_type);
 
         // Initialize beam helicity, target spin, random variable and cross-section asymmetry value
         int bhelicity    = 0;
@@ -774,6 +805,115 @@ RNode injectAsym(
     return frame;
 
 }// RNode injectAsym()
+
+/**
+* @brief Weight a dataframe by resampling with Poissonian statistics
+*
+* Weight an existing `ROOT::RDataFrame` following the Poissonian bootstrapping method
+* of resampling each event randomly from a Poissonian distribution with mean \f$\lambda=1\f$.
+*
+* @param df `ROOT::RDataFrame` to weight
+* @param seed Seed for random number generator
+* @param weight_name Name of column containing the event weights
+* @param trandom_type Type name of ROOT TRandom number generator
+*
+* @return `ROOT::RDataFrame` filtered for non-zero resampling weights
+*/
+RNode bootstrapPoisson(
+    RNode df,
+    int seed,
+    string weight_name,
+    string trandom_type
+    ) {
+
+    string method_name = "bootstrapPoisson";
+
+    // Define a lambda to inject an asymmetry for each rdf entry
+    LOG_DEBUG(Form("[%s]: Defining lambda function for Poisson resampling...", method_name.c_str()));
+    auto getEntrySlot = [seed,trandom_type](ULong64_t iEntry) -> int {
+
+        // Combine global seed and row index for determinism
+        UInt_t seed_iEntry = seed + static_cast<UInt_t>(iEntry);
+        TRandom * rng = initializeTRandom(seed_iEntry,trandom_type);
+
+        // Draw from Poisson distribution with mean lambda=1
+        return rng->Poisson(1.0);
+    };
+
+    // Define the event weights and filter for non-zero weights
+    return df.Define(
+                weight_name.c_str(),
+                getEntrySlot,
+                {"rdfentry_"}
+            ).Filter(Form("%s > 0",weight_name.c_str()));
+
+}// RNode bootstrapPoisson()
+
+/**
+* @brief Weight a dataframe by resampling with replacement
+*
+* Weight an existing `ROOT::RDataFrame` following the classical bootstrapping method
+* of resampling with replacement.
+*
+* @param df `ROOT::RDataFrame` to weight
+* @param n Sample size
+* @param seed Seed for random number generator
+* @param weight_name Name of column containing the event weights
+* @param trandom_type Type name of ROOT TRandom number generator
+*
+* @return `ROOT::RDataFrame` filtered for non-zero resampling weights
+*
+* @throws Runtime Error
+*/
+RNode bootstrapClassical(
+        RNode df,
+        int n,
+        int seed,
+        string weight_name,
+        string trandom_type
+    ) {
+
+    string method_name = "bootstrapClassical";
+
+    // Grab indices
+    LOG_DEBUG(Form("[%s]: Grabbing event indices...", method_name.c_str()));
+    auto entries = *df.Take<ULong64_t>("rdfentry_");
+
+    // Check dataframe and resampling size
+    const ULong64_t N = entries.size();
+    if (N==0) {
+        string msg = Form("[%s]: Dataframe size is 0.  Cannot resample.", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+    if (n==0) {
+        string msg = Form("[%s]: Resampling size 0 is not allowed.", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+
+    // Initialize the generator
+    LOG_DEBUG(Form("[%s]: Initialize random number generator with type, seed = %s, %d ...", method_name.c_str(), trandom_type.c_str(), seed));
+    TRandom * rng = initializeTRandom(seed,trandom_type);
+
+    // Resample the dataset
+    LOG_DEBUG(Form("[%s]: Resampling dataset...", method_name.c_str()));
+    unordered_multiset<ULong64_t> selected;
+    for (ULong64_t i = 0; i < n; ++i) {
+        selected.insert(rng->Integer(N));
+    }
+
+    // Set event weights and filter for non-zero weights
+    LOG_DEBUG(Form("[%s]: Defining event weight %s...", method_name.c_str(), weight_name.c_str()));
+    return df.Define(
+                weight_name.c_str(),
+                [selected](ULong64_t entry) {
+                    return selected.count(entry);
+                },
+                {"rdfentry_"}
+            ).Filter(Form("%s > 0",weight_name.c_str()));
+
+}// RNode bootstrapClassical()
 
 /**
 * @brief Define Monte Carlo (MC) simulation angular difference variables
