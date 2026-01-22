@@ -317,10 +317,10 @@ void execute(const YAML::Node& node) {
     if (inject_asym) {
         // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fsgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
         }
         for (int idx=0; idx<asymfitvars.size(); idx++) {
             saga::util::replaceAll(fsgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
@@ -347,10 +347,10 @@ void execute(const YAML::Node& node) {
 
         // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fbgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
         }
         for (int idx=0; idx<asymfitvars.size(); idx++) {
             saga::util::replaceAll(fbgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
