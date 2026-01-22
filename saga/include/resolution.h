@@ -265,8 +265,9 @@ vector<double> fitResolution(
     vector<double> fitpars;
     vector<double> fitparerrs;
     for (int aa=0; aa<nparams; aa++) {
-        fitpars.push_back((double)pars[aa]->getVal());
-        fitparerrs.push_back((double)pars[aa]->getError());
+        RooRealVar *fitpar = (RooRealVar*)w->var(pars[aa]->GetName()); //NOTE: Load from workspace since parameters are copied to work space when you import the PDF.
+        fitpars.push_back((double)fitpar->getVal());
+        fitparerrs.push_back((double)fitpar->getError());
     }
 
     // Compute chi2 from 1D histograms
@@ -329,7 +330,7 @@ vector<double> fitResolution(
 
         // Create and add legend entries for PDF parameter values and errors
         for (int i=0; i<nparams; i++) {
-            string par_str = Form("%s = %.3g #pm %.3g %s", pars[i]->GetTitle(), pars[i]->getVal(), pars[i]->getError(), parunits[i].c_str());
+            string par_str = Form("%s = %.3g #pm %.3g %s", pars[i]->GetTitle(), fitpars[i], fitparerrs[i], parunits[i].c_str());
             legend->AddEntry((TObject*)0, par_str.c_str(), Form(" %g ",chi2ndfs[i]));
         }
 
