@@ -896,7 +896,7 @@ void getBinKinematics(
         csvout << count; if (kinvars.size()>0) { csvout << csv_separator.c_str(); }
         for (int idx=0; idx<kinvars.size(); idx++) {
             double binvar_mean = saga::data::get_weighted_mean<double>(frame_filtered,kinvars[idx],weight_name);
-            double binvar_err  = saga::data::get_weighted_mean<double>(frame_filtered,kinvars[idx],weight_name,binvar_mean);
+            double binvar_err  = saga::data::get_weighted_stddev<double>(frame_filtered,kinvars[idx],weight_name,binvar_mean);
             csvout << binvar_mean << csv_separator.c_str();
             csvout << binvar_err;
             if (idx<kinvars.size()-1) csvout << csv_separator.c_str();
