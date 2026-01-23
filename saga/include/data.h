@@ -131,12 +131,15 @@ void createDataset(
 
     // Define weight variable
     LOG_DEBUG(Form("[%s]: Defining RooRealVar for event weight: %s", method_name.c_str(), weight_name.c_str()));
-    RooRealVar *weightvar = new RooRealVar(
+    RooRealVar *weightvar;
+    if (weight_name!=""){
+        weightvar = new RooRealVar(
         weight_name.c_str(),
         "Event weight",
         1.0,        // initial value (irrelevant for datasets)
         -1e6, 1e6   // range (important!)
     );
+    }
 
     // Define the helicity variable
     LOG_DEBUG(Form("[%s]: Defining RooCategory for helicity variable: %s", method_name.c_str(), helicity.c_str()));
@@ -291,7 +294,7 @@ void createDataset(
     for (int rr=0; rr<nvars; rr++) {
         argset->add(*rrvars[rr]);
     }
-    argset->add(*weightvar);
+    if (weight_name!="") argset->add(*weightvar);
 
     // Create RDataFrame to RooDataSet pointer
     LOG_DEBUG(Form("[%s]: Creating dataset: %s , %s, with %d variables...", method_name.c_str(), name.c_str(), title.c_str(), nvars));
