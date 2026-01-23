@@ -6,6 +6,7 @@
 #include <functional>
 #include <unordered_set>
 #include <vector>
+#include <cmath>
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
@@ -54,6 +55,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 using std::unordered_multiset;
+using std::sqrt;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
 /**
@@ -936,6 +938,106 @@ RNode bootstrapClassical(
             ).Filter(Form("%s > 0",weight_name.c_str()));
 
 }// RNode bootstrapClassical()
+
+/**
+* @brief Compute a weighted count
+*
+* Compute the weighted count of a `ROOT::RDataFrame`.
+*
+* @param df RDataFrame to use
+* @param weight_name Name of the weight column in the RDataFrame, ignored if empty
+*
+* @return The weighted count
+*/
+template<typename RetType>
+RetType get_weighted_count(
+    RNode df,
+    string weight_name
+    ) {
+    return (RetType)((weight_name=="") ? *df.Count(): *df.Sum(weight_name.c_str()));
+}// RetType get_weighted_count()
+
+/**
+* @brief Compute a weighted mean
+*
+* Compute the weighted mean of a variable in a `ROOT::RDataFrame`.
+*
+* @param df RDataFrame to use
+* @param var_name Name other variable in which to compute the mean
+* @param weight_name Name of the weight column in the RDataFrame, ignored if empty
+*
+* @return The weighted mean of the variable
+*/
+template<typename RetType>
+RetType get_weighted_mean(
+    RNode df,
+    string var_name,
+    string weight_name
+    ) {
+
+    // Check if weight name is empty
+    if (weight_name=="") return (RetType)*df.Mean(var_name.c_str());
+
+    // Compute weighted count
+    RetType sum_w = (RetType)*df.Sum(weight_name.c_str());
+
+    // Compute weighted mean
+    std::string wx_name = Form("__%s_X_%s",var_name.c_str(),weight_name.c_str());
+    RetType sum_wx = (RetType)*df.Define(
+            wx_name.c_str(),
+            [](RetType x, RetType w){ return x*w; },
+            {var_name.c_str(),weight_name.c_str()}
+        )
+        .Sum(wx_name.c_str());  // sum_i: w_i * x_i
+    RetType mean_w = sum_wx / sum_w;
+
+    return mean_w;
+
+}// RetType get_weighted_count()
+
+/**
+* @brief Compute a weighted standard deviation
+*
+* Compute the weighted standard deviation of a variable in a `ROOT::RDataFrame`.
+*
+* @param df RDataFrame to use
+* @param var_name Name other variable in which to compute the mean
+* @param weight_name Name of the weight column in the RDataFrame, ignored if empty
+* @param mean Value of the weighted mean if already available
+*
+* @return The weighted standard deviation of the variable
+*/
+template<typename RetType>
+RetType get_weighted_stddev(
+    RNode df,
+    string var_name,
+    string weight_name,
+    RetType mean = 0.0
+    ) {
+
+    // Check if weight name is empty
+    if (weight_name=="") return (RetType)*df.StdDev(var_name.c_str());
+
+    // Compute weighted count
+    RetType sum_w = (RetType)*df.Sum(weight_name.c_str());
+
+    // Compute mean only if not provided
+    RetType mean_w = (mean!=0.0) ? mean : get_weighted_mean<RetType>(df,var_name,weight_name);
+
+    // Compute the weighted variance
+    string wdx2_name = Form("__d%s_X_%s_2",var_name.c_str(),weight_name.c_str());
+    RetType sum_wdx2 = (RetType)*df.Define(
+            wdx2_name.c_str(),
+            [mean_w](RetType x, RetType w){ 
+                RetType dx = x - mean_w;
+                return w * dx*dx;
+            }, {var_name.c_str(),weight_name.c_str()})
+        .Sum(wdx2_name.c_str());
+    RetType var_w = sum_wdx2 / sum_w;
+    RetType std_w = sqrt(var_w);
+
+    return mean_w;
+}// RetType get_weighted_stddev()
 
 /**
 * @brief Define Monte Carlo (MC) simulation angular difference variables

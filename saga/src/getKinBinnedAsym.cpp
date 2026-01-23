@@ -525,7 +525,7 @@ void execute(const YAML::Node& node) {
 
     // Resample dataset for bootstrapping
     if (bootstrap_weight_name!="" && bootstrap_n>0) {
-        frame= saga::data::bootstrapClassical(
+        frame = saga::data::bootstrapClassical(
             frame,
             bootstrap_seed,
             bootstrap_n,
@@ -533,7 +533,7 @@ void execute(const YAML::Node& node) {
             bootstrap_trandom_type
         );
     } else if (bootstrap_weight_name!="" && bootstrap_n<=0) {
-        frame= saga::data::bootstrapPoisson(
+        frame = saga::data::bootstrapPoisson(
             frame,
             bootstrap_seed,
             bootstrap_weight_name,
