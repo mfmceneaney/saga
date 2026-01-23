@@ -2119,44 +2119,42 @@ void getKinBinnedAsym(
         LOG_DEBUG(Form("[%s]: Extracting results...", method_name.c_str()));
         int nbinvars = binvars.size();
         int nparams  = asymfitpar_inits.size();
-        double xs[nbinvars];
-        double exs[nbinvars];
+        vector<double> xs;
+        vector<double> exs;
         int    count;
 
-        double ys[nparams];
-        double eys[nparams];
-        double ys_sb[nparams];
-        double eys_sb[nparams];
-        double depols[nparams];
-        double edepols[nparams];
-        double ys_corrected[nparams];
-        double eys_corrected[nparams];
-        double rawasyms[(const int)rawasymvars.size()];
-        double rawasymerrs[(const int)rawasymvars.size()];
+        vector<double> ys;
+        vector<double> eys;
+        vector<double> ys_sb;
+        vector<double> eys_sb;
+        vector<double> depols;
+        vector<double> edepols;
+        vector<double> rawasyms;
+        vector<double> rawasymerrs;
 
         // Get asymmetry fit bin data
         int k = 0;
         count = (int)asymfit_result[k++];
         for (int idx=0; idx<binvars.size(); idx++) {
-            xs[idx]     = asymfit_result[k++];
-            exs[idx]    = asymfit_result[k++];
+            xs.push_back(asymfit_result[k++]);
+            exs.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx] = asymfit_result[k++];
-            edepols[idx] = asymfit_result[k++];
+            depols.push_back(asymfit_result[k++]);
+            edepols.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<rawasymvars.size(); idx++) {
-            rawasyms[idx] = asymfit_result[k++];
-            rawasymerrs[idx] = asymfit_result[k++];
+            rawasyms.push_back(asymfit_result[k++]);
+            rawasymerrs.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx] = asymfit_result[k++];
-            eys[idx] = asymfit_result[k++];
+            ys.push_back(asymfit_result[k++]);
+            eys.push_back(asymfit_result[k++]);
         }
         if (use_binned_sb_bgfracs) {
             for (int idx=0; idx<nparams; idx++) {
-                ys_sb[idx] = asymfit_result[k++];
-                eys_sb[idx] = asymfit_result[k++];
+                ys_sb.push_back(asymfit_result[k++]);
+                eys_sb.push_back(asymfit_result[k++]);
             }
         }
 
@@ -2244,13 +2242,8 @@ void getKinBinnedAsym(
         if (use_average_depol) {
             LOG_DEBUG(Form("[%s]: Dividing out depolarization factors...", method_name.c_str()));
             for (int idx=0; idx<nparams; idx++) {
-                ys_corrected[idx] = ys[idx] / depols[idx];
-                eys_corrected[idx] = eys[idx] / depols[idx];
-            }
-        } else {
-            for (int idx=0; idx<nparams; idx++) {
-                ys_corrected[idx] = ys[idx];
-                eys_corrected[idx] = eys[idx];
+                ys[idx] = ys[idx] / depols[idx];
+                eys[idx] = eys[idx] / depols[idx];
             }
         }
 
@@ -2266,8 +2259,6 @@ void getKinBinnedAsym(
                 out << " ys_sb["<< idx <<"]       = " << ys_sb[idx] << "\n";
                 out << " eys_sb["<< idx <<"]      = " << eys_sb[idx] << "\n";
             }
-            out << " ys_corrected["<< idx <<"]   = " << ys_corrected[idx] << "\n";
-            out << " eys_corrected["<< idx <<"]  = " << eys_corrected[idx] << "\n";
         }
         out << "---------------------------\n";
 
@@ -2289,8 +2280,8 @@ void getKinBinnedAsym(
             csvout << rawasymerrs[rr] << csv_separator.c_str();
         }
         for (int aa=0; aa<nparams; aa++) {
-            csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
-            csvout << eys_corrected[aa];
+            csvout << ys[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
+            csvout << eys[aa];
             if (aa<nparams-1 || single_massfit || use_binned_sb_bgfracs) csvout << csv_separator.c_str();
             else csvout << endl;//NOTE: IMPORTANT!
         }

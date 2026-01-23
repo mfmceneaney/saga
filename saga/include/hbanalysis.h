@@ -1118,37 +1118,37 @@ void getKinBinnedHB(
         LOG_DEBUG(Form("[%s]: Extracting results...", method_name.c_str()));
         int nbinvars = binvars.size();
         // int nparams  = 1; //NOTE: DEFINED ABOVE.  DO NOT REDEFINE.
-        double xs[nbinvars];
-        double exs[nbinvars];
+        vector<double> xs;
+        vector<double> exs;
         int    count;
 
-        double ys[nparams];
-        double eys[nparams];
-        double ys_sb[nparams];
-        double eys_sb[nparams];
-        double depols[nparams];
-        double edepols[nparams];
-        double rawasyms[(const int)rawasymvars.size()];
-        double rawasymerrs[(const int)rawasymvars.size()];
+        vector<double> ys;
+        vector<double> eys;
+        vector<double> ys_sb;
+        vector<double> eys_sb;
+        vector<double> depols;
+        vector<double> edepols;
+        vector<double> rawasyms;
+        vector<double> rawasymerrs;
 
         // Get asymmetry fit bin data
         int k = 0;
         count = (int)asymfit_result[k++];
         for (int idx=0; idx<binvars.size(); idx++) {
-            xs[idx]     = asymfit_result[k++];
-            exs[idx]    = asymfit_result[k++];
+            xs.push_back(asymfit_result[k++]);
+            exs.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx] = asymfit_result[k++];
-            edepols[idx] = asymfit_result[k++];
+            depols.push_back(asymfit_result[k++]);
+            edepols.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<rawasymvars.size(); idx++) {
-            rawasyms[idx] = asymfit_result[k++];
-            rawasymerrs[idx] = asymfit_result[k++];
+            rawasyms.push_back(asymfit_result[k++]);
+            rawasymerrs.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx] = asymfit_result[k++];
-            eys[idx] = asymfit_result[k++];
+            ys.push_back(asymfit_result[k++]);
+            eys.push_back(asymfit_result[k++]);
         }
 
         // Get mass fit bin data
@@ -1221,6 +1221,7 @@ void getKinBinnedHB(
         if (use_sb_subtraction) {
             LOG_DEBUG(Form("[%s]: Applying sideband subtraction...", method_name.c_str()));
             int k2 = 1 + 2 * (binvars.size() + depolvars.size() + rawasymvars.size());
+            LOG_DEBUG(Form("[%s]: k2 = %d AND asymfit_result_sb.size() = %d", method_name.c_str(), k2, asymfit_result_sb.size()));
             epsilon = eps_bg_pdf;
             epsilon_err = eps_bg_pdf_err;
             for (int idx=0; idx<nparams; idx++) {
