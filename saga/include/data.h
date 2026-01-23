@@ -603,7 +603,6 @@ TRandom * initializeTRandom(
     string method_name = "initializeTRandom";
 
     // Initialize the generator
-    LOG_DEBUG(Form("[%s]: Initializing random number generator with type %s", method_name.c_str(), trandom_type.c_str()));
     TRandom * rng;
 
     // Select the generator
