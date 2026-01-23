@@ -524,6 +524,22 @@ void execute(const YAML::Node& node) {
         );
     }
 
+    // Check helicity and target spin statistics
+    double h_std = saga::data::get_weighted_stddev<double>(frame,helicity_name,bootstrap_weight_name);
+    double t_std = saga::data::get_weighted_stddev<double>(frame,tspin_name,bootstrap_weight_name);
+    if (h_std<0.10 && t_std<0.10) {
+        LOG_WARN(
+            Form(
+                "%sStdDev(%s)=%.3f and StdDev(%s)=%.3f.  Did you forget to inject an asymmetry?",
+                message_prefix.c_str(),
+                helicity_name.c_str(),
+                h_std,
+                tspin_name.c_str(),
+                t_std
+            )
+        );
+    }
+
     // Dump dataset to ROOT file and exit
     if (dump_dataset) {
         std::string out_ds_path = Form("%sdataset.root", baseoutpath.c_str());
