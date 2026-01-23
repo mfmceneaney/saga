@@ -1117,7 +1117,7 @@ void getKinBinnedHB(
         // Initialize data
         LOG_DEBUG(Form("[%s]: Extracting results...", method_name.c_str()));
         int nbinvars = binvars.size();
-        int nparams  = nparams;
+        // int nparams  = nparams;
         double xs[nbinvars];
         double exs[nbinvars];
         int    count;
