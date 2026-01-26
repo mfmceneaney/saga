@@ -12,7 +12,12 @@ from .aggregate import get_config_list, get_config_str
 
 
 def create_jobs(
-    configs, base_dir="./", submit_path="submit.sh", yaml_path="args.yaml", aliases=None, replacements=None,
+    configs,
+    base_dir="./",
+    submit_path="submit.sh",
+    yaml_path="args.yaml",
+    aliases=None,
+    replacements=None,
 ):
     """
     Parameters
