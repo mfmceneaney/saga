@@ -134,7 +134,9 @@ def rescale_graph_data(
     # Set y values to constant and update scaled y errors if requested
     scaled_y_mean = y_mean if yvalue < -1 else [yvalue for i in range(len(y_mean))]
     if yvalue >= -1:
-        scaled_yerr_mean *= np.sqrt(1 - np.square(yvalue * tpol_factor))
+        scaled_yerr_mean = (
+            np.divide(1.0, np.sqrt(scaled_ct_mean)) * 1.0 / (tpol_factor * tdil_factor)
+        ) * np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
 
     # Create a length 1 list of graph data with scaled graph results
     graph_list = np.array(
