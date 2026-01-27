@@ -19,6 +19,7 @@
 // Local Includes
 #include <log.h>
 #include <util.h>
+#include <data.h>
 
 #pragma once
 
@@ -753,13 +754,15 @@ map<string,map<int,string>> getBinCutsMapBatch(
 * @param bincuts Map of unique integer bin identifiers to bin cuts
 * @param binvars List of bin variable names
 * @param mc_suffix Suffix for forming the truth variable names
+* @param weight_name Name of the weight variable, ignored if empty
 */
 void getBinMigration(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
     string                                                   scheme_name,
     map<int,string>                                     bincuts,
     vector<string>                                      binvars,
-    string                                                   mc_suffix = "_mc"
+    string                                                   mc_suffix = "_mc",
+    string                                                   weight_name = ""
     ) {
 
     string method_name = "getBinMigration";
@@ -801,7 +804,7 @@ void getBinMigration(
         // Get generated count
         LOG_DEBUG(Form("[%s]: Filtering frame with generated bin cut %s", method_name.c_str(), bincut_gen.c_str()));
         auto frame_filtered = frame.Filter(bincut_gen.c_str());
-        double count_gen = (double)*frame_filtered.Count();
+        double count_gen = saga::data::get_weighted_count<double>(frame_filtered,weight_name);
 
         // Loop reconstructed bins
         for (auto it_rec = bincuts.begin(); it_rec != bincuts.end(); ++it_rec) {
@@ -812,7 +815,8 @@ void getBinMigration(
 
             // Get reconstructed count
             LOG_DEBUG(Form("[%s]: Filtering frame with reconstructed bin cut %s", method_name.c_str(), bincut_rec.c_str()));
-            double count_rec = (double)*frame_filtered.Filter(bincut_rec.c_str()).Count();
+            auto frame_filtered_bincut_rec = frame_filtered.Filter(bincut_rec.c_str());
+            double count_rec = saga::data::get_weighted_count<double>(frame_filtered_bincut_rec,weight_name);
 
             // Compute bin migration fraction
             double mig = count_rec / count_gen; //NOTE: f[i->j] = [# generated in i AND reconstructed in j] / [# generated in bin i]
@@ -840,12 +844,14 @@ void getBinMigration(
 * @param scheme_name Bin scheme name, csv file will be named `<scheme_name>_kinematics.csv`
 * @param bincuts Map of unique integer bin identifiers to bin cuts
 * @param kinvars List of kinematic variable names
+* @param weight_name Name of the weight variable, ignored if empty
 */
 void getBinKinematics(
     ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
     string                                                   scheme_name,
     map<int,string>                                     bincuts,
-    vector<string>                                      kinvars
+    vector<string>                                      kinvars,
+    string                                              weight_name
     ) {
 
     string method_name = "getBinKinematics";
@@ -881,7 +887,7 @@ void getBinKinematics(
         auto frame_filtered = frame.Filter(bincut.c_str());
 
         // Get bin count
-        int count = (int)*frame_filtered.Count();
+        int count = saga::data::get_weighted_count<int>(frame_filtered,weight_name);
 
         // Set CSV column data
         // COLS: bin,{kinvar,kinvar_err}
@@ -889,8 +895,8 @@ void getBinKinematics(
         csvout << bin << csv_separator.c_str();
         csvout << count; if (kinvars.size()>0) { csvout << csv_separator.c_str(); }
         for (int idx=0; idx<kinvars.size(); idx++) {
-            double binvar_mean = (double)*frame_filtered.Mean(kinvars[idx].c_str());
-            double binvar_err  = (double)*frame_filtered.StdDev(kinvars[idx].c_str());
+            double binvar_mean = saga::data::get_weighted_mean<double>(frame_filtered,kinvars[idx],weight_name);
+            double binvar_err  = saga::data::get_weighted_stddev<double>(frame_filtered,kinvars[idx],weight_name,binvar_mean);
             csvout << binvar_mean << csv_separator.c_str();
             csvout << binvar_err;
             if (idx<kinvars.size()-1) csvout << csv_separator.c_str();

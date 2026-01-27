@@ -1499,6 +1499,7 @@ vector<double> fitAsym(
 * @param workspace_title Title of workspace in which to work
 * @param dataset_name Dataset name
 * @param dataset_title Dataset title
+* @param weight_name Name of weight variable, ignored if empty
 * @param categories_as_float List of category variables to include as asymmetry fit variables in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
@@ -1591,6 +1592,7 @@ void getKinBinnedAsym(
         // parameters passed to data::createDataset()
         string                      dataset_name,
         string                      dataset_title,
+        string                      weight_name,
         vector<string>         categories_as_float,
         string                      helicity,
         map<string,int>        helicity_states,
@@ -1820,6 +1822,7 @@ void getKinBinnedAsym(
             ws,
             dataset_name,
             dataset_title,
+            weight_name,
             categories_as_float,
             helicity,
             helicity_states,
@@ -1901,6 +1904,7 @@ void getKinBinnedAsym(
             saga::signal::applySPlot(
                 ws,
                 dataset_name,
+                weight_name,
                 Form("%s_%s",massfit_sgYield_name.c_str(),scheme_binid.c_str()),//NOTE: getGenAsymPdf() renames these variables to ensure workspace uniqueness
                 Form("%s_%s",massfit_bgYield_name.c_str(),scheme_binid.c_str()),
                 Form("%s_%s",massfit_pdf_name.c_str(),scheme_binid.c_str()),
@@ -1976,6 +1980,7 @@ void getKinBinnedAsym(
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
+                weight_name,
                 categories_as_float,
                 helicity,
                 helicity_states,
@@ -2050,6 +2055,7 @@ void getKinBinnedAsym(
                 ws_sb, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
                 dataset_name,
                 dataset_title,
+                weight_name,
                 categories_as_float,
                 helicity,
                 helicity_states,
@@ -2113,49 +2119,47 @@ void getKinBinnedAsym(
         LOG_DEBUG(Form("[%s]: Extracting results...", method_name.c_str()));
         int nbinvars = binvars.size();
         int nparams  = asymfitpar_inits.size();
-        double xs[nbinvars];
-        double exs[nbinvars];
+        vector<double> xs;
+        vector<double> exs;
         int    count;
 
-        double ys[nparams];
-        double eys[nparams];
-        double ys_sb[nparams];
-        double eys_sb[nparams];
-        double depols[nparams];
-        double edepols[nparams];
-        double ys_corrected[nparams];
-        double eys_corrected[nparams];
-        double rawasyms[(const int)rawasymvars.size()];
-        double rawasymerrs[(const int)rawasymvars.size()];
+        vector<double> ys;
+        vector<double> eys;
+        vector<double> ys_sb;
+        vector<double> eys_sb;
+        vector<double> depols;
+        vector<double> edepols;
+        vector<double> rawasyms;
+        vector<double> rawasymerrs;
 
         // Get asymmetry fit bin data
         int k = 0;
         count = (int)asymfit_result[k++];
         for (int idx=0; idx<binvars.size(); idx++) {
-            xs[idx]     = asymfit_result[k++];
-            exs[idx]    = asymfit_result[k++];
+            xs.push_back(asymfit_result[k++]);
+            exs.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<depolvars.size(); idx++) {
-            depols[idx] = asymfit_result[k++];
-            edepols[idx] = asymfit_result[k++];
+            depols.push_back(asymfit_result[k++]);
+            edepols.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<rawasymvars.size(); idx++) {
-            rawasyms[idx] = asymfit_result[k++];
-            rawasymerrs[idx] = asymfit_result[k++];
+            rawasyms.push_back(asymfit_result[k++]);
+            rawasymerrs.push_back(asymfit_result[k++]);
         }
         for (int idx=0; idx<nparams; idx++) {
-            ys[idx] = asymfit_result[k++];
-            eys[idx] = asymfit_result[k++];
+            ys.push_back(asymfit_result[k++]);
+            eys.push_back(asymfit_result[k++]);
         }
         if (use_binned_sb_bgfracs) {
             for (int idx=0; idx<nparams; idx++) {
-                ys_sb[idx] = asymfit_result[k++];
-                eys_sb[idx] = asymfit_result[k++];
+                ys_sb.push_back(asymfit_result[k++]);
+                eys_sb.push_back(asymfit_result[k++]);
             }
         }
 
-
         // Get mass fit bin data
+        LOG_DEBUG(Form("[%s]: Extracting mass fit results...", method_name.c_str()));
         double int_sg_pdf_val;
         double int_sg_pdf_err;
         double int_bg_pdf_val;
@@ -2178,7 +2182,7 @@ void getKinBinnedAsym(
         if (massfit_result.size()>0) {
 
             // Start counter
-            int m = 1; //NOTE: Ignore count which should first entry
+            int m = 1; //NOTE: Ignore count which should be first entry
 
             // Add signal region integration values
             int_sg_pdf_val    = massfit_result[m++];
@@ -2223,7 +2227,7 @@ void getKinBinnedAsym(
         double epsilon, epsilon_err;
         if (use_sb_subtraction) {
             LOG_DEBUG(Form("[%s]: Applying sideband subtraction...", method_name.c_str()));
-            int k2 = 1 + binvars.size() + depolvars.size();
+            int k2 = 1 + 2 * (binvars.size() + depolvars.size() + rawasymvars.size());
             epsilon = eps_bg_pdf;
             epsilon_err = eps_bg_pdf_err;
             for (int idx=0; idx<nparams; idx++) {
@@ -2238,13 +2242,8 @@ void getKinBinnedAsym(
         if (use_average_depol) {
             LOG_DEBUG(Form("[%s]: Dividing out depolarization factors...", method_name.c_str()));
             for (int idx=0; idx<nparams; idx++) {
-                ys_corrected[idx] = ys[idx] / depols[idx];
-                eys_corrected[idx] = eys[idx] / depols[idx];
-            }
-        } else {
-            for (int idx=0; idx<nparams; idx++) {
-                ys_corrected[idx] = ys[idx];
-                eys_corrected[idx] = eys[idx];
+                ys[idx] = ys[idx] / depols[idx];
+                eys[idx] = eys[idx] / depols[idx];
             }
         }
 
@@ -2260,8 +2259,6 @@ void getKinBinnedAsym(
                 out << " ys_sb["<< idx <<"]       = " << ys_sb[idx] << "\n";
                 out << " eys_sb["<< idx <<"]      = " << eys_sb[idx] << "\n";
             }
-            out << " ys_corrected["<< idx <<"]   = " << ys_corrected[idx] << "\n";
-            out << " eys_corrected["<< idx <<"]  = " << eys_corrected[idx] << "\n";
         }
         out << "---------------------------\n";
 
@@ -2283,8 +2280,8 @@ void getKinBinnedAsym(
             csvout << rawasymerrs[rr] << csv_separator.c_str();
         }
         for (int aa=0; aa<nparams; aa++) {
-            csvout << ys_corrected[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
-            csvout << eys_corrected[aa];
+            csvout << ys[aa] << csv_separator.c_str();//NOTE: This is the default naming from analysis::fitAsym()
+            csvout << eys[aa];
             if (aa<nparams-1 || single_massfit || use_binned_sb_bgfracs) csvout << csv_separator.c_str();
             else csvout << endl;//NOTE: IMPORTANT!
         }

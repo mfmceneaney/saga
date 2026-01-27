@@ -40,6 +40,13 @@ void execute(const YAML::Node& node) {
     std::vector<std::string> particle_suffixes = saga::util::getYamlArg<std::vector<std::string>>(node, "particle_suffixes", {}, message_prefix, verbose); // -> For MC matching with mc_sg_match cut
 
     //----------------------------------------------------------------------//
+    // BEGIN BOOTSTRAPPING ARGUMENTS
+    int bootstrap_seed = saga::util::getYamlArg<int>(node, "bootstrap_seed", 2, message_prefix, verbose);
+    std::string bootstrap_trandom_type = saga::util::getYamlArg<std::string>(node, "bootstrap_trandom_type", "TRandomMixMax17",message_prefix,verbose);
+    std::string bootstrap_weight_name = saga::util::getYamlArg<std::string>(node,"bootstrap_weight","",message_prefix,verbose); //NOTE: If empty no bootstrapping will be applied
+    int bootstrap_n = saga::util::getYamlArg<int>(node, "bootstrap_n", 0, message_prefix, verbose); //NOTE: Bootstrap sample size (if non-zero classical resampling is used, if zero Poissonian is used instead)
+
+    //----------------------------------------------------------------------//
     // VAR_FORMULAS
     std::vector<std::vector<std::string>> var_formulas = saga::util::getYamlArg<std::vector<std::vector<std::string>>>(node, "var_formulas", {}, message_prefix, verbose);
 
@@ -153,6 +160,24 @@ void execute(const YAML::Node& node) {
     // Define angular difference variables
     if (mc_cuts.size()>0) d2_filtered = saga::data::defineAngularDiffVars(d2_filtered, particle_suffixes, "theta", "phi", "_mc");
     //TODO: Add output message about defined branches
+
+    // Resample dataset for bootstrapping
+    if (bootstrap_weight_name!="" && bootstrap_n>0) {
+        d2_filtered = saga::data::bootstrapClassical(
+            d2_filtered,
+            bootstrap_seed,
+            bootstrap_n,
+            bootstrap_weight_name,
+            bootstrap_trandom_type
+        );
+    } else if (bootstrap_weight_name!="" && bootstrap_n<=0) {
+        d2_filtered = saga::data::bootstrapPoisson(
+            d2_filtered,
+            bootstrap_seed,
+            bootstrap_weight_name,
+            bootstrap_trandom_type
+        );
+    }
  
     // Loop bin schemes
     for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
@@ -167,7 +192,8 @@ void execute(const YAML::Node& node) {
             d2_filtered, //ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void> frame,
             scheme_name, //std::string                                                   scheme_name,
             bincuts, //std::map<int,std::string>                                     bincuts,
-            kinvars //std::vector<std::string>                                      kinvarrs,
+            kinvars, //std::vector<std::string>                                      kinvars,
+            bootstrap_weight_name // string                                              weight_name
         );
     } // for (auto it = bincuts_map.begin(); it != bincuts_map.end(); ++it) {
 

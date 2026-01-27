@@ -69,6 +69,13 @@ void execute(const YAML::Node& node) {
     std::string combined_spin_state = saga::util::getYamlArg<std::string>(node, "combined_spin_state", "ss", message_prefix, verbose); //NOTE: This may not be empty!
 
     //----------------------------------------------------------------------//
+    // BEGIN BOOTSTRAPPING ARGUMENTS
+    int bootstrap_seed = saga::util::getYamlArg<int>(node, "bootstrap_seed", 2, message_prefix, verbose);
+    std::string bootstrap_trandom_type = saga::util::getYamlArg<std::string>(node, "bootstrap_trandom_type", "TRandomMixMax17",message_prefix,verbose);
+    std::string bootstrap_weight_name = saga::util::getYamlArg<std::string>(node,"bootstrap_weight","",message_prefix,verbose); //NOTE: If empty no bootstrapping will be applied
+    int bootstrap_n = saga::util::getYamlArg<int>(node, "bootstrap_n", 0, message_prefix, verbose); //NOTE: Bootstrap sample size (if non-zero classical resampling is used, if zero Poissonian is used instead)
+
+    //----------------------------------------------------------------------//
     // BEGIN RUN-DEPENDENT CSV VARIABLE ARGUMENTS
     std::vector<std::string> rdf_key_cols = saga::util::getYamlArg<std::vector<std::string>>(node, "rdf_key_cols", {}, message_prefix, verbose);
     std::vector<std::string> csv_paths = saga::util::getYamlArg<std::vector<std::string>>(node, "csv_paths", {}, message_prefix, verbose);
@@ -310,10 +317,10 @@ void execute(const YAML::Node& node) {
     if (inject_asym) {
         // Find and replace asymmetry names with injected values in fsgasyms_xs : example string fsgasyms_xs="0.747*depolvars_mc0*sgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fsgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fsgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fsgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
         }
         for (int idx=0; idx<asymfitvars.size(); idx++) {
             saga::util::replaceAll(fsgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
@@ -340,10 +347,10 @@ void execute(const YAML::Node& node) {
 
         // Find and replace placeholder variable names with actual values in fbgasyms_xs : example string fbgasyms_xs="0.747*depolvars_mc0*bgasym0*fitvar1_mc"
         for (int idx=0; idx<asymfitvars.size(); idx++) {
-            saga::util::replaceAll(fbgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fbgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
-            saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), Form("%.8f",asymfitvars[idx])); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_uu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_pu_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_up_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
+            saga::util::replaceAll(fbgasyms_xs_pp_formula, Form("asymfitvars[%d]",idx), asymfitvars[idx].c_str()); // Replace asymfitvars[idx] with actual asymmetry fit variable name
         }
         for (int idx=0; idx<asymfitvars.size(); idx++) {
             saga::util::replaceAll(fbgasyms_xs_uu_formula, asymfitvars[idx].c_str(), asymfitvars_mc[idx].c_str()); // Replace asymfitvars_mc[idx] with actual branch name
@@ -499,6 +506,40 @@ void execute(const YAML::Node& node) {
         double my_testvar2 = (double)*frame.Mean(tspin_name.c_str());
     }
 
+    // Resample dataset for bootstrapping
+    if (bootstrap_weight_name!="" && bootstrap_n>0) {
+        frame = saga::data::bootstrapClassical(
+            frame,
+            bootstrap_seed,
+            bootstrap_n,
+            bootstrap_weight_name,
+            bootstrap_trandom_type
+        );
+    } else if (bootstrap_weight_name!="" && bootstrap_n<=0) {
+        frame = saga::data::bootstrapPoisson(
+            frame,
+            bootstrap_seed,
+            bootstrap_weight_name,
+            bootstrap_trandom_type
+        );
+    }
+
+    // Check helicity and target spin statistics
+    double h_std = saga::data::get_weighted_stddev<double>(frame,helicity_name,bootstrap_weight_name);
+    double t_std = saga::data::get_weighted_stddev<double>(frame,tspin_name,bootstrap_weight_name);
+    if (h_std<0.10 && t_std<0.10) {
+        LOG_WARN(
+            Form(
+                "%sStdDev(%s)=%.3f and StdDev(%s)=%.3f.  Did you forget to inject an asymmetry?",
+                message_prefix.c_str(),
+                helicity_name.c_str(),
+                h_std,
+                tspin_name.c_str(),
+                t_std
+            )
+        );
+    }
+
     // Dump dataset to ROOT file and exit
     if (dump_dataset) {
         std::string out_ds_path = Form("%sdataset.root", baseoutpath.c_str());
@@ -553,6 +594,7 @@ void execute(const YAML::Node& node) {
             // // parameters passed to data::createDataset()
             "dataset", // std::string                      dataset_name,
             "dataset", // std::string                      dataset_title,
+            bootstrap_weight_name, // std::string                      weight_name,
             categories_as_float, // std::vector<std::string>         categories_as_float,
             helicity_name, // std::string                      helicity,
             helicity_states, // std::map<std::string,int>        helicity_states,

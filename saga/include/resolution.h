@@ -438,6 +438,7 @@ vector<double> fitResolution(
 * @param workspace_title Title of workspace in which to work
 * @param dataset_name Dataset name
 * @param dataset_title Dataset title
+* @param weight_name Name of weight variable, ignored if empty
 * @param categories_as_float List of category variables to include as asymmetry fit variables in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
@@ -493,6 +494,7 @@ void getKinBinnedResolutions(
         // parameters passed to data::createDataset()
         string                      dataset_name,
         string                      dataset_title,
+        string                      weight_name,
         vector<string>         categories_as_float,
         string                      helicity,
         map<string,int>        helicity_states,
@@ -610,6 +612,7 @@ void getKinBinnedResolutions(
             ws,
             dataset_name,
             dataset_title,
+            weight_name,
             categories_as_float,
             helicity,
             helicity_states,
