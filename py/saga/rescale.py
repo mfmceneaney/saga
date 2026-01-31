@@ -86,7 +86,7 @@ def rescale_graph_data(
     If the value satisfies :math:`A\\in[-1,0)`, the asymmetry errors will be set to
     :math:`\\sigma_{A} = \\frac{1}{P_{T} \\cdot D_{T}} \\cdot \\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2}}{N_{Rescaled}}}`.
     If the value satisfies :math:`A\\in[0,+1]`, the asymmetry errors will be rescaled by the factor
-    :math:`\\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2}}{N_{Rescaled}}}`.
+    :math:`\\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2} N_{Old Data}}{N_{Rescaled}}}`.
     Otherwise, the :obj:`yvalue` from :obj:`old_dat` will be used.
     """
 
@@ -227,7 +227,7 @@ def rescale_csv_data(
     If the value satisfies :math:`A\\in[-1,0)`, the asymmetry errors will be set to
     :math:`\\sigma_{A} = \\frac{1}{P_{T} \\cdot D_{T}} \\cdot \\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2}}{N_{Rescaled}}}`.
     If the value satisfies :math:`A\\in[0,+1]`, the asymmetry errors will be rescaled by the factor
-    :math:`\\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2}}{N_{Rescaled}}}`.
+    :math:`\\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2} N_{Old Data}}{N_{Rescaled}}}`.
     Otherwise, the :obj:`yvalue` from :obj:`old_dat` will be used.
     """
 
