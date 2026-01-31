@@ -59,9 +59,9 @@ def rescale_graph_data(
     lumi_ratio : str, optional
         Luminosity ratio (new/old) for scaling
     tpol_factor : float, optional
-        Target polarization factor for rescaling
+        Target polarization factor :math:`P_{T}` for rescaling
     tdil_factor : float, optional
-        Target dilution factor for rescaling
+        Target dilution factor :math:`D_{T}` for rescaling
     yvalue : float, optional
         Constant asymmetry value to be used for computing rescaled errors
     xvar_keys : list, optional
@@ -81,10 +81,13 @@ def rescale_graph_data(
     Rescale a graph from data (:obj:`old_dat`) loading new and old simulation graphs (:obj:`new_sim` and :obj:`old_sim`)
     from file to compute the bin dependent acceptance ratio.  Start from the ratio (:obj:`new_sim`/:obj:`old_sim`) of counts in each bin.
     The rescaling ratio is then computed by multiplying by :obj:`lumi_ratio / xs_ratio`.  This ratio is used to rescale the counts, but
-    the errors are further multiplied by a factor :math:`\\frac{1}{P_{Target} \\cdot D_{Target}}` to account for the target polarization
-    and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors,
-    and that if you do so, the rescaled asymmetry errors will be further scaled as
-    :math:`\\sigma_{A} = \\sqrt{\\frac{1-(A \\cdot P_{Target})^{2}}{N_{Rescaled}}}`.
+    the errors are further multiplied by a factor :math:`\\frac{1}{P_{T} \\cdot D_{T}}` to account for the target polarization
+    and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors.
+    If the value satisfies :math:`A\\in[-1,0)`, the asymmetry errors will be set to
+    :math:`\\sigma_{A} = \\frac{1}{P_{T} \\cdot D_{T}} \\cdot \\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2}}{N_{Rescaled}}}`.
+    If the value satisfies :math:`A\\in[0,+1]`, the asymmetry errors will be rescaled by the factor
+    :math:`\\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2} N_{Old Data}}{N_{Rescaled}}}`.
+    Otherwise, the :obj:`yvalue` from :obj:`old_dat` will be used.
     """
 
     # Load other graphs from csv
@@ -132,11 +135,13 @@ def rescale_graph_data(
     y_mean = new_sim_graph["y"]
 
     # Set y values to constant and update scaled y errors if requested
-    scaled_y_mean = y_mean if yvalue < -1 else [yvalue for i in range(len(y_mean))]
-    if yvalue >= -1:
+    scaled_y_mean = y_mean if yvalue < -1 else [np.abs(yvalue) for i in range(len(y_mean))]
+    if yvalue >= -1 and yvalue<0:
         scaled_yerr_mean = (
             np.divide(1.0, np.sqrt(scaled_ct_mean)) * 1.0 / (tpol_factor * tdil_factor)
         ) * np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
+    elif yvalue >= 0 and yvalue <= 1:
+        scaled_yerr_mean *= np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
 
     # Create a length 1 list of graph data with scaled graph results
     graph_list = np.array(
@@ -196,9 +201,9 @@ def rescale_csv_data(
     lumi_ratio : str, optional
         Luminosity ratio (new/old) for scaling
     tpol_factor : float, optional
-        Target polarization factor for rescaling
+        Target polarization factor :math:`P_{T}` for rescaling
     tdil_factor : float, optional
-        Target dilution factor for rescaling
+        Target dilution factor :math:`D_{T}` for rescaling
     yvalue : float, optional
         Constant asymmetry value to be used for computing rescaled errors
     float_format : str or Callable, optional
@@ -217,10 +222,13 @@ def rescale_csv_data(
     Rescale a set of results from data (:obj:`old_dat`) loading new and old simulation results (:obj:`new_sim` and :obj:`old_sim`)
     from file to compute the bin dependent acceptance ratio.  Start from the ratio (:obj:`new_sim`/:obj:`old_sim`) of counts in each bin.
     The rescaling ratio is then computed by multiplying by :obj:`lumi_ratio / xs_ratio`.  This ratio is used to rescale the counts, but
-    the errors are further multiplied by a factor :math:`\\frac{1}{P_{Target} \\cdot D_{Target}}` to account for the target polarization
-    and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors,
-    and that if you do so, the rescaled asymmetry errors will be further scaled as
-    :math:`\\sigma_{A} = \\sqrt{\\frac{1-(A \\cdot P_{Target})^{2}}{N_{Rescaled}}}`.
+    the errors are further multiplied by a factor :math:`\\frac{1}{P_{T} \\cdot D_{T}}` to account for the target polarization
+    and dilution factors.  Note that the asymmetry values can be set to a constant with :obj:`yvalue=A` if you only care about the rescaled errors.
+    If the value satisfies :math:`A\\in[-1,0)`, the asymmetry errors will be set to
+    :math:`\\sigma_{A} = \\frac{1}{P_{T} \\cdot D_{T}} \\cdot \\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2}}{N_{Rescaled}}}`.
+    If the value satisfies :math:`A\\in[0,+1]`, the asymmetry errors will be rescaled by the factor
+    :math:`\\sqrt{\\frac{1-(A \\cdot P_{T} \\cdot D_{T})^{2} N_{Old Data}}{N_{Rescaled}}}`.
+    Otherwise, the :obj:`yvalue` from :obj:`old_dat` will be used.
     """
 
     # Load results from csv
@@ -271,10 +279,14 @@ def rescale_csv_data(
     scaled_ys = (
         old_dat_df[y_key]
         if yvalue < -1
-        else [yvalue for i in range(len(old_dat_df[y_key]))]
+        else [np.abs(yvalue) for i in range(len(old_dat_df[y_key]))]
     )
-    if yvalue >= -1:
-        scaled_yerrs *= np.sqrt(1 - np.square(yvalue * tpol_factor))
+    if yvalue >= -1 and yvalue<0:
+        scaled_yerrs = (
+            np.divide(1.0, np.sqrt(new_dat_df_count)) * 1.0 / (tpol_factor * tdil_factor)
+        ) * np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
+    elif yvalue >= 0 and yvalue <= 1:
+        scaled_yerrs *= np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
 
     # Copy the old dataframe into the new dataframe
     new_dat_df = old_dat_df.copy(deep=True)
