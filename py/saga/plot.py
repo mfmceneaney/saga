@@ -704,7 +704,9 @@ def plot_systematics(
     watermark="CLAS12 Preliminary",
     watermark_kwargs=None,
     use_default_plt_settings=True,
-    legend_loc="upper left",
+    title_pad=20,
+    lg_kwargs={"loc":"upper left", "bbox_to_anchor":(1.05, 1.0), "frameon": False},
+    plot_label_args=[0.95,0.15,None],
     axlinewidth=1.0,
     log=False,
     figsize=(16, 10),
@@ -742,8 +744,12 @@ def plot_systematics(
         Optional key word arguments for :meth:`plot_watermark`
     use_default_plt_settings : bool, optional
         Option to use default font and tick parameter style settings
-    legend_loc : str, optional
-        Matplotlib.pyplot legend location string, will not be plotted if set to :obj:`None` or :obj:`''`
+    title_pad : int, optional
+        Title padding
+    lg_kwargs : dict, optional
+        Matplotlib.pyplot legend keyword arguments
+    plot_label_args : list, optional
+        List of positional arguments for plot label
     axlinewidth : float, optional
         Axis line and injected asymmetries line width
     log : bool, optional
@@ -768,7 +774,7 @@ def plot_systematics(
     f1, ax1 = plt.subplots(figsize=figsize)
     plt.xlim(*xlims)
     plt.ylim(*ylims)
-    plt.title(title, usetex=True)
+    plt.title(title, usetex=True, pad=title_pad)
     plt.xlabel(xtitle, usetex=True)
     plt.ylabel(ytitle, usetex=True)
 
@@ -797,8 +803,14 @@ def plot_systematics(
         plot_watermark(ax1, watermark=watermark, **watermark_kwargs)
 
     # Plot legend
-    if legend_loc is not None and legend_loc != "":
-        ax1.legend(loc=legend_loc)
+    if isinstance(legend_loc,dict):
+        ax1.legend(**lg_kwargs)
+
+    # Plot label
+    if isinstance(plot_label_args,tuple) or isinstance(plot_label_args,list) \
+    and len(plot_label_args)==3 and isinstance(plot_label_args[-1],str):
+        ax1.text(*plot_label_args, transform=ax1.transAxes,
+            fontsize=plt.rcParams['axes.titlesize'], fontweight='bold', va='top', ha='right')
 
     # Save figure
     f1.savefig(outpath)
@@ -856,7 +868,9 @@ def plot_results(
     watermark="CLAS12 Preliminary",
     watermark_kwargs=None,
     show_injected_asymmetries=False,
-    legend_loc="upper left",
+    title_pad=20,
+    lg_kwargs={"loc":"best", "frameon": False},
+    plot_label_args=[0.95,0.15,None],
     ecolor="black",
     elinewidth=2.0,
     capsize=18,
@@ -956,8 +970,12 @@ def plot_results(
         Optional key word arguments for :meth:`plot_watermark`
     show_injected_asymmetries : bool, optional
         Option to show injected signal and background asymmetries
-    legend_loc : str, optional
-        Matplotlib.pyplot legend location string, will not be plotted if set to :obj:`None` or :obj:`''`
+    title_pad : int, optional
+        Title padding
+    lg_kwargs : dict, optional
+        Matplotlib.pyplot legend keyword arguments
+    plot_label_args : list, optional
+        List of positional arguments for plot label
     ecolor : str, optional
         Error line color
     ecolor : float, optional
@@ -1093,7 +1111,7 @@ def plot_results(
     # Set up plot
     ax1.set_xlim(*xlims)
     ax1.set_ylim(*ylims)
-    ax1.set_title(title, usetex=True)
+    ax1.set_title(title, usetex=True, pad=title_pad)
     ax1.set_xlabel(xlabel, usetex=True)
     ax1.set_ylabel(ylabel, usetex=True)
 
@@ -1207,8 +1225,14 @@ def plot_results(
         plot_watermark(ax1, watermark=watermark, **watermark_kwargs)
 
     # Plot legend
-    if legend_loc is not None and legend_loc != "":
-        ax1.legend(loc=legend_loc)
+    if isinstance(lg_kwargs,dict):
+        ax1.legend(**lg_kwargs)
+
+    # Plot label
+    if isinstance(plot_label_args,tuple) or isinstance(plot_label_args,list) \
+    and len(plot_label_args)==3 and isinstance(plot_label_args[-1],str):
+        ax1.text(*plot_label_args, transform=ax1.transAxes,
+            fontsize=plt.rcParams['axes.titlesize'], fontweight='bold', va='top', ha='right')
 
     # Check whether you have graph data to save to CSV
     if ct_mean is None:
