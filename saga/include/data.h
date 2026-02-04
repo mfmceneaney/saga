@@ -4,6 +4,9 @@
 #include <map>
 #include <thread>
 #include <functional>
+#include <unordered_set>
+#include <vector>
+#include <cmath>
 
 // ROOT Includes
 #include <ROOT/RDataFrame.hxx>
@@ -51,6 +54,8 @@ using std::runtime_error;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using std::unordered_multiset;
+using std::sqrt;
 using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 
 /**
@@ -64,6 +69,7 @@ using RNode = ROOT::RDF::RInterface<ROOT::Detail::RDF::RJittedFilter, void>;
 * @param w RooWorkspace in which to work
 * @param name Dataset name
 * @param title Dataset title
+* @param weight_name Name of weight variable, ignored if empty
 * @param categories_as_float List of category variables to include as floats named `<category>_as_float` in dataset
 * @param helicity Name of helicity variable
 * @param helicity_states Map of state names to helicity values
@@ -94,6 +100,7 @@ void createDataset(
         RooWorkspace *w,
         string name,
         string title,
+        string weight_name,
         vector<string> categories_as_float,
         string helicity,
         map<string,int> helicity_states,
@@ -121,6 +128,18 @@ void createDataset(
     ) {
 
     string method_name = "createDataset";
+
+    // Define weight variable
+    LOG_DEBUG(Form("[%s]: Defining RooRealVar for event weight: %s", method_name.c_str(), weight_name.c_str()));
+    RooRealVar *weightvar;
+    if (weight_name!=""){
+        weightvar = new RooRealVar(
+        weight_name.c_str(),
+        "Event weight",
+        1.0,        // initial value (irrelevant for datasets)
+        -1e6, 1e6   // range (important!)
+    );
+    }
 
     // Define the helicity variable
     LOG_DEBUG(Form("[%s]: Defining RooCategory for helicity variable: %s", method_name.c_str(), helicity.c_str()));
@@ -275,6 +294,7 @@ void createDataset(
     for (int rr=0; rr<nvars; rr++) {
         argset->add(*rrvars[rr]);
     }
+    if (weight_name!="") argset->add(*weightvar);
 
     // Create RDataFrame to RooDataSet pointer
     LOG_DEBUG(Form("[%s]: Creating dataset: %s , %s, with %d variables...", method_name.c_str(), name.c_str(), title.c_str(), nvars));
@@ -456,13 +476,23 @@ void createDataset(
     w->import(ht);
     w->import(ss);
     for (int rr=0; rr<nvars; rr++) { w->import(*rrvars[rr]); }
+    if (weight_name!="") w->import(*weightvar);
 
     // Import data into the workspace
-    LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
-    w->import(*rooDataSetResult);
+    if (weight_name=="") {
+        LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
+        w->import(*rooDataSetResult);
+    } else {
+        LOG_DEBUG(Form("[%s]: Setting weight variable...", method_name.c_str()));
+        auto& data = static_cast<RooDataSet&>(*rooDataSetResult);
+        RooDataSet * rooDataSetResult_weighted = new RooDataSet(name.c_str(), title.c_str(), &data, *data.get(), nullptr, weight_name.c_str());
+        LOG_DEBUG(Form("[%s]: Importing RooDataSet into RooWorkspace...", method_name.c_str()));
+        w->import(*rooDataSetResult_weighted);
+    }
 
     return;
-}
+
+}// createDataset()
 
 /**
 * @brief Map values from a CSV file into an existing RDataFrame.
@@ -551,6 +581,49 @@ RNode mapDataFromCSV(RNode filtered_df,
 
     return df_with_new_column;
 }
+
+/**
+* @brief Initialize a `TRandom` generator
+*
+* Initialize a `TRandom` generator from the available algorithms
+* provided by ROOT.
+*
+* @param seed Seed for random number generator
+* @param trandom_type Type name of ROOT TRandom number generator
+*
+* @return `TRandom` generator of given type initialized with the given seed
+*
+* @throws Runtime Error
+*/
+TRandom * initializeTRandom(
+    UInt_t seed,
+    string trandom_type
+    ) {
+
+    string method_name = "initializeTRandom";
+
+    // Initialize the generator
+    TRandom * rng;
+
+    // Select the generator
+    if (trandom_type=="TRandom3") { rng = new TRandom3(seed); }
+    else if (trandom_type=="TRandomRanluxpp") { rng = new TRandomRanluxpp(seed); }
+    else if (trandom_type=="TRandomMixMax") { rng = new TRandomMixMax(seed); }
+    else if (trandom_type=="TRandomMixMax17") { rng = new TRandomMixMax17(seed); }
+    else if (trandom_type=="TRandomMixMax256") { rng = new TRandomMixMax256(seed); }
+    else if (trandom_type=="TRandomMT64") { rng = new TRandomMT64(seed); }
+    else if (trandom_type=="TRandom1") { rng = new TRandom1(seed); }
+    else if (trandom_type=="TRandomRanlux48") { rng = new TRandomRanlux48(seed); }
+    else if (trandom_type=="TRandom2") { rng = new TRandom2(seed); }
+    else {
+        string msg = Form("[%s]: trandom_type %s is not recognized.  Please consult the ROOT documentation for allowed types", method_name.c_str(), trandom_type.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+
+    return rng;
+
+}// initializeTRandom()
 
 /**
 * @brief Inject an asymmetry into an existing RDataFrame.
@@ -664,24 +737,8 @@ RNode injectAsym(
                         float asyms_bg_up, float asyms_bg_pp) -> int {
 
         // Combine global seed and row index for determinism
-        TRandom * rng;
         UInt_t seed_iEntry = seed + static_cast<UInt_t>(iEntry);
-
-        // Select the generator
-        if (trandom_type=="TRandom3") { rng = new TRandom3(seed_iEntry); }
-        else if (trandom_type=="TRandomRanluxpp") { rng = new TRandomRanluxpp(seed_iEntry); }
-        else if (trandom_type=="TRandomMixMax") { rng = new TRandomMixMax(seed_iEntry); }
-        else if (trandom_type=="TRandomMixMax17") { rng = new TRandomMixMax17(seed_iEntry); }
-        else if (trandom_type=="TRandomMixMax256") { rng = new TRandomMixMax256(seed_iEntry); }
-        else if (trandom_type=="TRandomMT64") { rng = new TRandomMT64(seed_iEntry); }
-        else if (trandom_type=="TRandom1") { rng = new TRandom1(seed_iEntry); }
-        else if (trandom_type=="TRandomRanlux48") { rng = new TRandomRanlux48(seed_iEntry); }
-        else if (trandom_type=="TRandom2") { rng = new TRandom2(seed_iEntry); }
-        else {
-            string msg = Form("trandom_type %s is not recognized.  Please consult the ROOT documentation for allowed types", trandom_type.c_str());
-            LOG_ERROR(msg);
-            throw runtime_error(msg);
-        }
+        TRandom * rng = initializeTRandom(seed_iEntry,trandom_type);
 
         // Initialize beam helicity, target spin, random variable and cross-section asymmetry value
         int bhelicity    = 0;
@@ -774,6 +831,215 @@ RNode injectAsym(
     return frame;
 
 }// RNode injectAsym()
+
+/**
+* @brief Weight a dataframe by resampling with Poissonian statistics
+*
+* Weight an existing `ROOT::RDataFrame` following the Poissonian bootstrapping method
+* of resampling each event randomly from a Poissonian distribution with mean \f$\lambda=1\f$.
+*
+* @param df `ROOT::RDataFrame` to weight
+* @param seed Seed for random number generator
+* @param weight_name Name of column containing the event weights
+* @param trandom_type Type name of ROOT TRandom number generator
+*
+* @return `ROOT::RDataFrame` filtered for non-zero resampling weights
+*/
+RNode bootstrapPoisson(
+    RNode df,
+    int seed,
+    string weight_name,
+    string trandom_type
+    ) {
+
+    string method_name = "bootstrapPoisson";
+
+    // Define a lambda to inject an asymmetry for each rdf entry
+    LOG_DEBUG(Form("[%s]: Defining lambda function for Poisson resampling...", method_name.c_str()));
+    auto getEntrySlot = [seed,trandom_type](ULong64_t iEntry) -> int {
+
+        // Combine global seed and row index for determinism
+        UInt_t seed_iEntry = seed + static_cast<UInt_t>(iEntry);
+        TRandom * rng = initializeTRandom(seed_iEntry,trandom_type);
+
+        // Draw from Poisson distribution with mean lambda=1
+        return rng->Poisson(1.0);
+    };
+
+    // Define the event weights and filter for non-zero weights
+    return df.Define(
+                weight_name.c_str(),
+                getEntrySlot,
+                {"rdfentry_"}
+            ).Filter(Form("%s > 0",weight_name.c_str()));
+
+}// RNode bootstrapPoisson()
+
+/**
+* @brief Weight a dataframe by resampling with replacement
+*
+* Weight an existing `ROOT::RDataFrame` following the classical bootstrapping method
+* of resampling with replacement.
+*
+* @param df `ROOT::RDataFrame` to weight
+* @param n Sample size
+* @param seed Seed for random number generator
+* @param weight_name Name of column containing the event weights
+* @param trandom_type Type name of ROOT TRandom number generator
+*
+* @return `ROOT::RDataFrame` filtered for non-zero resampling weights
+*
+* @throws Runtime Error
+*/
+RNode bootstrapClassical(
+        RNode df,
+        int n,
+        int seed,
+        string weight_name,
+        string trandom_type
+    ) {
+
+    string method_name = "bootstrapClassical";
+
+    // Grab indices
+    LOG_DEBUG(Form("[%s]: Grabbing event indices...", method_name.c_str()));
+    auto entries = *df.Take<ULong64_t>("rdfentry_");
+
+    // Check dataframe and resampling size
+    const ULong64_t N = entries.size();
+    if (N==0) {
+        string msg = Form("[%s]: Dataframe size is 0.  Cannot resample.", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+    if (n==0) {
+        string msg = Form("[%s]: Resampling size 0 is not allowed.", method_name.c_str());
+        LOG_ERROR(msg);
+        throw runtime_error(msg);
+    }
+
+    // Initialize the generator
+    LOG_DEBUG(Form("[%s]: Initialize random number generator with type, seed = %s, %d ...", method_name.c_str(), trandom_type.c_str(), seed));
+    TRandom * rng = initializeTRandom(seed,trandom_type);
+
+    // Resample the dataset
+    LOG_DEBUG(Form("[%s]: Resampling dataset...", method_name.c_str()));
+    unordered_multiset<ULong64_t> selected;
+    for (ULong64_t i = 0; i < n; ++i) {
+        selected.insert(rng->Integer(N));
+    }
+
+    // Set event weights and filter for non-zero weights
+    LOG_DEBUG(Form("[%s]: Defining event weight %s...", method_name.c_str(), weight_name.c_str()));
+    return df.Define(
+                weight_name.c_str(),
+                [selected](ULong64_t entry) {
+                    return selected.count(entry);
+                },
+                {"rdfentry_"}
+            ).Filter(Form("%s > 0",weight_name.c_str()));
+
+}// RNode bootstrapClassical()
+
+/**
+* @brief Compute a weighted count
+*
+* Compute the weighted count of a `ROOT::RDataFrame`.
+*
+* @param df RDataFrame to use
+* @param weight_name Name of the weight column in the RDataFrame, ignored if empty
+*
+* @return The weighted count
+*/
+template<typename RetType>
+RetType get_weighted_count(
+    RNode df,
+    string weight_name
+    ) {
+    return (RetType)((weight_name=="") ? *df.Count(): *df.Sum(weight_name.c_str()));
+}// RetType get_weighted_count()
+
+/**
+* @brief Compute a weighted mean
+*
+* Compute the weighted mean of a variable in a `ROOT::RDataFrame`.
+*
+* @param df RDataFrame to use
+* @param var_name Name other variable in which to compute the mean
+* @param weight_name Name of the weight column in the RDataFrame, ignored if empty
+*
+* @return The weighted mean of the variable
+*/
+template<typename RetType>
+RetType get_weighted_mean(
+    RNode df,
+    string var_name,
+    string weight_name
+    ) {
+
+    // Check if weight name is empty
+    if (weight_name=="") return (RetType)*df.Mean(var_name.c_str());
+
+    // Compute weighted count
+    RetType sum_w = (RetType)*df.Sum(weight_name.c_str());
+
+    // Compute weighted mean
+    std::string wx_name = Form("__%s_X_%s",var_name.c_str(),weight_name.c_str());
+    RetType sum_wx = (RetType)*df.Define(
+            wx_name.c_str(),
+            [](RetType x, RetType w){ return x*w; },
+            {var_name.c_str(),weight_name.c_str()}
+        )
+        .Sum(wx_name.c_str());  // sum_i: w_i * x_i
+    RetType mean_w = sum_wx / sum_w;
+
+    return mean_w;
+
+}// RetType get_weighted_count()
+
+/**
+* @brief Compute a weighted standard deviation
+*
+* Compute the weighted standard deviation of a variable in a `ROOT::RDataFrame`.
+*
+* @param df RDataFrame to use
+* @param var_name Name other variable in which to compute the mean
+* @param weight_name Name of the weight column in the RDataFrame, ignored if empty
+* @param mean Value of the weighted mean if already available
+*
+* @return The weighted standard deviation of the variable
+*/
+template<typename RetType>
+RetType get_weighted_stddev(
+    RNode df,
+    string var_name,
+    string weight_name,
+    RetType mean = 0.0
+    ) {
+
+    // Check if weight name is empty
+    if (weight_name=="") return (RetType)*df.StdDev(var_name.c_str());
+
+    // Compute weighted count
+    RetType sum_w = (RetType)*df.Sum(weight_name.c_str());
+
+    // Compute mean only if not provided
+    RetType mean_w = (mean!=0.0) ? mean : get_weighted_mean<RetType>(df,var_name,weight_name);
+
+    // Compute the weighted variance
+    string wdx2_name = Form("__d%s_X_%s_2",var_name.c_str(),weight_name.c_str());
+    RetType sum_wdx2 = (RetType)*df.Define(
+            wdx2_name.c_str(),
+            [mean_w](RetType x, RetType w){ 
+                RetType dx = x - mean_w;
+                return w * dx*dx;
+            }, {var_name.c_str(),weight_name.c_str()})
+        .Sum(wdx2_name.c_str());
+    RetType var_w = sum_wdx2 / sum_w;
+    RetType std_w = sqrt(var_w);
+
+    return mean_w;
+}// RetType get_weighted_stddev()
 
 /**
 * @brief Define Monte Carlo (MC) simulation angular difference variables

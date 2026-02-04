@@ -30,6 +30,7 @@
 #include <RooPlot.h>
 // #include <RooAbsDataHelper.h>
 #include <RooDataHist.h>
+#include "RooFormulaVar.h"
 #include <RooArgList.h>
 #include <RooAddPdf.h>
 #include <RooGenericPdf.h>
@@ -780,6 +781,7 @@ vector<double> fitMass(
 * 
 * @param w RooWorkspace in which to work
 * @param dataset_name Dataset name
+* @param weight_name Name of existing weight variable, ignored if empty
 * @param sgYield_name Signal yield variable name
 * @param bgYield_name Background yield variable name
 * @param model_name Full PDF name
@@ -789,6 +791,7 @@ vector<double> fitMass(
 void applySPlot(
         RooWorkspace *w,
         string dataset_name,
+        string weight_name,
         string sgYield_name,
         string bgYield_name,
         string model_name,
@@ -814,9 +817,71 @@ void applySPlot(
     // Run sPlot and create weighted datasets
     LOG_DEBUG(Form("[%s]: Creating SPlot...", method_name.c_str()));
     RooStats::SPlot sData{"sData", "sPlot Data", *rooDataSetResult, model, RooArgList(*sgYield, *bgYield)};
+
+    string sg_sweightvar_name = Form("%s_sw",sgYield_name.c_str());
+    string bg_sweightvar_name = Form("%s_sw",bgYield_name.c_str());
+
+    // Combine existing weights with sweights
+    if (weight_name!="") {
+
+        LOG_DEBUG(Form("[%s]: Combining existing weight %s and sweights...", method_name.c_str(), weight_name.c_str()));
+
+        // Define new weight names
+        string new_sg_sweightvar_name = Form("%s_%s",weight_name.c_str(),sg_sweightvar_name.c_str());
+        string new_bg_sweightvar_name = Form("%s_%s",weight_name.c_str(),bg_sweightvar_name.c_str());
+
+        // Grab pointers
+        RooAbsArg* weight_ptr     = rooDataSetResult->get()->find(weight_name.c_str());
+        RooAbsArg* sg_sweight_ptr = rooDataSetResult->get()->find(sg_sweightvar_name.c_str());
+        RooAbsArg* bg_sweight_ptr = rooDataSetResult->get()->find(bg_sweightvar_name.c_str());
+
+        // Check for null pointers
+        if (!weight_ptr) {
+            string msg = Form("[%s]: Weight variable %s not found in dataset", method_name.c_str(), weight_name.c_str());
+            LOG_ERROR(msg);
+            throw runtime_error(msg);
+        }
+        if (!sg_sweight_ptr) {
+            string msg = Form("[%s]: Weight variable %s not found in dataset", method_name.c_str(), sg_sweightvar_name.c_str());
+            LOG_ERROR(msg);
+            throw runtime_error(msg);
+        }
+        if (!bg_sweight_ptr) {
+            string msg = Form("[%s]: Weight variable %s not found in dataset", method_name.c_str(), bg_sweightvar_name.c_str());
+            LOG_ERROR(msg);
+            throw runtime_error(msg);
+        }
+
+        // Create named lvalue references
+        RooAbsArg& weight_ref     = *weight_ptr;
+        RooAbsArg& sg_sweight_ref = *sg_sweight_ptr;
+        RooAbsArg& bg_sweight_ref = *bg_sweight_ptr;
+
+        // Define new weight column for signal
+        RooFormulaVar * rfv_sg_sweight = new RooFormulaVar(
+            new_sg_sweightvar_name.c_str(),
+            "@0 * @1",
+            RooArgList(weight_ref,sg_sweight_ref)
+        ); 
+        rooDataSetResult->addColumn(*rfv_sg_sweight);
+
+        // And for background
+        RooFormulaVar * rfv_bg_sweight = new RooFormulaVar(
+            new_bg_sweightvar_name.c_str(),
+            "@0 * @1",
+            RooArgList(weight_ref,bg_sweight_ref)
+        ); 
+        rooDataSetResult->addColumn(*rfv_bg_sweight);
+
+        // Reset sweight names
+        sg_sweightvar_name = new_sg_sweightvar_name;
+        bg_sweightvar_name = new_bg_sweightvar_name;
+    }
+
+    // Create weighted datasets
     auto& data = static_cast<RooDataSet&>(*rooDataSetResult);
-    RooDataSet data_sg_sw{dataset_sg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",sgYield_name.c_str())};
-    RooDataSet data_bg_sw{dataset_bg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, Form("%s_sw",bgYield_name.c_str())};
+    RooDataSet data_sg_sw{dataset_sg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, sg_sweightvar_name.c_str()};
+    RooDataSet data_bg_sw{dataset_bg_name.c_str(), data.GetTitle(), &data, *data.get(), nullptr, bg_sweightvar_name.c_str()};
 
     // Import sweighted datasets into workspace
     LOG_DEBUG(Form("[%s]: Importing sWeighted datasets into workspace...", method_name.c_str()));
