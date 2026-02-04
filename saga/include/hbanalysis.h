@@ -1225,8 +1225,8 @@ void getKinBinnedHB(
             epsilon = eps_bg_pdf;
             epsilon_err = eps_bg_pdf_err;
             for (int idx=0; idx<nparams; idx++) {
-                ys_sb[idx] = asymfit_result_sb[k2++];
-                eys_sb[idx] = asymfit_result_sb[k2++];
+                ys_sb.push_back(asymfit_result_sb[k2++]);
+                eys_sb.push_back(asymfit_result_sb[k2++]);
                 ys[idx]  = (ys[idx] - epsilon * ys_sb[idx]) / (1.0 - epsilon);
                 eys[idx] = TMath::Sqrt(eys[idx]*eys[idx] + epsilon * epsilon * eys_sb[idx]*eys_sb[idx]) / (1.0 - epsilon);
             }
