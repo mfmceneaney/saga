@@ -997,7 +997,7 @@ void getKinBinnedHB(
 
         // Create signal region dataset for sideband subtraction
         if (use_sb_subtraction) {
-            LOG_DEBUG(Form("[%s]: Creating sideband dataset...", method_name.c_str()));
+            LOG_DEBUG(Form("[%s]: Creating signal dataset...", method_name.c_str()));
             data::createDataset(
                 binframe_sg,
                 ws_sg, //NOTE: Use separate sideband workspace for dataset, variable, and pdf name uniqueness.
@@ -1221,12 +1221,11 @@ void getKinBinnedHB(
         if (use_sb_subtraction) {
             LOG_DEBUG(Form("[%s]: Applying sideband subtraction...", method_name.c_str()));
             int k2 = 1 + 2 * (binvars.size() + depolvars.size() + rawasymvars.size());
-            LOG_DEBUG(Form("[%s]: k2 = %d AND asymfit_result_sb.size() = %d", method_name.c_str(), k2, asymfit_result_sb.size()));
             epsilon = eps_bg_pdf;
             epsilon_err = eps_bg_pdf_err;
             for (int idx=0; idx<nparams; idx++) {
-                ys_sb[idx] = asymfit_result_sb[k2++];
-                eys_sb[idx] = asymfit_result_sb[k2++];
+                ys_sb.push_back(asymfit_result_sb[k2++]);
+                eys_sb.push_back(asymfit_result_sb[k2++]);
                 ys[idx]  = (ys[idx] - epsilon * ys_sb[idx]) / (1.0 - epsilon);
                 eys[idx] = TMath::Sqrt(eys[idx]*eys[idx] + epsilon * epsilon * eys_sb[idx]*eys_sb[idx]) / (1.0 - epsilon);
             }
