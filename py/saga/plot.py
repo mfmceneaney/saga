@@ -161,6 +161,40 @@ def plot_watermark(
     )
 
 
+def plot_label(
+    ax1,
+    plot_label_args=None,
+):
+    """
+    Parameters
+    ----------
+    ax1 : matplotlib.axes._axes.Axes, required
+        Matplotlib.pyplot figure axis
+    plot_label_args : list, optional
+        List of positional arguments for plot label
+
+    Description
+    -----------
+    Plot a text label.
+    """
+    if plot_label_args is None:
+        plot_label_args = [0.95, 0.15, None]
+    if (
+        isinstance(plot_label_args, tuple)
+        or isinstance(plot_label_args, list)
+        and len(plot_label_args) == 3
+        and isinstance(plot_label_args[-1], str)
+    ):
+        ax1.text(
+            *plot_label_args,
+            transform=ax1.transAxes,
+            fontsize=plt.rcParams["axes.titlesize"],
+            fontweight="bold",
+            va="top",
+            ha="right",
+        )
+
+
 def plot_vlines(
     hist,
     binlims=None,
@@ -705,8 +739,8 @@ def plot_systematics(
     watermark_kwargs=None,
     use_default_plt_settings=True,
     title_pad=20,
-    lg_kwargs={"loc":"upper left", "bbox_to_anchor":(1.05, 1.0), "frameon": False},
-    plot_label_args=[0.95,0.15,None],
+    lg_kwargs=None,
+    plot_label_args=None,
     axlinewidth=1.0,
     log=False,
     figsize=(16, 10),
@@ -763,6 +797,14 @@ def plot_systematics(
     Save systematics breakdowns to CSV in :obj:`<outpath>.csv`.  Note that this does **not** allow for asymmetric errors.
     """
 
+    # Check arguments
+    if lg_kwargs is None:
+        lg_kwargs = {
+            "loc": "upper left",
+            "bbox_to_anchor": (1.05, 1.0),
+            "frameon": False,
+        }
+
     # Set color palette
     sbn.set_palette(palette)
 
@@ -803,14 +845,11 @@ def plot_systematics(
         plot_watermark(ax1, watermark=watermark, **watermark_kwargs)
 
     # Plot legend
-    if isinstance(legend_loc,dict):
+    if isinstance(lg_kwargs, dict):
         ax1.legend(**lg_kwargs)
 
     # Plot label
-    if isinstance(plot_label_args,tuple) or isinstance(plot_label_args,list) \
-    and len(plot_label_args)==3 and isinstance(plot_label_args[-1],str):
-        ax1.text(*plot_label_args, transform=ax1.transAxes,
-            fontsize=plt.rcParams['axes.titlesize'], fontweight='bold', va='top', ha='right')
+    plot_label(ax1, plot_label_args)
 
     # Save figure
     f1.savefig(outpath)
@@ -869,8 +908,8 @@ def plot_results(
     watermark_kwargs=None,
     show_injected_asymmetries=False,
     title_pad=20,
-    lg_kwargs={"loc":"best", "frameon": False},
-    plot_label_args=[0.95,0.15,None],
+    lg_kwargs=None,
+    plot_label_args=None,
     ecolor="black",
     elinewidth=2.0,
     capsize=18,
@@ -1067,6 +1106,8 @@ def plot_results(
         sgasyms = [0.10]
     if sg_colors is None:
         sg_colors = ["blue"]
+    if lg_kwargs is None:
+        lg_kwargs = {"loc": "best", "frameon": False}
 
     # Rescale graph
     scaling, acceptanceratio = None, None
@@ -1225,14 +1266,11 @@ def plot_results(
         plot_watermark(ax1, watermark=watermark, **watermark_kwargs)
 
     # Plot legend
-    if isinstance(lg_kwargs,dict):
+    if isinstance(lg_kwargs, dict):
         ax1.legend(**lg_kwargs)
 
     # Plot label
-    if isinstance(plot_label_args,tuple) or isinstance(plot_label_args,list) \
-    and len(plot_label_args)==3 and isinstance(plot_label_args[-1],str):
-        ax1.text(*plot_label_args, transform=ax1.transAxes,
-            fontsize=plt.rcParams['axes.titlesize'], fontweight='bold', va='top', ha='right')
+    plot_label(ax1, plot_label_args)
 
     # Check whether you have graph data to save to CSV
     if ct_mean is None:
