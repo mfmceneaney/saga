@@ -135,8 +135,10 @@ def rescale_graph_data(
     y_mean = new_sim_graph["y"]
 
     # Set y values to constant and update scaled y errors if requested
-    scaled_y_mean = y_mean if yvalue < -1 else [np.abs(yvalue) for i in range(len(y_mean))]
-    if yvalue >= -1 and yvalue<0:
+    scaled_y_mean = (
+        y_mean if yvalue < -1 else [np.abs(yvalue) for i in range(len(y_mean))]
+    )
+    if yvalue >= -1 and yvalue < 0:
         scaled_yerr_mean = (
             np.divide(1.0, np.sqrt(scaled_ct_mean)) * 1.0 / (tpol_factor * tdil_factor)
         ) * np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
@@ -281,9 +283,11 @@ def rescale_csv_data(
         if yvalue < -1
         else [np.abs(yvalue) for i in range(len(old_dat_df[y_key]))]
     )
-    if yvalue >= -1 and yvalue<0:
+    if yvalue >= -1 and yvalue < 0:
         scaled_yerrs = (
-            np.divide(1.0, np.sqrt(new_dat_df_count)) * 1.0 / (tpol_factor * tdil_factor)
+            np.divide(1.0, np.sqrt(new_dat_df_count))
+            * 1.0
+            / (tpol_factor * tdil_factor)
         ) * np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
     elif yvalue >= 0 and yvalue <= 1:
         scaled_yerrs *= np.sqrt(1 - np.square(yvalue * tpol_factor * tdil_factor))
